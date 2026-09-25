@@ -26,12 +26,27 @@ async function distinctColors(page: Page): Promise<number> {
   });
 }
 
+async function waitForPaint(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 test('la vue 3D montre une chaussette homme puis femme', async ({ page }) => {
   const errors = trackErrors(page);
   await page.goto('/');
-  await page.waitForFunction(() => window.__SIM__?.ready === true);
-  await page.waitForFunction(() => (window.__SIM__?.geometryBuilds ?? 0) >= 1);
-  await expect.poll(() => distinctColors(page)).toBeGreaterThan(2);
+  await page.waitForFunction(
+    () =>
+      window.__SIM__?.ready === true &&
+      (window.__SIM__?.geometryBuilds ?? 0) >= 1 &&
+      (window.__SIM__?.textureUpdates ?? 0) >= 1,
+  );
+  await waitForPaint(page);
+  // SwiftShader CI : le premier frame utile peut arriver après geometryBuilds.
+  await expect.poll(() => distinctColors(page), { timeout: 30_000 }).toBeGreaterThan(2);
   await page.getByTestId('viewport').screenshot({ path: 'test-results/visuel-t06-homme.png' });
 
   const before = await page.evaluate(() => ({
@@ -42,7 +57,9 @@ test('la vue 3D montre une chaussette homme puis femme', async ({ page }) => {
     window.__SIM__?.setDesign({ dimensions: { size: 'femme' } });
   });
   await page.waitForFunction((id) => window.__SIM__?.computeId !== id, before.id);
-  await expect.poll(() => distinctColors(page)).toBeGreaterThan(2);
+  await page.waitForFunction(() => (window.__SIM__?.geometryBuilds ?? 0) >= 2);
+  await waitForPaint(page);
+  await expect.poll(() => distinctColors(page), { timeout: 30_000 }).toBeGreaterThan(2);
   const after = await page.evaluate(() => window.__SIM__?.grid.width ?? 0);
   expect(after).toBeGreaterThan(0);
   expect(after).toBeLessThan(before.width);
