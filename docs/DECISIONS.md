@@ -209,4 +209,9 @@ Options : retoucher les paramètres T38 / remplacer par `reference/decor` v2 (ma
 Choix : intégrer sans réécrire `reference/decor/tileSurface.ts` (import `../../core/calepinage`) ; charger `public/textures/grain-ciment.jpg` une fois ; défauts `groutMm` 1,5 / `#f3f1ec` / `attenuation` 0 / `grainStrength` 0,7 ; `tilesPerSide = round(240/tileCm)` ; `pxPerTile` 160 si ≤12 cm sinon 256 ; curseur Grain 0–100 % dans le panneau.
 Conséquence : couleurs franches, joints fins clairs, grain visible ; textures 10 cm plus lourdes (timeout e2e 180 s + `decorBuildId`).
 
+## D37 — Visionneuse mobile pleine hauteur
+Contexte : sur mobile (≤1279 px) la grille `#app` a 2 rangées 1fr/1fr pour viewport+panneau ; en mode visionneuse le panneau est `display:none` mais la 1re rangée seule reste à 50 %.
+Choix : `#app.viewer-mode { grid-template-rows: minmax(0, 1fr); }` + `#viewport { height: 100%; }`.
+Conséquence : le canvas occupe toute la hauteur viewport hors mode dev.
+
 
