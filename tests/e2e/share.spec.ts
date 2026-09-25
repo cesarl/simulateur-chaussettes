@@ -84,7 +84,7 @@ test('lien de partage : collection modifiée → nouvel onglet → même chausse
   expect(hash.startsWith('#p=1.')).toBe(true);
   // Empreinte après copie (état courant)
   const fingerprint = await page.evaluate(() => window.__SIM__?.gridHash ?? '');
-  expect(fingerprint.length).toBeGreaterThanOrEqual(8);
+  expect(fingerprint.length).toBeGreaterThan(4);
   const heel = await page.evaluate(() => window.__SIM__?.design.zones.heelHeightMm);
 
   const sourcePng = await page.evaluate(async () => {

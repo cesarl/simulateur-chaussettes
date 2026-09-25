@@ -14,6 +14,7 @@ import {
   fittingTileWidths,
   planPlacements,
   raccord,
+  seamColumn,
   type CalepinageSpec,
   type Preset,
   type TileGeometry,
@@ -44,7 +45,7 @@ export function geometryFromLayout(layout: LayoutSettings, needles: number): Til
     tileRows: layout.tileRows,
     gapStitches: layout.gapStitches,
     gapRows: layout.gapRows,
-    offsetStitches: layout.offsetStitches,
+    offsetStitches: layout.offsetStitches + seamColumn(layout.seam, needles),
     offsetRows: layout.offsetRows,
     appareil: layout.calepinage.appareil,
   };

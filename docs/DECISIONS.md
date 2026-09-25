@@ -191,4 +191,10 @@ Options : garder 24 en mode libre / dériver de N=6.
 Choix : `defaultDesign()` calcule largeur/hauteur via `tileWidthForCount(168, 6)` et `tileRowsFor` (mode `around`).
 Conséquence : le motif tombe juste dès l’ouverture ; la case « Taille libre » retrouve l’ancien comportement.
 
+## D34 — Raccord via seamColumn dans geometryFromLayout (T37)
+Contexte : le raccord doit pouvoir tomber au dos / intérieur / extérieur / devant sans changer le calepinage.
+Options : décaler la texture UV / ajouter un offset dans `geometryFromLayout` / décaler à l’affichage seulement.
+Choix : `offsetStitches` effectif = offset utilisateur + `seamColumn(seam, needles)` dans `geometryFromLayout` ; UI « Faire tomber juste » repasse en mode `around` (plus proche N) plutôt qu’ajuster la largeur libre.
+Conséquence : les tests de calepinage qui attendent un motif démarrant en colonne 0 utilisent `seam: 'interieur'` (seamColumn = 0).
+
 

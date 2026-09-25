@@ -1,8 +1,7 @@
 import type { FabricationReport } from '../core/checks';
 import type { Rot } from '../core/calepinage';
 import { tileRowsFor } from '../core/calepinage';
-import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
-import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
+import { clampLegRows, defaultDimensions, SIZE_PRESETS, totalRows } from '../core/sizes';
 import { CATALOGUE_MISSING_MESSAGE } from '../io/catalogue';
 import type { ExportRequest, FlatKind } from '../io/exportPng';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
@@ -293,13 +292,24 @@ export function renderStatus(info: {
   patternCounts: readonly number[];
   mismatch: number;
   raccordMessage?: string;
+  seamLabel?: string;
+  showFit?: boolean;
 }): void {
   if (computeMs) computeMs.textContent = `Dernier calcul : ${Math.round(info.ms)} ms`;
   if (seamStatus) {
-    seamStatus.textContent = info.raccordMessage
-      ?? (info.mismatch === 0
-        ? 'Le motif tombe juste.'
-        : `Décalage de ${info.mismatch} mailles au dos.`);
+    const seam = info.seamLabel ?? 'dos';
+    if (info.mismatch === 0) {
+      seamStatus.textContent = info.raccordMessage ?? 'Le motif tombe juste.';
+    } else {
+      seamStatus.textContent =
+        info.raccordMessage ??
+        `Carreau coupé au raccord (${seam}) · décalage de ${info.mismatch} mailles.`;
+    }
+  }
+  const fitBtn = document.querySelector<HTMLButtonElement>('[data-testid="ctl-fit-width"]');
+  if (fitBtn) {
+    const free = getState().design.layout.tileSizeMode === 'free';
+    fitBtn.hidden = !(free && info.mismatch > 0);
   }
   if (!swatches) return;
   swatches.replaceChildren();
@@ -773,6 +783,24 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     onChange: (value) =>
       update({ design: { layout: { calepinage: { graine: Math.max(1, Math.round(value)) } } } }),
   });
+
+  const seamSelect = makeSelect(
+    'Raccord du motif',
+    'ctl-seam',
+    [
+      { value: 'dos', label: 'Dos' },
+      { value: 'interieur', label: 'Intérieur' },
+      { value: 'exterieur', label: 'Extérieur' },
+      { value: 'devant', label: 'Devant' },
+    ],
+    design.layout.seam,
+    (value) => {
+      if (value !== 'dos' && value !== 'interieur' && value !== 'exterieur' && value !== 'devant') return;
+      update({ design: { layout: { seam: value } } });
+    },
+    'Où le tour se referme : au dos (moins visible), à l’intérieur, à l’extérieur ou devant.',
+  );
+
   seamStatus = document.createElement('p');
   seamStatus.className = 'hint';
   seamStatus.dataset.testid = 'seam-status';
@@ -780,13 +808,25 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const fit = document.createElement('button');
   fit.type = 'button';
   fit.dataset.testid = 'ctl-fit-width';
-  fit.textContent = 'Ajuster la largeur';
+  fit.textContent = 'Faire tomber juste';
   fit.addEventListener('click', () => {
     const current = getState().design;
-    const tileStitches = nearestFittingWidth(current.layout, current.dimensions.needles);
-    const next: { tileStitches: number; tileRows?: number } = { tileStitches };
-    if (keepRatio) next.tileRows = tileRowsForWidth(tileStitches, stitchAspect(current.dimensions));
-    update({ design: { layout: next } });
+    // Passe en « carreaux sur le tour » avec le nombre le plus proche.
+    const pitch = current.layout.tileStitches + current.layout.gapStitches;
+    const approx = pitch > 0 ? Math.round(current.dimensions.needles / pitch) : current.layout.tilesAround;
+    const sized = layoutFromTilesAround(
+      current.dimensions.needles,
+      approx,
+      current.layout.gapStitches,
+      current.dimensions.stitchesPerCm,
+      current.dimensions.rowsPerCm,
+      keepRatio,
+      current.layout.tileRows,
+    );
+    update({ design: { layout: sized } });
+    freeSizeBox.input.checked = false;
+    tileWidth.root.hidden = true;
+    tileRows.root.hidden = true;
   });
   layout.append(
     tilesAround.root,
@@ -802,6 +842,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     offsetX.root,
     offsetY.root,
     seed.root,
+    seamSelect.root,
     seamStatus,
     fit,
   );
@@ -1219,10 +1260,18 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   fitSeam.textContent = 'Ajuster la largeur pour que le motif tombe juste';
   fitSeam.addEventListener('click', () => {
     const current = getState().design;
-    const tileStitches = nearestFittingWidth(current.layout, current.dimensions.needles);
-    const next: { tileStitches: number; tileRows?: number } = { tileStitches };
-    if (keepRatio) next.tileRows = tileRowsForWidth(tileStitches, stitchAspect(current.dimensions));
-    update({ design: { layout: next } });
+    const pitch = current.layout.tileStitches + current.layout.gapStitches;
+    const approx = pitch > 0 ? Math.round(current.dimensions.needles / pitch) : current.layout.tilesAround;
+    const sized = layoutFromTilesAround(
+      current.dimensions.needles,
+      approx,
+      current.layout.gapStitches,
+      current.dimensions.stitchesPerCm,
+      current.dimensions.rowsPerCm,
+      keepRatio,
+      current.layout.tileRows,
+    );
+    update({ design: { layout: sized } });
   });
   checks.appendChild(fitSeam);
 
@@ -1290,6 +1339,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     offsetX.setValue(current.layout.offsetStitches);
     offsetY.setValue(current.layout.offsetRows);
     seed.setValue(current.layout.calepinage.graine);
+    if (document.activeElement !== seamSelect.input) seamSelect.input.value = current.layout.seam;
     size.input.value = current.dimensions.size;
     leg.setRange(1, SIZE_PRESETS[current.dimensions.size].legRowsMax);
     leg.input.removeAttribute('max');

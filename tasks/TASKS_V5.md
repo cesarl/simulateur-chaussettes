@@ -51,14 +51,14 @@ Lire `docs/JAUGE_EXPLIQUEE.md` (texte à reprendre dans l'interface).
 - [x] Tests unitaires : 5 carreaux sur 168 aiguilles → aucune colonne coupée (le motif de la colonne 0 prolonge celui de la colonne 167).
 - [x] e2e : changer la jauge verticale ne change pas le nombre de carreaux sur le tour ; l'encadré affiche les nouvelles valeurs.
 
-### [~] T37 — Où tombe le raccord
+### [x] T37 — Où tombe le raccord
 - Réglage « Raccord du motif » : **Dos** (défaut), Intérieur, Extérieur, Devant. Décalage horizontal effectif = `seamColumn(position, aiguilles)` + décalage choisi par l'utilisateur.
 - En mode « taille libre » quand le motif ne tombe pas juste : message « Carreau coupé au raccord (dos) » + bouton « Faire tomber juste » (passe en « carreaux sur le tour » avec le nombre le plus proche).
 - Vue à plat : trait vertical pointillé à la colonne du raccord, libellé « raccord ».
 
 **Critères**
-- [ ] Test unitaire : largeur 25 mailles, raccord « dos » → la colonne coupée est juste avant la colonne 42 (milieu du dos), pas en colonne 0.
-- [ ] Captures dos / profil intérieur avec raccord « dos » puis « intérieur », décrites dans `PROGRESS.md`.
+- [x] Test unitaire : largeur 25 mailles, raccord « dos » → la colonne coupée est juste avant la colonne 42 (milieu du dos), pas en colonne 0.
+- [x] Captures dos / profil intérieur avec raccord « dos » puis « intérieur », décrites dans `PROGRESS.md`.
 
 ### [ ] T38 — Décor : sol et mur en carreaux de ciment
 - Intégrer `reference/decor/tileSurface.ts` (`src/render/decor/`). Section « Décor » : Aucun (défaut) / Sol / Mur / Sol + mur ; format du carreau (défaut : `format` de la collection, 20 × 20 → 20 cm ; 10 × 10 → 10 cm ; curseur 10–30 cm) ; joint (mm) et couleur du joint ; patine ; atténuation ; carreaux du décor : **« comme la chaussette »** (mêmes carreaux et couleurs) / **« couleurs d'origine de la collection »** / **autre collection** (liste) ; calepinage du décor : celui par défaut de la collection choisie.

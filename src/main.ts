@@ -378,12 +378,20 @@ function recompute(): void {
   const preset = resolvePreset(design.layout.calepinage, calepPresets);
   const mismatch = seamMismatch(design.layout, design.dimensions.needles, tileCount, preset);
   const raccordInfo = layoutRaccord(design.layout, design.dimensions.needles, tileCount, preset);
+  const SEAM_LABEL: Record<string, string> = {
+    dos: 'dos',
+    interieur: 'intérieur',
+    exterieur: 'extérieur',
+    devant: 'devant',
+  };
   renderStatus({
     ms: lastComputeMs,
     patternPalette,
     patternCounts,
     mismatch,
     raccordMessage: raccordInfo.message,
+    seamLabel: SEAM_LABEL[design.layout.seam] ?? design.layout.seam,
+    showFit: design.layout.tileSizeMode === 'free' && mismatch > 0,
   });
 }
 

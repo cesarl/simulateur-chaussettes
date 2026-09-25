@@ -1,5 +1,7 @@
 import type { StitchGrid } from '../core/types';
 import { Zone } from '../core/types';
+import { seamColumn } from '../core/calepinage';
+import { getState } from '../state';
 
 /**
  * Vue à plat : une maille = un rectangle au rapport réel.
@@ -162,6 +164,25 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
       if (y < MARGIN_TOP || y > canvas.height - 4) continue;
       context.fillText(String(row), MARGIN_LEFT - 8, y);
     }
+
+    // Trait du raccord (colonne où le tour se referme)
+    const col = Math.round(seamColumn(getState().design.layout.seam, grid.width));
+    const sx = originX + col * w + 0.5;
+    context.save();
+    context.setLineDash([4, 4]);
+    context.strokeStyle = '#b5462f';
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.moveTo(sx, originY);
+    context.lineTo(sx, originY + grid.height * h);
+    context.stroke();
+    context.setLineDash([]);
+    context.fillStyle = '#b5462f';
+    context.font = '11px system-ui, sans-serif';
+    context.textAlign = 'left';
+    context.textBaseline = 'top';
+    context.fillText('raccord', sx + 4, originY + 4);
+    context.restore();
 
     drawZones(originY, h);
   }

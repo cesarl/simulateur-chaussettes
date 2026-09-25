@@ -353,3 +353,22 @@ Fait : `shareState.ts` (diff vs défaut, collection, décor, raccord) ; hash `#p
 Vérification : `npm run verify` ✅ (unitaires + 40 e2e). Captures source (dev) / cible (visionneuse) : même Medina (marine / terracotta / pêche), bord-côte marine, talon terracotta, pointe sombre.
 Décisions : D32.
 Reste / risques : push GitHub intermittent (token) ; enchaîner T36.
+
+## T36 — Jauge et carreaux sur le tour — 2026-09-25 20:55
+Statut : terminée
+Fait : `tileWidthForCount` / `tileRowsFor` / raccord fractionnaire ; UI « Carreaux sur le tour » + taille libre ; encadré `gauge-readout` ; section machine repliée ; défaut = 6 carreaux sur 168.
+Vérification : `npm run verify` ✅ ; e2e `gauge.spec.ts` vert.
+Décisions : D33.
+Reste / risques : T37 raccord.
+
+## T37 — Position du raccord — 2026-09-25 21:05
+Statut : terminée
+Fait : `geometryFromLayout` ajoute `seamColumn(seam, aiguilles)` au décalage ; select Dos/Intérieur/Extérieur/Devant ; message « Carreau coupé au raccord (…) » + « Faire tomber juste » (mode around) ; trait pointillé « raccord » en vue à plat.
+Vérification : `npm run verify` ✅ (98 unitaires, 42 e2e). Contrôle visuel :
+- `visuel-T37-raccord-dos-vue-dos.png` : vue dos, étoile fixture, motif symétrique autour de l’axe vertical central (ligne bleue / nœuds rouges centrés) ; talon terracotta en bas ; bord-côte marine.
+- `visuel-T37-raccord-dos-vue-interieur.png` : profil intérieur, même palette ; ombre studio à droite ; pointe noire à gauche.
+- `visuel-T37-raccord-interieur-vue-dos.png` : vue dos après raccord « intérieur » — le motif n’est plus centré sur l’axe dos (décalage visible des nœuds rouges / lignes).
+- `visuel-T37-raccord-interieur-vue-interieur.png` : profil intérieur correspondant.
+- `visuel-T37-raccord-plat.png` : vue à plat, trait pointillé terracotta vertical avec libellé « raccord », bande bleu marine en haut, motif étoile, boutons 3D / À plat.
+Décisions : D34.
+Reste / risques : T38 décor.

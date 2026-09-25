@@ -41,7 +41,7 @@ describe('multi-motifs', () => {
       gapColor: '#000000',
       offsetStitches: 0,
       offsetRows: 0,
-      seam: 'dos',
+      seam: 'interieur',
       tilesAround: 6,
       tileSizeMode: 'around',
     };
@@ -79,7 +79,7 @@ describe('multi-motifs', () => {
       gapColor: '#000000',
       offsetStitches: 0,
       offsetRows: 0,
-      seam: 'dos',
+      seam: 'interieur',
       tilesAround: 6,
       tileSizeMode: 'around',
     };
