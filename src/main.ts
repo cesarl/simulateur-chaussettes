@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
-import { samplePattern, seamMismatch } from './core/layout';
+import { layoutRaccord, samplePattern, seamMismatch } from './core/layout';
+import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import { runExports, renderPair } from './io/exportPng';
@@ -263,11 +264,16 @@ function recompute(): void {
   lastComputeMs = performance.now() - started;
   computeId += 1;
   publish();
+  const tileCount = Math.max(1, tiles.length || design.layout.tileIds.length);
+  const preset = resolvePreset(design.layout.calepinage);
+  const mismatch = seamMismatch(design.layout, design.dimensions.needles, tileCount, preset);
+  const raccordInfo = layoutRaccord(design.layout, design.dimensions.needles, tileCount, preset);
   renderStatus({
     ms: lastComputeMs,
     patternPalette,
     patternCounts,
-    mismatch: seamMismatch(design.layout, design.dimensions.needles),
+    mismatch,
+    raccordMessage: raccordInfo.message,
   });
 }
 

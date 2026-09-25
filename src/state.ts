@@ -1,4 +1,8 @@
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
+import { migrateLegacyKind } from './core/presets';
+import type {
+  CalepinageSpec,
+} from './core/calepinage';
 import type {
   KnitFidelity,
   LayoutSettings,
@@ -15,7 +19,13 @@ export type FootSide = 'droite' | 'gauche';
 export interface DesignPatch {
   name?: string;
   version?: 1;
-  layout?: Partial<LayoutSettings>;
+  layout?: Partial<Omit<LayoutSettings, 'calepinage'>> & {
+    calepinage?: Partial<CalepinageSpec> & { genere?: Partial<CalepinageSpec['genere']> };
+    /** @deprecated V1 — migré vers calepinage */
+    kind?: string;
+    rotation?: 0 | 90 | 180 | 270;
+    seed?: number;
+  };
   dimensions?: Partial<SockDimensions>;
   zones?: Partial<ZoneSettings>;
   quantize?: Partial<QuantizeSettings>;
@@ -42,7 +52,11 @@ export interface StatePatch {
 
 type Listener = (state: AppState) => void;
 
-/** Modèle de départ : homme, calepinage en grille, 4 couleurs auto, bord-côte présent. */
+function defaultCalepinage(): CalepinageSpec {
+  return migrateLegacyKind('grille', 1, 0);
+}
+
+/** Modèle de départ : homme, un seul motif, 4 couleurs auto, bord-côte présent. */
 export function defaultDesign(): SockDesign {
   const dimensions = defaultDimensions('homme');
   const tileStitches = 24;
@@ -51,7 +65,7 @@ export function defaultDesign(): SockDesign {
     version: 1,
     name: 'modele',
     layout: {
-      kind: 'grille',
+      calepinage: defaultCalepinage(),
       tileIds: [],
       tileStitches,
       tileRows,
@@ -60,8 +74,6 @@ export function defaultDesign(): SockDesign {
       gapColor: '#d9d3c7',
       offsetStitches: 0,
       offsetRows: 0,
-      rotation: 0,
-      seed: 1,
     },
     dimensions,
     zones: {
@@ -102,12 +114,49 @@ export function resetState(): void {
   listeners.clear();
 }
 
+function mergeCalepinage(
+  current: CalepinageSpec,
+  patch: NonNullable<DesignPatch['layout']>['calepinage'],
+): CalepinageSpec {
+  if (!patch) return current;
+  return {
+    ...current,
+    ...patch,
+    genere: patch.genere ? { ...current.genere, ...patch.genere } : current.genere,
+  };
+}
+
+function applyLayout(layout: LayoutSettings, patch: NonNullable<DesignPatch['layout']>): LayoutSettings {
+  let calepinage = layout.calepinage;
+  if (patch.kind && !patch.calepinage) {
+    const seed = patch.seed ?? calepinage.graine;
+    const rotation = patch.rotation ?? calepinage.rotationGlobale;
+    calepinage = migrateLegacyKind(patch.kind, seed, rotation);
+  } else if (patch.calepinage) {
+    calepinage = mergeCalepinage(calepinage, patch.calepinage);
+  } else {
+    if (patch.seed !== undefined) calepinage = { ...calepinage, graine: patch.seed };
+    if (patch.rotation !== undefined) calepinage = { ...calepinage, rotationGlobale: patch.rotation };
+  }
+  return {
+    calepinage,
+    tileIds: patch.tileIds ?? layout.tileIds,
+    tileStitches: patch.tileStitches ?? layout.tileStitches,
+    tileRows: patch.tileRows ?? layout.tileRows,
+    gapStitches: patch.gapStitches ?? layout.gapStitches,
+    gapRows: patch.gapRows ?? layout.gapRows,
+    gapColor: patch.gapColor ?? layout.gapColor,
+    offsetStitches: patch.offsetStitches ?? layout.offsetStitches,
+    offsetRows: patch.offsetRows ?? layout.offsetRows,
+  };
+}
+
 function applyDesign(design: SockDesign, patch: DesignPatch): SockDesign {
   return {
     ...design,
     ...(patch.name !== undefined ? { name: patch.name } : {}),
     ...(patch.version !== undefined ? { version: patch.version } : {}),
-    layout: patch.layout ? { ...design.layout, ...patch.layout } : design.layout,
+    layout: patch.layout ? applyLayout(design.layout, patch.layout) : design.layout,
     dimensions: patch.dimensions ? { ...design.dimensions, ...patch.dimensions } : design.dimensions,
     zones: patch.zones ? { ...design.zones, ...patch.zones } : design.zones,
     quantize: patch.quantize ? { ...design.quantize, ...patch.quantize } : design.quantize,

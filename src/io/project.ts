@@ -1,5 +1,14 @@
 import { normalizeHex } from '../core/color';
-import type { LayoutKind, SockDesign, TileAsset } from '../core/types';
+import {
+  DEFAULT_CALEPINAGE,
+  type Appareil,
+  type CalepinageSpec,
+  type ModeRotation,
+  type Ordre,
+  type Rot,
+} from '../core/calepinage';
+import { isLegacyLayoutKind, migrateLegacyKind } from '../core/presets';
+import type { SockDesign, TileAsset } from '../core/types';
 import { base64ToBytes, bytesToBase64, decodePng, encodePng } from './pngCodec';
 
 /**
@@ -11,15 +20,17 @@ const DB_NAME = 'cesar-bazaar';
 const STORE = 'project';
 const KEY = 'last';
 
-const LAYOUTS: readonly LayoutKind[] = [
-  'grille',
-  'quinconce-h',
-  'quinconce-v',
-  'rotation-4',
-  'miroir-4',
-  'damier',
-  'rotation-aleatoire',
+const ORDRES: readonly Ordre[] = ['unique', 'suite', 'aleatoire', 'aleatoire-sans-voisin'];
+const MODES: readonly ModeRotation[] = [
+  'aucune',
+  'fixe',
+  'suite-90',
+  'aleatoire-90',
+  'aleatoire-180',
+  'rosace',
+  'miroir',
 ];
+const APPAREILS: readonly Appareil[] = ['droit', 'quinconce-h', 'quinconce-v'];
 
 export class ProjectError extends Error {
   constructor(message: string) {
@@ -85,6 +96,52 @@ function needRecord(source: Record<string, unknown>, key: string): Record<string
   return value;
 }
 
+function asRot(value: number, label: string): Rot {
+  if (value !== 0 && value !== 90 && value !== 180 && value !== 270) {
+    throw new ProjectError(`${label} inconnue.`);
+  }
+  return value;
+}
+
+function readCalepinage(layout: Record<string, unknown>): CalepinageSpec {
+  if (isRecord(layout.calepinage)) {
+    const c = layout.calepinage;
+    const source = needString(c, 'source');
+    if (source !== 'prereglage' && source !== 'genere') throw new ProjectError('source de calepinage inconnue.');
+    const genereRaw = needRecord(c, 'genere');
+    const ordre = needString(genereRaw, 'ordre');
+    const rotation = needString(genereRaw, 'rotation');
+    const appareil = needString(c, 'appareil');
+    if (!ORDRES.includes(ordre as Ordre)) throw new ProjectError('ordre de calepinage inconnu.');
+    if (!MODES.includes(rotation as ModeRotation)) throw new ProjectError('mode de rotation inconnu.');
+    if (!APPAREILS.includes(appareil as Appareil)) throw new ProjectError('appareillage inconnu.');
+    const rotationFixe = asRot(needNumber(genereRaw, 'rotationFixe'), 'rotation fixe');
+    const rotationGlobale = asRot(needNumber(c, 'rotationGlobale'), 'rotation globale');
+    const presetId = c.presetId === null || c.presetId === undefined ? null : needString(c, 'presetId');
+    return {
+      source,
+      presetId,
+      genere: {
+        ordre: ordre as Ordre,
+        pasRangee: needNumber(genereRaw, 'pasRangee'),
+        rotation: rotation as ModeRotation,
+        rotationFixe,
+      },
+      appareil: appareil as Appareil,
+      rotationGlobale,
+      graine: needNumber(c, 'graine'),
+    };
+  }
+  // Ancien format V1 : layout.kind
+  if (typeof layout.kind === 'string' && isLegacyLayoutKind(layout.kind)) {
+    const seed = typeof layout.seed === 'number' ? layout.seed : 1;
+    const rotation = typeof layout.rotation === 'number' ? asRot(layout.rotation, 'rotation') : 0;
+    return migrateLegacyKind(layout.kind, seed, rotation);
+  }
+  if (typeof layout.kind === 'string') throw new ProjectError('calepinage inconnu.');
+  return { ...DEFAULT_CALEPINAGE };
+}
+
 function readDesign(value: unknown): SockDesign {
   if (!isRecord(value)) throw new ProjectError('réglages manquants.');
   if (value.version !== 1) throw new ProjectError('version non prise en charge.');
@@ -92,15 +149,10 @@ function readDesign(value: unknown): SockDesign {
   const dimensions = needRecord(value, 'dimensions');
   const zones = needRecord(value, 'zones');
   const quantize = needRecord(value, 'quantize');
-  const kind = needString(layout, 'kind');
-  if (!LAYOUTS.includes(kind as LayoutKind)) throw new ProjectError('calepinage inconnu.');
+  const calepinage = readCalepinage(layout);
   const tileIds = layout.tileIds;
   if (!Array.isArray(tileIds) || tileIds.some((id) => typeof id !== 'string')) {
     throw new ProjectError('liste de carreaux illisible.');
-  }
-  const rotation = needNumber(layout, 'rotation');
-  if (rotation !== 0 && rotation !== 90 && rotation !== 180 && rotation !== 270) {
-    throw new ProjectError('rotation inconnue.');
   }
   const size = needString(dimensions, 'size');
   if (size !== 'homme' && size !== 'femme') throw new ProjectError('taille inconnue.');
@@ -114,7 +166,7 @@ function readDesign(value: unknown): SockDesign {
     version: 1,
     name: needString(value, 'name'),
     layout: {
-      kind: kind as LayoutKind,
+      calepinage,
       tileIds: tileIds.filter((id): id is string => typeof id === 'string'),
       tileStitches: needNumber(layout, 'tileStitches'),
       tileRows: needNumber(layout, 'tileRows'),
@@ -123,8 +175,6 @@ function readDesign(value: unknown): SockDesign {
       gapColor: needHex(layout, 'gapColor'),
       offsetStitches: needNumber(layout, 'offsetStitches'),
       offsetRows: needNumber(layout, 'offsetRows'),
-      rotation,
-      seed: needNumber(layout, 'seed'),
     },
     dimensions: {
       size,

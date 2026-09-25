@@ -34,7 +34,20 @@ test('silhouette ≥ 0,90 vs captures homme-etoile de référence', async ({ pag
     const tileRows = Math.max(1, Math.round(tileStitches / aspect));
     const id = window.__SIM__!.computeId;
     window.__SIM__!.setDesign({
-      layout: { kind: 'quinconce-h', tileStitches, tileRows, offsetStitches: 0, offsetRows: 0 },
+      layout: {
+        calepinage: {
+          source: 'genere',
+          presetId: null,
+          genere: { ordre: 'unique', pasRangee: 0, rotation: 'aucune', rotationFixe: 0 },
+          appareil: 'quinconce-h',
+          rotationGlobale: 0,
+          graine: 1,
+        },
+        tileStitches,
+        tileRows,
+        offsetStitches: 0,
+        offsetRows: 0,
+      },
       zones: {
         cuffEnabled: true,
         cuffColor: '#1f3a5f',

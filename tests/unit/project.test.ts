@@ -71,4 +71,40 @@ describe('projet JSON', () => {
     expect(back.design.zones.heelDepthMm).toBe(72);
     expect(back.design.zones.heelSpread).toBe(100);
   });
+
+  it('migre les anciens LayoutKind vers CalepinageSpec', async () => {
+    const design = defaultDesign();
+    const json = await serializeProject(design, []);
+    const doc = JSON.parse(json) as {
+      design: { layout: Record<string, unknown> };
+    };
+    delete doc.design.layout.calepinage;
+    doc.design.layout.kind = 'rotation-4';
+    doc.design.layout.rotation = 90;
+    doc.design.layout.seed = 42;
+    const back = await parseProject(JSON.stringify(doc));
+    expect(back.design.layout.calepinage.genere.rotation).toBe('rosace');
+    expect(back.design.layout.calepinage.rotationGlobale).toBe(90);
+    expect(back.design.layout.calepinage.graine).toBe(42);
+
+    doc.design.layout.kind = 'quinconce-h';
+    doc.design.layout.rotation = 0;
+    doc.design.layout.seed = 1;
+    const q = await parseProject(JSON.stringify(doc));
+    expect(q.design.layout.calepinage.appareil).toBe('quinconce-h');
+    expect(q.design.layout.calepinage.genere.ordre).toBe('unique');
+
+    doc.design.layout.kind = 'damier';
+    const d = await parseProject(JSON.stringify(doc));
+    expect(d.design.layout.calepinage.genere.ordre).toBe('suite');
+    expect(d.design.layout.calepinage.genere.pasRangee).toBe(1);
+
+    doc.design.layout.kind = 'miroir-4';
+    const m = await parseProject(JSON.stringify(doc));
+    expect(m.design.layout.calepinage.genere.rotation).toBe('miroir');
+
+    doc.design.layout.kind = 'rotation-aleatoire';
+    const r = await parseProject(JSON.stringify(doc));
+    expect(r.design.layout.calepinage.genere.rotation).toBe('aleatoire-90');
+  });
 });

@@ -125,4 +125,10 @@ Options : champs dans `SockDimensions` / dans `ZoneSettings` / état d’afficha
 Choix : `heelHeightMm`, `heelDepthMm`, `heelSpread` (%) dans `ZoneSettings` (sérialisés, défauts 55 / 72 / 100). Conversion `heelSpread/100` vers `SockShapeInput.heelSpread`. Anciens projets sans ces champs → défauts à l’import.
 Conséquence : changer ces curseurs reconstruit la géométrie 3D (`geometryBuilds`) ; la vue à plat et le nombre de rangs de talon restent inchangés.
 
+## D23 — CalepinageSpec remplace LayoutKind (T25)
+Contexte : multi-motifs + 75 préréglages ; l’ancien `kind` ne suffit plus.
+Options : étendre LayoutKind / remplacer par `CalepinageSpec` du module référence.
+Choix : `layout.calepinage: CalepinageSpec` ; migration à l’import projet et via `setDesign({ layout: { kind } })` ; bibliothèque dans `config/calepinages.json` via `presets.ts`. Liste panneau provisoire = GENERATED_PRESETS (galerie T26).
+Conséquence : projets V1 restent ouvrables ; `seed`/`rotation` migrent vers `graine`/`rotationGlobale`. Sur-échantillonnage 3×3 (comme `sampler.ts` de référence) pour tenir le budget 300 ms.
+
 

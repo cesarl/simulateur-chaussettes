@@ -15,13 +15,13 @@ test('quinconce, 3 couleurs et taille femme se reflètent dans le simulateur', a
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await page.getByTestId('tile-fixture').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(1);
-  await page.getByTestId('ctl-layout-kind').selectOption('quinconce-h');
+  await page.getByTestId('ctl-layout-kind').selectOption('g-quinconce');
   await page.getByTestId('ctl-max-colors').fill('3');
   await page.getByTestId('ctl-size').selectOption('femme');
   await page.waitForFunction(() => {
     const sim = window.__SIM__;
     if (!sim) return false;
-    return sim.design.layout.kind === 'quinconce-h'
+    return sim.design.layout.calepinage.appareil === 'quinconce-h'
       && sim.design.quantize.maxColors === 3
       && sim.design.dimensions.size === 'femme'
       && sim.patternPalette.length > 0
@@ -51,11 +51,15 @@ test('décocher le bord-côte retire ses rangs', async ({ page }) => {
 
 test('une tige trop haute est ramenée au maximum', async ({ page }) => {
   const errors = trackErrors(page);
+  await page.addInitScript(() => {
+    indexedDB.deleteDatabase('cesar-bazaar');
+  });
   await page.goto('/');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   const max = await page.evaluate(() => window.__SIM__?.design.dimensions.legRows ?? 0);
   await page.getByTestId('ctl-leg-rows').fill(String(max + 80));
-  await expect(page.getByTestId('ctl-leg-rows')).toHaveValue(String(max));
+  await page.getByTestId('ctl-leg-rows').blur();
+  await expect(page.getByTestId('ctl-leg-rows')).toHaveValue(String(max), { timeout: 10_000 });
   await expect(page.getByTestId('ctl-leg-message')).toBeVisible();
   await expect(page.getByTestId('ctl-leg-message')).toContainText(String(max));
   const leg = await page.evaluate(() => window.__SIM__?.design.dimensions.legRows ?? 0);

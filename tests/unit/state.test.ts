@@ -8,7 +8,8 @@ describe('état initial', () => {
     expect(design.version).toBe(1);
     expect(design.dimensions.size).toBe('homme');
     expect(design.dimensions.needles).toBeGreaterThan(0);
-    expect(design.layout.kind).toBe('grille');
+    expect(design.layout.calepinage.genere.ordre).toBe('unique');
+    expect(design.layout.calepinage.appareil).toBe('droit');
     expect(design.quantize.maxColors).toBe(4);
     expect(design.quantize.paletteMode).toBe('auto');
     expect(design.zones.cuffEnabled).toBe(true);
@@ -25,7 +26,8 @@ describe('état initial', () => {
     const { design } = getState();
     expect(design.quantize.maxColors).toBe(3);
     expect(design.quantize.paletteMode).toBe('auto');
-    expect(design.layout.kind).toBe('grille');
+    expect(design.layout.calepinage.genere.ordre).toBe('unique');
+    expect(design.layout.calepinage.appareil).toBe('droit');
     expect(design.zones.cuffEnabled).toBe(true);
     expect(seen).toEqual([3]);
     stop();

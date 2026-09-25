@@ -1,26 +1,28 @@
-import { hexToRgb } from './color';
-import type { LayoutKind, LayoutSettings, SockDimensions, TileAsset, ZoneSettings } from './types';
-
 /**
- * Calepinage maille par maille.
+ * Calepinage maille par maille (multi-motifs).
  *
- * Le motif est un pavage infini. La maille (col, rang) lit la coordonnée
- * (col − décalage, rang − décalage). L'axe horizontal se referme sur la
- * chaussette : le pas du motif est pris modulo, et le raccord est le reste
- * de la division du nombre d'aiguilles par la période.
+ * Branche le moteur `calepinage.ts` : plan des cases → case de la maille →
+ * rotation/miroir → pixel du bon carreau. Tous les carreaux de `layout.tileIds`
+ * sont utilisés (motif 1 = premier de la liste).
  *
- * Le joint est à droite et en bas de chaque carreau.
- * Quinconce horizontal : les rangées impaires sont décalées vers la droite
- * d'une demi-largeur (moitié du nombre de mailles du carreau).
- * Quinconce vertical : les colonnes impaires sont décalées vers le bas
- * d'une demi-hauteur.
- *
- * Pixels transparents (alpha < 128) : couleur du premier pixel opaque en
- * partant du coin haut-gauche, sinon blanc cassé `#f4f1ea`.
- * La sortie est du RVB, 3 octets par maille, rang par rang.
+ * Pixels transparents (alpha < 128) : couleur du premier pixel opaque du carreau,
+ * sinon blanc cassé `#f4f1ea`. Sortie RVB, 3 octets par maille.
  */
 
-const SAMPLE = 4;
+import {
+  cellAtStitch,
+  fittingTileWidths,
+  planPlacements,
+  raccord,
+  type CalepinageSpec,
+  type Preset,
+  type TileGeometry,
+} from './calepinage';
+import { hexToRgb } from './color';
+import { BUILTIN_PRESETS, resolvePreset } from './presets';
+import type { LayoutSettings, SockDimensions, TileAsset, ZoneSettings } from './types';
+
+const SAMPLE = 3;
 const TILE_BACKGROUND_FALLBACK = '#f4f1ea';
 
 export function motifRows(dims: SockDimensions, zones: ZoneSettings): number {
@@ -35,57 +37,74 @@ export function tileRowsForWidth(tileStitches: number, aspect: number): number {
   return Math.max(1, Math.round(tileStitches / aspect));
 }
 
-function blockColumns(kind: LayoutKind): number {
-  if (kind === 'rotation-4' || kind === 'miroir-4' || kind === 'damier') return 2;
-  return 1;
+export function geometryFromLayout(layout: LayoutSettings, needles: number): TileGeometry {
+  return {
+    needles,
+    tileStitches: layout.tileStitches,
+    tileRows: layout.tileRows,
+    gapStitches: layout.gapStitches,
+    gapRows: layout.gapRows,
+    offsetStitches: layout.offsetStitches,
+    offsetRows: layout.offsetRows,
+    appareil: layout.calepinage.appareil,
+  };
 }
 
-/** Période horizontale du motif, en mailles (joint compris). */
-export function repeatWidth(layout: LayoutSettings): number {
-  const pitch = Math.max(0, layout.tileStitches) + Math.max(0, layout.gapStitches);
-  return pitch * blockColumns(layout.kind);
+export function layoutRaccord(
+  layout: LayoutSettings,
+  needles: number,
+  tileCount: number,
+  preset: Preset | null = resolvePreset(layout.calepinage),
+): ReturnType<typeof raccord> {
+  return raccord(geometryFromLayout(layout, needles), layout.calepinage, tileCount, preset);
 }
 
-/** Reste de la division : 0 si le motif tombe juste sur le tour. */
-export function seamMismatch(layout: LayoutSettings, needles: number): number {
-  const period = repeatWidth(layout);
-  if (period <= 0) return Math.max(0, needles);
-  return ((needles % period) + period) % period;
+/** Largeur de répétition complète du calepinage sur le tour (mailles). */
+export function repeatWidth(
+  layout: LayoutSettings,
+  needles = 168,
+  tileCount = Math.max(1, layout.tileIds.length),
+): number {
+  return layoutRaccord(layout, needles, tileCount).repeatStitches;
+}
+
+/** Reste de division historique : 0 si le motif tombe juste sur le tour. */
+export function seamMismatch(
+  layout: LayoutSettings,
+  needles: number,
+  tileCount = Math.max(1, layout.tileIds.length),
+  preset: Preset | null = resolvePreset(layout.calepinage),
+): number {
+  const info = layoutRaccord(layout, needles, tileCount, preset);
+  if (info.seamless) return 0;
+  if (info.repeatStitches <= 0) return Math.max(0, needles);
+  return ((needles % info.repeatStitches) + info.repeatStitches) % info.repeatStitches;
 }
 
 /**
- * Largeur de carreau (mailles) la plus proche dont la période divise `needles`.
+ * Largeur de carreau (mailles) la plus proche dont le raccord est parfait.
  * À distance égale, on garde la plus grande.
  */
-export function nearestFittingWidth(layout: LayoutSettings, needles: number): number {
+export function nearestFittingWidth(
+  layout: LayoutSettings,
+  needles: number,
+  tileCount = Math.max(1, layout.tileIds.length),
+  preset: Preset | null = resolvePreset(layout.calepinage),
+): number {
   const target = Math.max(1, layout.tileStitches);
-  if (needles <= 0) return target;
-  const block = blockColumns(layout.kind);
-  const gap = Math.max(0, layout.gapStitches);
-  let best = target;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  let found = false;
-  for (let divisor = 1; divisor <= needles; divisor++) {
-    if (needles % divisor !== 0) continue;
-    if (divisor % block !== 0) continue;
-    const width = divisor / block - gap;
-    if (width < 1 || !Number.isInteger(width)) continue;
+  const geo = geometryFromLayout(layout, needles);
+  const widths = fittingTileWidths(geo, layout.calepinage, tileCount, preset, target, 12);
+  if (widths.length === 0) return target;
+  let best = widths[0]!;
+  let bestDistance = Math.abs(best - target);
+  for (const width of widths) {
     const distance = Math.abs(width - target);
-    if (!found || distance < bestDistance || (distance === bestDistance && width > best)) {
-      found = true;
-      bestDistance = distance;
+    if (distance < bestDistance || (distance === bestDistance && width > best)) {
       best = width;
+      bestDistance = distance;
     }
   }
   return best;
-}
-
-function positiveMod(value: number, size: number): number {
-  return ((value % size) + size) % size;
-}
-
-function floorDiv(value: number, size: number): number {
-  return Math.floor(value / size);
 }
 
 interface ResolvedTile {
@@ -134,13 +153,13 @@ function readPacked(tile: ResolvedTile, su: number, sv: number): number {
   return pack(tile.rgba[index] ?? 0, tile.rgba[index + 1] ?? 0, tile.rgba[index + 2] ?? 0);
 }
 
-/** Un pas de mulberry32, mélangé avec la position du carreau. */
-function randomQuarterTurns(seed: number, tileX: number, tileY: number): number {
-  let state = (seed ^ Math.imul(tileX + 0x9e37, 0x7feb352d) ^ Math.imul(tileY + 0x85eb, 0x846ca68b)) >>> 0;
-  state = (state + 0x6d2b79f5) | 0;
-  let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
-  mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
-  return ((mixed ^ (mixed >>> 14)) >>> 0) % 4;
+function tileUVLocal(rot: number, fx: boolean, fy: boolean, u: number, v: number): [number, number] {
+  const a = fx ? 1 - u : u;
+  const b = fy ? 1 - v : v;
+  if (rot === 90) return [b, 1 - a];
+  if (rot === 180) return [1 - a, 1 - b];
+  if (rot === 270) return [1 - b, a];
+  return [a, b];
 }
 
 function majority(samples: Uint32Array): number {
@@ -176,6 +195,19 @@ function average(samples: Uint32Array): number {
   return pack(Math.round(red / count), Math.round(green / count), Math.round(blue / count));
 }
 
+function orderedTiles(tiles: readonly TileAsset[], tileIds: readonly string[]): ResolvedTile[] {
+  const out: ResolvedTile[] = [];
+  for (const id of tileIds) {
+    const resolved = resolveTile(tiles, id);
+    if (resolved) out.push(resolved);
+  }
+  if (out.length === 0) {
+    const first = resolveTile(tiles, tiles[0]?.id);
+    if (first) out.push(first);
+  }
+  return out;
+}
+
 /**
  * Couleur RVB de chaque maille de motif (tige, et pied si `patternOnFoot`).
  * `needles × rangsMotif × 3` octets.
@@ -186,6 +218,7 @@ export function samplePattern(
   dims: SockDimensions,
   zones: ZoneSettings,
   sampling: 'majoritaire' | 'moyenne',
+  presets: readonly Preset[] = BUILTIN_PRESETS,
 ): Uint8ClampedArray {
   const width = Math.max(0, dims.needles);
   const height = motifRows(dims, zones);
@@ -193,13 +226,16 @@ export function samplePattern(
   const fallback = hexToRgb(TILE_BACKGROUND_FALLBACK);
   if (width === 0 || height === 0) return rgb;
 
-  const tileStitches = layout.tileStitches;
-  const tileRows = layout.tileRows;
-  const pitchX = tileStitches + layout.gapStitches;
-  const pitchY = tileRows + layout.gapRows;
-  const primary = resolveTile(tiles, layout.tileIds[0]);
-  const secondary = resolveTile(tiles, layout.tileIds[1] ?? layout.tileIds[0]);
-  if (!primary || pitchX <= 0 || pitchY <= 0 || tileStitches <= 0 || tileRows <= 0) {
+  const resolved = orderedTiles(tiles, layout.tileIds);
+  const pitchX = layout.tileStitches + layout.gapStitches;
+  const pitchY = layout.tileRows + layout.gapRows;
+  if (
+    resolved.length === 0 ||
+    pitchX <= 0 ||
+    pitchY <= 0 ||
+    layout.tileStitches <= 0 ||
+    layout.tileRows <= 0
+  ) {
     for (let i = 0; i < rgb.length; i += 3) {
       rgb[i] = fallback.r;
       rgb[i + 1] = fallback.g;
@@ -209,80 +245,43 @@ export function samplePattern(
   }
 
   const gap = hexToRgb(layout.gapColor);
-  const shiftX = Math.floor(tileStitches / 2);
-  const shiftY = Math.floor(tileRows / 2);
-  const globalTurns = (layout.rotation / 90) | 0;
-  const kind = layout.kind;
+  const gapPacked = pack(gap.r, gap.g, gap.b);
+  const spec: CalepinageSpec = layout.calepinage;
+  const preset = resolvePreset(spec, presets);
+  const geo = geometryFromLayout(layout, width);
+  const r = raccord(geo, spec, resolved.length, preset);
+  const nx = r.tilesAround ?? Math.ceil(width / pitchX) + 2;
+  const ny = Math.ceil((height + Math.abs(layout.offsetRows) + pitchY) / pitchY) + 2;
+  const plan = planPlacements(
+    spec,
+    { tileCount: resolved.length, preset, tilesAround: r.tilesAround },
+    nx,
+    ny,
+  );
   const samples = new Uint32Array(SAMPLE * SAMPLE);
   const combine = sampling === 'moyenne' ? average : majority;
 
   for (let row = 0; row < height; row++) {
     for (let col = 0; col < width; col++) {
-      let x = col - layout.offsetStitches;
-      let y = row - layout.offsetRows;
-      if (kind === 'quinconce-h' && positiveMod(floorDiv(y, pitchY), 2) === 1) x -= shiftX;
-      if (kind === 'quinconce-v' && positiveMod(floorDiv(x, pitchX), 2) === 1) y -= shiftY;
-
-      const tileX = floorDiv(x, pitchX);
-      const tileY = floorDiv(y, pitchY);
-      const localX = positiveMod(x, pitchX);
-      const localY = positiveMod(y, pitchY);
-      const offset = (row * width + col) * 3;
-
-      if (localX >= tileStitches || localY >= tileRows) {
-        rgb[offset] = gap.r;
-        rgb[offset + 1] = gap.g;
-        rgb[offset + 2] = gap.b;
-        continue;
-      }
-
-      let mirrorH = false;
-      let mirrorV = false;
-      let extraTurns = 0;
-      let tile = primary;
-      if (kind === 'rotation-4') {
-        const bx = positiveMod(tileX, 2);
-        const by = positiveMod(tileY, 2);
-        extraTurns = bx + by * 2;
-      } else if (kind === 'miroir-4') {
-        mirrorH = positiveMod(tileX, 2) === 1;
-        mirrorV = positiveMod(tileY, 2) === 1;
-      } else if (kind === 'damier') {
-        if ((positiveMod(tileX, 2) + positiveMod(tileY, 2)) % 2 === 1 && secondary) tile = secondary;
-      } else if (kind === 'rotation-aleatoire') {
-        extraTurns = randomQuarterTurns(layout.seed, tileX, tileY);
-      }
-      const turns = positiveMod(globalTurns + extraTurns, 4);
-
-      const u0 = localX / tileStitches;
-      const v0 = localY / tileRows;
-      const du = 1 / tileStitches / SAMPLE;
-      const dv = 1 / tileRows / SAMPLE;
       let sampleIndex = 0;
       for (let sy = 0; sy < SAMPLE; sy++) {
         for (let sx = 0; sx < SAMPLE; sx++) {
-          let su = u0 + (sx + 0.5) * du;
-          let sv = v0 + (sy + 0.5) * dv;
-          if (mirrorH) su = 1 - su;
-          if (mirrorV) sv = 1 - sv;
-          if (turns === 1) {
-            const nextU = sv;
-            sv = 1 - su;
-            su = nextU;
-          } else if (turns === 2) {
-            su = 1 - su;
-            sv = 1 - sv;
-          } else if (turns === 3) {
-            const nextU = 1 - sv;
-            sv = su;
-            su = nextU;
+          const hit = cellAtStitch(geo, col + (sx + 0.5) / SAMPLE, row + (sy + 0.5) / SAMPLE);
+          if (hit.gap) {
+            samples[sampleIndex] = gapPacked;
+          } else {
+            const cx = ((hit.cx % nx) + nx) % nx;
+            const cy = ((hit.cy % ny) + ny) % ny;
+            const p = plan[cy * nx + cx]!;
+            const tile = resolved[p.tile % resolved.length]!;
+            const [a, b] = tileUVLocal(p.rot, p.flipX, p.flipY, hit.u, hit.v);
+            samples[sampleIndex] = readPacked(tile, a, b);
           }
-          samples[sampleIndex] = readPacked(tile, su, sv);
           sampleIndex += 1;
         }
       }
-
       const color = combine(samples);
+      const offset = (row * width + col) * 3;
       rgb[offset] = (color >> 16) & 255;
       rgb[offset + 1] = (color >> 8) & 255;
       rgb[offset + 2] = color & 255;

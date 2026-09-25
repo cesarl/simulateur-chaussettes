@@ -1,11 +1,13 @@
 import type { FabricationReport } from '../core/checks';
+import { GENERATED_PRESETS, type Rot } from '../core/calepinage';
 import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
+import { applyGeneratedPreset, generatedPresetId } from '../core/presets';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
 import type { ExportRequest, FlatKind } from '../io/exportPng';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { VIEW_ANGLES, type ViewId } from '../render/views';
 import { getState, subscribe, update } from '../state';
-import type { Hex, LayoutKind, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
+import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
 import {
   details,
   makeCheckbox,
@@ -199,15 +201,10 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   mountSettings(host, actions);
 }
 
-const LAYOUT_OPTIONS: { value: LayoutKind; label: string }[] = [
-  { value: 'grille', label: 'Grille droite' },
-  { value: 'quinconce-h', label: 'Quinconce horizontal' },
-  { value: 'quinconce-v', label: 'Quinconce vertical' },
-  { value: 'rotation-4', label: 'Rotation ×4' },
-  { value: 'miroir-4', label: 'Miroirs ×4' },
-  { value: 'damier', label: 'Damier' },
-  { value: 'rotation-aleatoire', label: 'Rotation aléatoire' },
-];
+const LAYOUT_OPTIONS: { value: string; label: string }[] = GENERATED_PRESETS.map((preset) => ({
+  value: preset.id,
+  label: preset.nom,
+}));
 
 const MANUAL_SEED: Hex[] = ['#1f3a5f', '#b5462f', '#f4f1ea', '#1d1d1b'];
 
@@ -221,12 +218,14 @@ export function renderStatus(info: {
   patternPalette: readonly string[];
   patternCounts: readonly number[];
   mismatch: number;
+  raccordMessage?: string;
 }): void {
   if (computeMs) computeMs.textContent = `Dernier calcul : ${Math.round(info.ms)} ms`;
   if (seamStatus) {
-    seamStatus.textContent = info.mismatch === 0
-      ? 'Le motif tombe juste.'
-      : `Décalage de ${info.mismatch} mailles au dos.`;
+    seamStatus.textContent = info.raccordMessage
+      ?? (info.mismatch === 0
+        ? 'Le motif tombe juste.'
+        : `Décalage de ${info.mismatch} mailles au dos.`);
   }
   if (!swatches) return;
   swatches.replaceChildren();
@@ -412,8 +411,8 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
   );
 }
 
-function isLayoutKind(value: string): value is LayoutKind {
-  return LAYOUT_OPTIONS.some((option) => option.value === value);
+function isGeneratedPresetId(value: string): boolean {
+  return GENERATED_PRESETS.some((option) => option.id === value);
 }
 
 function isSize(value: string): value is SizeId {
@@ -436,12 +435,17 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     'Calepinage',
     'ctl-layout-kind',
     LAYOUT_OPTIONS,
-    design.layout.kind,
+    generatedPresetId(design.layout.calepinage) ?? 'g-unique',
     (value) => {
-      if (!isLayoutKind(value)) return;
-      update({ design: { layout: { kind: value } } });
+      if (!isGeneratedPresetId(value)) return;
+      const next = applyGeneratedPreset(
+        value,
+        getState().design.layout.calepinage.graine,
+        getState().design.layout.calepinage.rotationGlobale,
+      );
+      if (next) update({ design: { layout: { calepinage: next } } });
     },
-    'Façon d’assembler les carreaux sur la chaussette : grille droite, quinconce (comme des briques), rotations, miroirs…',
+    'Façon d’assembler les carreaux : un seul motif, à la suite, rotations, miroirs, aléatoire…',
   );
   const tileWidth = makeSliderNumber({
     label: 'Largeur du carreau',
@@ -532,10 +536,10 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       { value: '180', label: '180°' },
       { value: '270', label: '270°' },
     ],
-    String(design.layout.rotation),
+    String(design.layout.calepinage.rotationGlobale),
     (value) => {
-      const angle = value === '90' || value === '180' || value === '270' ? Number(value) : 0;
-      update({ design: { layout: { rotation: angle as 0 | 90 | 180 | 270 } } });
+      const angle = (value === '90' || value === '180' || value === '270' ? Number(value) : 0) as Rot;
+      update({ design: { layout: { calepinage: { rotationGlobale: angle } } } });
     },
   );
   const offsetX = makeSliderNumber({
@@ -564,8 +568,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 1,
     max: 9999,
     step: 1,
-    value: design.layout.seed,
-    onChange: (value) => update({ design: { layout: { seed: Math.max(1, Math.round(value)) } } }),
+    value: design.layout.calepinage.graine,
+    onChange: (value) =>
+      update({ design: { layout: { calepinage: { graine: Math.max(1, Math.round(value)) } } } }),
   });
   seamStatus = document.createElement('p');
   seamStatus.className = 'hint';
@@ -953,17 +958,17 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   };
 
   const sync = (current: SockDesign): void => {
-    kind.input.value = current.layout.kind;
+    kind.input.value = generatedPresetId(current.layout.calepinage) ?? 'g-unique';
     tileWidth.setValue(current.layout.tileStitches);
     tileRows.setValue(current.layout.tileRows);
     keepBox.input.checked = keepRatio;
     gapStitches.setValue(current.layout.gapStitches);
     gapRows.setValue(current.layout.gapRows);
     if (document.activeElement !== gapColor.input) gapColor.input.value = current.layout.gapColor;
-    rotation.input.value = String(current.layout.rotation);
+    rotation.input.value = String(current.layout.calepinage.rotationGlobale);
     offsetX.setValue(current.layout.offsetStitches);
     offsetY.setValue(current.layout.offsetRows);
-    seed.setValue(current.layout.seed);
+    seed.setValue(current.layout.calepinage.graine);
     size.input.value = current.dimensions.size;
     leg.setRange(1, SIZE_PRESETS[current.dimensions.size].legRowsMax);
     leg.input.removeAttribute('max');

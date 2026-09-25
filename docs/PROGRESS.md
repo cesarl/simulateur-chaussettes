@@ -218,3 +218,12 @@ Vérification : unitaires sock3d + project verts ; e2e talon + T21 IoU ≥ 0,90 
 - `visuel-T24-talon-haut.png` (h=95) : même vue, zone rouge nettement plus haute vers la cheville (+30 % pixels talon).
 Décisions : D22.
 Reste / risques : enchaîner T25 (calepinage multi-motifs).
+
+## T25 — Moteur de calepinage multi-motifs — 2026-09-25 12:55
+Statut : terminée
+Fait : `src/core/calepinage.ts` + `config/calepinages.json` ; `LayoutSettings.calepinage` remplace `kind` ; migration V1 ; `layout.ts` réécrit (plan → case → UV → pixel) ; raccord/`fittingTileWidths` ; liste déroulante = 11 GENERATED_PRESETS (galerie en T26).
+Vérification : unitaires (dont calepinage 13 + multi 2 + migration) verts ; e2e multi + T21 verts. Captures :
+- `visuel-T25-suite-rotalea-3d.png` : trois-quarts ; on distingue clairement les 3 motifs (étoile, quart de cercle / diagonales teal, damier) avec rotations variées sur la tige et le pied ; talon terracotta ; pointe sombre ; bord-côte marine.
+- `visuel-T25-suite-rotalea-plat.png` : vue à plat ; même enchaînement de carreaux sur la tige (étoile / damier / quart), bord-côte marine, talon terracotta à gauche.
+Décisions : D23.
+Reste / risques : T26 galerie 75 préréglages.
