@@ -1,0 +1,36 @@
+---
+description: Boucle de travail autonome — comment enchaîner les tâches sans solliciter César
+alwaysApply: true
+---
+
+# Travail en autonomie
+
+César n'est pas disponible pendant que tu travailles. **Ne lui pose pas de question et n'attends pas de validation.** Avance tâche par tâche jusqu'à la fin de la liste ou jusqu'à un vrai blocage.
+
+## Boucle pour chaque tâche
+1. Ouvre `tasks/TASKS.md` et prends la **première** tâche marquée `[ ]` (ou `[~]` si une tâche a été interrompue). Passe-la à `[~]`.
+2. Relis les sections concernées du cahier des charges et de l'architecture.
+3. Écris d'abord les tests décrits dans les critères (ils doivent échouer), puis le code.
+4. Lance `npm run verify` (typecheck + tests unitaires + build + e2e). Corrige jusqu'à ce que tout passe.
+5. Pour les critères visuels : génère la capture (test e2e avec `page.screenshot` dans `test-results/`), **ouvre l'image avec ton outil de lecture de fichiers** et décris objectivement ce que tu vois. Si le rendu n'est pas conforme, corrige avant de continuer.
+6. Coche chaque critère `[x]` dans `tasks/TASKS.md`, puis passe la tâche à `[x]`.
+7. Ajoute une entrée dans `docs/PROGRESS.md` (modèle en tête du fichier).
+8. Commit : `git add -A && git commit -m "T0X: <résumé court>"`. Si un dépôt distant est configuré, `git push`. Jamais de `--force`, jamais de réécriture d'historique.
+9. Enchaîne immédiatement sur la tâche suivante, sans t'arrêter pour faire un résumé.
+
+## Quand une décision n'est pas couverte par les documents
+Choisis l'option la plus simple qui respecte le cahier des charges, note-la dans `docs/DECISIONS.md` (contexte, options, choix, conséquence) et continue. César relira les décisions après coup.
+
+## Quand tu es bloqué
+- Après 3 tentatives différentes sans succès sur le même problème : note le problème précisément dans `docs/PROGRESS.md` (ce qui a été essayé, message d'erreur), marque la tâche `[!]`, commit, et passe à la tâche suivante si elle ne dépend pas de celle-ci.
+- Ne désactive jamais un test, ne baisse jamais un seuil de test et ne supprime jamais un critère pour « faire passer ». Si un critère est vraiment impossible ou faux, explique-le dans `DECISIONS.md` et propose le critère corrigé.
+
+## Interdits
+- Modifier `docs/CAHIER_DES_CHARGES.md` (seul César le modifie). Tu peux compléter `ARCHITECTURE.md` en le signalant dans `DECISIONS.md`.
+- Modifier les valeurs de `config/sizes.json` (seul César, après confirmation du fabricant).
+- Travailler sur plusieurs tâches à la fois, ou commencer le Jalon 2 si une tâche du Jalon 1 n'est pas `[x]` ou `[!]`.
+- Supprimer des fichiers de `docs/`, `tasks/`, `.cursor/`.
+- Tout accès réseau autre que `npm install` / `npx playwright install`.
+
+## Fin de session
+Quand toutes les tâches accessibles sont faites (ou si tu dois t'arrêter), écris dans `docs/PROGRESS.md` une section « Point pour César » : ce qui marche, comment le tester en 3 étapes (`npm run dev`, puis…), les décisions à relire, les blocages.

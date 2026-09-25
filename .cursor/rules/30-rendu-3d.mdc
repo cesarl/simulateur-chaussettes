@@ -1,0 +1,17 @@
+---
+description: Règles pour le rendu Three.js (maillage procédural, textures, captures)
+globs: src/render/**
+alwaysApply: false
+---
+
+# Rendu 3D
+
+- Importer Three depuis `three` et les addons depuis `three/examples/jsm/...` (ou `three/addons/...`). Pas d'autre moteur.
+- Rendu **à la demande** (`requestRender`) : pas de boucle `requestAnimationFrame` permanente.
+- Le maillage est procédural et suit `ARCHITECTURE.md` : 1 quad par maille, UV = (col/aiguilles, rang/rangs). Ne jamais « ajuster » les UV à la main pour qu'un motif tombe bien : si le motif est mal placé, c'est la grille ou la géométrie qui est fausse.
+- Séparer le calcul pur (positions, UV, indices dans des `Float32Array`/`Uint32Array`, testables sous Vitest) de la création des objets Three.
+- Couleurs : `renderer.outputColorSpace = SRGBColorSpace` ; textures de couleur en `SRGBColorSpace` ; cartes de normales/occlusion en espace linéaire.
+- Texture de la grille : `NearestFilter` en magnification. Détail de maille : mipmaps + anisotropie maximale pour éviter le moiré.
+- Libérer (`dispose`) géométries, textures et render targets remplacés.
+- Captures : rendu hors écran à la taille demandée, sans toucher à la caméra de l'utilisateur ; fond uni ou transparent (`setClearAlpha(0)`).
+- Échelle en mètres, réaliste (tour de jambe ≈ 20-25 cm).

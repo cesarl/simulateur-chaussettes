@@ -1,0 +1,33 @@
+{
+  "_note": "VALEURS PROVISOIRES À CONFIRMER avec le fabricant (appel Perrin). Tout est en mailles (colonnes = aiguilles) et en rangs. Modifier ce fichier suffit : l'application le relit, aucune valeur ne doit être codée en dur ailleurs.",
+  "sizes": {
+    "homme": {
+      "label": "Homme (TU ~ 41-46)",
+      "needles": 168,
+      "cuffRows": 30,
+      "legRowsMax": 180,
+      "heelRows": 56,
+      "footRows": 200,
+      "toeRows": 50,
+      "stitchesPerCm": 7.5,
+      "rowsPerCm": 10
+    },
+    "femme": {
+      "label": "Femme (TU ~ 36-40)",
+      "needles": 144,
+      "cuffRows": 28,
+      "legRowsMax": 160,
+      "heelRows": 48,
+      "footRows": 170,
+      "toeRows": 44,
+      "stitchesPerCm": 7.5,
+      "rowsPerCm": 10
+    }
+  },
+  "machine": {
+    "_note": "Contraintes jacquard à confirmer : nombre de couleurs max par rang et au total, flotté max.",
+    "maxColorsTotal": 6,
+    "maxColorsPerRow": 4,
+    "maxFloat": 7
+  }
+}

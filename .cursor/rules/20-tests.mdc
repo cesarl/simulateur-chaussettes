@@ -1,0 +1,28 @@
+---
+description: Stratégie de tests unitaires (Vitest) et de bout en bout (Playwright)
+globs: tests/**,src/**
+alwaysApply: false
+---
+
+# Tests
+
+## Commandes
+- `npm run verify` : la seule commande qui fait foi (typecheck, Vitest, build, Playwright).
+- `npm run test:watch` pendant le développement de `src/core`.
+- `npm run e2e` teste le **build de production** (`vite preview`, port 4173) : lancer `npm run build` avant si tu l'exécutes seul.
+
+## Unitaires (`tests/unit/*.test.ts`, Vitest, environnement node)
+- Toute fonction exportée de `src/core` a au moins un test. Préférer de petites données synthétiques (grilles 4×4, carreaux 2×2) dont on connaît le résultat exact.
+- Tests de performance : mesurer avec `performance.now()`, seuil = budget × 2 pour absorber la variabilité.
+
+## Bout en bout (`tests/e2e/*.spec.ts`, Playwright, Chromium)
+- WebGL tourne en logiciel (SwiftShader) : c'est lent mais fiable. Garder les scènes de test raisonnables.
+- Attendre `window.__SIM__.ready === true` et, après une action, `window.__SIM__.computeId` qui change (ne jamais utiliser d'attente fixe `waitForTimeout` sauf pour les téléchargements successifs).
+- Chaque test vérifie qu'aucune erreur n'apparaît dans la console (`pageerror` + `console.error`).
+- Sélecteurs : uniquement `getByTestId(...)` ou rôles accessibles.
+- Téléchargements : `page.waitForEvent('download')`, puis lire le fichier et vérifier dimensions/couleurs (décoder le PNG dans la page via `createImageBitmap` ou avec une petite fonction de lecture d'en-tête PNG côté Node : largeur/hauteur aux octets 16-23).
+- Captures pour contrôle visuel : `test-results/visuel-<tache>-<nom>.png`. Ne pas les commiter.
+
+## Crochet `window.__SIM__`
+Exposé par `main.ts`, typé dans `src/testHook.ts` (à créer en T03). Contenu minimal attendu au fil des tâches :
+`ready`, `computeId`, `lastComputeMs`, `design` (copie de l'état), `grid: { width, height, palette }`, `geometryBuilds`, `warnings`, et les actions `loadFixture(nom)`, `setDesign(partiel)`, `getStitch(col, rang)`.

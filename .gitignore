@@ -1,0 +1,9 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+exports/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini

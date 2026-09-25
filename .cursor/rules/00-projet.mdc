@@ -1,0 +1,28 @@
+---
+description: Contexte du projet, sources de vérité et conventions générales
+alwaysApply: true
+---
+
+# Projet : simulateur de chaussettes jacquard César Bazaar
+
+Application web TypeScript (Vite + Three.js) qui génère des aperçus 3D fidèles et la grille de mailles à plat de chaussettes jacquard dont les motifs viennent de carreaux de ciment.
+
+## Sources de vérité (à lire avant toute tâche)
+1. `docs/CAHIER_DES_CHARGES.md` — ce que l'outil doit faire.
+2. `docs/ARCHITECTURE.md` — comment il est construit. Ne pas s'en écarter sans l'écrire dans `docs/DECISIONS.md`.
+3. `tasks/TASKS.md` — la liste ordonnée des tâches et leurs critères.
+4. `src/core/types.ts` — le contrat de données.
+5. `config/sizes.json` — les seules valeurs de tailles et limites machine. Jamais de nombre de mailles/rangs codé en dur ailleurs.
+6. `docs/PROGRESS.md` et `docs/DECISIONS.md` — le journal et les décisions prises.
+7. Si le dossier `reference/` contient le code du simulateur de carreaux de César, s'en inspirer pour le vocabulaire et les calepinages (sans copier de dépendances).
+
+## Principe métier
+Une chaussette jacquard = une grille de gros pixels : 1 maille = 1 pixel, largeur = nombre d'aiguilles (tour), hauteur = rangs. La `StitchGrid` est la source de vérité ; 3D et exports en dérivent. Pas de dégradé, couleurs limitées, pas de motif sur bord-côte, talon, pointe.
+
+## Conventions de code
+- TypeScript strict, pas de `any` (utiliser `unknown` + garde). Pas de `// @ts-ignore`.
+- `src/core/` : fonctions pures, sans DOM ni Three.js, déterministes. Tout aléatoire passe par un générateur à graine.
+- Fonctions courtes et nommées explicitement. Commentaires et textes d'interface en français ; identifiants en anglais.
+- Pas de nouvelle dépendance npm sans justification dans `docs/DECISIONS.md` (taille, alternative écartée). Jamais de dépendance chargée depuis un CDN.
+- Pas de réseau à l'exécution : l'application fonctionne hors ligne.
+- Chaque élément interactif a un `data-testid` stable.

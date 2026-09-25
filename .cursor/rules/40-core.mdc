@@ -1,0 +1,15 @@
+---
+description: Règles pour la logique métier pure (grille, calepinage, couleurs, contrôles)
+globs: src/core/**
+alwaysApply: false
+---
+
+# Logique métier (`src/core`)
+
+- Aucun import de `three`, aucun accès à `window`, `document`, `canvas`. Entrées et sorties = objets simples et tableaux typés.
+- Déterminisme : mêmes entrées ⇒ même sortie, au bit près. Aléatoire uniquement via un PRNG à graine (ex. mulberry32) passé en paramètre.
+- Indexation des grilles : `index = rang * width + col`, rang 0 = premier rang tricoté (haut de la chaussette), col 0 = côté intérieur (voir ARCHITECTURE.md).
+- Horizontal circulaire : toujours `((col % w) + w) % w`.
+- Couleurs en `Hex` minuscule `#rrggbb` aux frontières du module ; en interne, tableaux `Uint8ClampedArray` RGB(A).
+- Les valeurs de taille viennent de `sizes.ts` / `config/sizes.json`, jamais de constantes locales.
+- Performances : boucles simples sur tableaux typés, pas d'allocation d'objet par maille.
