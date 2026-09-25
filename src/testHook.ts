@@ -1,4 +1,5 @@
 import type { DesignPatch } from './state';
+import type { Catalogue } from './core/collections';
 import type { KnitFidelity, SockDesign } from './core/types';
 import type { ViewName } from './render/sock3d/studio';
 
@@ -28,6 +29,9 @@ export interface SimHook {
   cameraPosition: { x: number; y: number; z: number };
   cameraTarget: { x: number; y: number; z: number };
   warnings: string[];
+  /** Catalogue synchronisé, ou null si absent. */
+  catalogue: Catalogue | null;
+  catalogueMissing: boolean;
   loadFixture: (name: string) => Promise<void>;
   setDesign: (partial: DesignPatch) => void;
   getStitch: (col: number, row: number) => StitchRead | null;

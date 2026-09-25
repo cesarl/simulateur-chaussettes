@@ -6,6 +6,7 @@ import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import { runExports, renderPair } from './io/exportPng';
+import { loadCatalogue } from './io/catalogue';
 import { loadLastProject, parseProject, saveLastProject, serializeProject } from './io/project';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
@@ -220,6 +221,8 @@ function publish(): void {
       z: handle.controls.target.z,
     },
     warnings: [...warnings],
+    catalogue: getState().catalogue,
+    catalogueMissing: getState().catalogueMissing,
     loadFixture,
     setDesign,
     getStitch: readStitch,
@@ -298,6 +301,22 @@ async function boot(): Promise<void> {
   } catch {
     // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
   }
+
+  const bundle = await loadCatalogue();
+  if (bundle.missing) {
+    update({ catalogue: null, catalogueMissing: true }, { skipHistory: true });
+  } else {
+    const patch: Parameters<typeof update>[0] = {
+      catalogue: bundle.catalogue,
+      catalogueMissing: false,
+    };
+    if (bundle.presets && bundle.presets.length > 0) {
+      patch.calepPresets = bundle.presets;
+      patch.calepWarnings = bundle.warnings;
+    }
+    update(patch, { skipHistory: true });
+  }
+
   mountPanel(panel, {
     exportImages: (request) => {
       const { design, footSide } = getState();

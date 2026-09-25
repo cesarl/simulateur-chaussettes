@@ -6,7 +6,7 @@ import path from 'node:path';
 import {
   paletteOptions, recolorSvg, suggestZoneColors, visibleCollections, yarnColors, zoneHex,
   type Catalogue, type NuancierColor,
-} from '../../reference/collections/collections';
+} from '../../src/core/collections';
 
 const root = path.resolve(__dirname, '../..');
 const fixture = path.join(root, 'tests/fixtures/configurateur-mini');

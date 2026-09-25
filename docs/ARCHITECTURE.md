@@ -47,6 +47,8 @@ src/
     sizes.ts             tailles, jauge, bornes
     grid.ts              zones + composition de la grille
     layout.ts            calepinage et échantillonnage maille par maille
+    calepinage.ts        moteur multi-motifs (réf. reference/calepinage/)
+    collections.ts       catalogue, recolorSvg, palettes (réf. reference/collections/)
     quantize.ts          réduction de couleurs, nettoyage
     checks.ts            contrôles de fabrication
     color.ts             utilitaires couleur (hex ↔ rgb, distance)
@@ -65,12 +67,14 @@ src/
     flatView.ts          vue à plat
   io/
     tiles.ts             import PNG/SVG
+    catalogue.ts         charge public/carreaux/ (collections + calepinages)
     exportPng.ts         exports images
     project.ts           enregistrer / ouvrir un projet
 tests/
   unit/                  Vitest (src/core surtout)
   e2e/                   Playwright
 public/fixtures/         carreaux d'exemple (dessins de test originaux)
+public/carreaux/         copie sync du simulateur de carreaux (npm run sync:carreaux)
 ```
 
 ## Points de conception importants

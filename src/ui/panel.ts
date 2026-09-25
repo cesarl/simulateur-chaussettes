@@ -2,6 +2,7 @@ import type { FabricationReport } from '../core/checks';
 import type { Rot } from '../core/calepinage';
 import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
+import { CATALOGUE_MISSING_MESSAGE } from '../io/catalogue';
 import type { ExportRequest, FlatKind } from '../io/exportPng';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { VIEW_ANGLES, type ViewId } from '../render/views';
@@ -146,6 +147,13 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   const body = panel.querySelector('#panel-body');
   const host = body instanceof HTMLElement ? body : panel;
 
+  const catalogueHint = document.createElement('p');
+  catalogueHint.className = 'hint catalogue-missing';
+  catalogueHint.dataset.testid = 'catalogue-missing';
+  catalogueHint.hidden = !getState().catalogueMissing;
+  catalogueHint.textContent = CATALOGUE_MISSING_MESSAGE;
+  host.appendChild(catalogueHint);
+
   const section = details('Carreaux', 'section-tiles');
 
   const drop = document.createElement('div');
@@ -209,6 +217,7 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
     const message = getState().error;
     error.hidden = !message;
     error.textContent = message ?? '';
+    catalogueHint.hidden = !getState().catalogueMissing;
     renderTiles(list, empty);
   };
   subscribe(render);

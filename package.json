@@ -1,7 +1,7 @@
 {
   "name": "simulateur-chaussettes",
   "version": "0.1.0",
-  "description": "Simulateur de chaussettes jacquard César Bazaar (aperçu 3D + grille de mailles)",
+  "description": "Simulateur de chaussettes jacquard C\u00e9sar Bazaar (aper\u00e7u 3D + grille de mailles)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,9 +10,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "verify": "npm run typecheck && npm run test && npm run build && npm run e2e"
+    "verify": "npm run typecheck && npm run test && npm run build && npm run e2e",
+    "sync:carreaux": "node scripts/sync-carreaux.mjs"
   },
-  "author": "César Bazaar",
+  "author": "C\u00e9sar Bazaar",
   "license": "UNLICENSED",
   "dependencies": {
     "three": "^0.186.1"

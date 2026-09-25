@@ -1,5 +1,6 @@
 import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
 import type { CalepinageSpec } from './core/calepinage';
+import type { Catalogue } from './core/collections';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import type {
   KnitFidelity,
@@ -45,6 +46,10 @@ export interface AppState {
   /** Bibliothèque de préréglages (session / projet) ; défaut = config/calepinages.json. */
   calepPresets: Preset[];
   calepWarnings: string[];
+  /** Catalogue synchronisé (`public/carreaux/`), ou null s’il n’est pas disponible. */
+  catalogue: Catalogue | null;
+  /** Message discret si `public/carreaux/` est absent. */
+  catalogueMissing: boolean;
 }
 
 export interface StatePatch {
@@ -55,6 +60,8 @@ export interface StatePatch {
   footSide?: FootSide;
   calepPresets?: Preset[];
   calepWarnings?: string[];
+  catalogue?: Catalogue | null;
+  catalogueMissing?: boolean;
 }
 
 export interface UpdateOptions {
@@ -131,6 +138,8 @@ function createInitial(): AppState {
     footSide: 'droite',
     calepPresets: [...BUILTIN_PRESETS],
     calepWarnings: [...BUILTIN_PRESET_WARNINGS],
+    catalogue: null,
+    catalogueMissing: false,
   };
 }
 
@@ -289,6 +298,9 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
     footSide: patch.footSide ?? state.footSide,
     calepPresets: patch.calepPresets ?? state.calepPresets,
     calepWarnings: patch.calepWarnings ?? state.calepWarnings,
+    catalogue: patch.catalogue === undefined ? state.catalogue : patch.catalogue,
+    catalogueMissing:
+      patch.catalogueMissing === undefined ? state.catalogueMissing : patch.catalogueMissing,
   };
   notify();
 }
