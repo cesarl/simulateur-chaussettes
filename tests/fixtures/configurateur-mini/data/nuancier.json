@@ -1,0 +1,1269 @@
+[
+ {
+  "Color_ID": "PP036",
+  "Nom couleur": "Brun lilas",
+  "Etat": "Validé",
+  "RAL": "RAL 340 40 05",
+  "Hex": "5b545d"
+ },
+ {
+  "Color_ID": "BK000",
+  "Nom couleur": "Noir ardoise",
+  "Etat": "Validé",
+  "RAL": "RAL 000 20 00",
+  "Hex": "323233"
+ },
+ {
+  "Color_ID": "BK001",
+  "Nom couleur": "Noir onyx",
+  "Etat": "Validé",
+  "RAL": "RAL 000 25 00",
+  "Hex": "1a1a1a"
+ },
+ {
+  "Color_ID": "BK002",
+  "Nom couleur": "Gris graphite",
+  "Etat": "Validé",
+  "RAL": "RAL 7024",
+  "Hex": "292929"
+ },
+ {
+  "Color_ID": "BK003",
+  "Nom couleur": "Gris basalte",
+  "Etat": "Validé",
+  "RAL": "RAL 7012",
+  "Hex": "383838"
+ },
+ {
+  "Color_ID": "BK004",
+  "Nom couleur": "Gris acier",
+  "Etat": "Validé",
+  "RAL": "RAL 000 50 00",
+  "Hex": "545454"
+ },
+ {
+  "Color_ID": "BK006",
+  "Nom couleur": "Gris moyen",
+  "Etat": "Validé",
+  "RAL": "RAL 000 55 00",
+  "Hex": "707070"
+ },
+ {
+  "Color_ID": "BK007",
+  "Nom couleur": "Gris cendré",
+  "Etat": "Validé",
+  "RAL": "RAL 000 60 00",
+  "Hex": "929197"
+ },
+ {
+  "Color_ID": "BK008",
+  "Nom couleur": "Gris marbre",
+  "Etat": "Validé",
+  "RAL": "RAL 000 75 00",
+  "Hex": "bbbabf"
+ },
+ {
+  "Color_ID": "BK010",
+  "Nom couleur": "Gris atate",
+  "Etat": "Validé",
+  "RAL": "RAL 7038",
+  "Hex": "cfcec9"
+ },
+ {
+  "Color_ID": "BK011",
+  "Nom couleur": "Gris anthracite",
+  "Etat": "Validé",
+  "RAL": "RAL 7016",
+  "Hex": "3c4144"
+ },
+ {
+  "Color_ID": "BL001",
+  "Nom couleur": "Bleu turc",
+  "Etat": "Validé",
+  "RAL": "RAL 250 50 35",
+  "Hex": "1077d1"
+ },
+ {
+  "Color_ID": "BL002",
+  "Nom couleur": "Bleu clair",
+  "Etat": "Validé",
+  "RAL": "RAL 5012",
+  "Hex": "2b8de3"
+ },
+ {
+  "Color_ID": "BL003",
+  "Nom couleur": "Bleu conte de fées",
+  "Etat": "Validé",
+  "RAL": "RAL 240 60 30",
+  "Hex": "56a8f0"
+ },
+ {
+  "Color_ID": "BL004",
+  "Nom couleur": "Bleu Madonna",
+  "Etat": "Validé",
+  "RAL": "RAL 240 70 25",
+  "Hex": "7abcf5"
+ },
+ {
+  "Color_ID": "BL005",
+  "Nom couleur": "Bleu légende",
+  "Etat": "Validé",
+  "RAL": "RAL 230 70 25",
+  "Hex": "a1ccf2"
+ },
+ {
+  "Color_ID": "BL006",
+  "Nom couleur": "Bleu délavé",
+  "Etat": "Validé",
+  "RAL": "RAL 230 80 10",
+  "Hex": "bcd5eb"
+ },
+ {
+  "Color_ID": "BL007",
+  "Nom couleur": "Gris turquoise",
+  "Etat": "Validé",
+  "RAL": "RAL 210 80 10",
+  "Hex": "daebf1"
+ },
+ {
+  "Color_ID": "BL008",
+  "Nom couleur": "Bleu éclat de saphir",
+  "Etat": "Validé",
+  "RAL": "RAL 280 50 35",
+  "Hex": "7486c8"
+ },
+ {
+  "Color_ID": "BL009",
+  "Nom couleur": "Bleu Portugal",
+  "Etat": "Validé",
+  "RAL": "RAL 280 40 35",
+  "Hex": "3c4b96"
+ },
+ {
+  "Color_ID": "BL010",
+  "Nom couleur": "Bleu brume",
+  "Etat": "Validé",
+  "RAL": "RAL 250 70 10",
+  "Hex": "abc0cf"
+ },
+ {
+  "Color_ID": "BL011",
+  "Nom couleur": "Bleu céleste",
+  "Etat": "Validé",
+  "RAL": "RAL 240 40 15",
+  "Hex": "507186"
+ },
+ {
+  "Color_ID": "BL012",
+  "Nom couleur": "Bleu clair Nordland",
+  "Etat": "Validé",
+  "RAL": "RAL 260 70 15",
+  "Hex": "b3cbe6"
+ },
+ {
+  "Color_ID": "BL014",
+  "Nom couleur": "Bleu salon",
+  "Etat": "Validé",
+  "RAL": "RAL 270 40 20",
+  "Hex": "3b5b87"
+ },
+ {
+  "Color_ID": "BL015",
+  "Nom couleur": "Bleu linoléum",
+  "Etat": "Validé",
+  "RAL": "RAL 250 50 25",
+  "Hex": "3073a6"
+ },
+ {
+  "Color_ID": "BL016",
+  "Nom couleur": "Bleu noir météorite",
+  "Etat": "Validé",
+  "RAL": "RAL 280 30 10",
+  "Hex": "303446"
+ },
+ {
+  "Color_ID": "BL017",
+  "Nom couleur": "Bleu distant",
+  "Etat": "Validé",
+  "RAL": "RAL 5023",
+  "Hex": "39507f"
+ },
+ {
+  "Color_ID": "BL018",
+  "Nom couleur": "Bleu fleur de sauge",
+  "Etat": "Validé",
+  "RAL": "RAL 270 50 30",
+  "Hex": "4e60b1"
+ },
+ {
+  "Color_ID": "BL019",
+  "Nom couleur": "Bleu aquatique",
+  "Etat": "Validé",
+  "RAL": "RAL 210 70 20",
+  "Hex": "a4d2d6"
+ },
+ {
+  "Color_ID": "BL020",
+  "Nom couleur": "Lilas lavande",
+  "Etat": "Validé",
+  "RAL": "RAL 280 50 20",
+  "Hex": "676f98"
+ },
+ {
+  "Color_ID": "BL021",
+  "Nom couleur": "Bleu cocktail",
+  "Etat": "Validé",
+  "RAL": "RAL 270 50 25",
+  "Hex": "7c97d5"
+ },
+ {
+  "Color_ID": "BL022",
+  "Nom couleur": "Bleu de Vienne",
+  "Etat": "Validé",
+  "RAL": "RAL 270 50 35",
+  "Hex": "4368b1"
+ },
+ {
+  "Color_ID": "BL023",
+  "Nom couleur": "Vert mare aux canards",
+  "Etat": "Validé",
+  "RAL": "RAL 190 60 20",
+  "Hex": "4d8f89"
+ },
+ {
+  "Color_ID": "BL024",
+  "Nom couleur": "Bleu calcaire baroque",
+  "Etat": "Validé",
+  "RAL": "RAL 200 80 10",
+  "Hex": "abc7ce"
+ },
+ {
+  "Color_ID": "BL025",
+  "Nom couleur": "Bleu baie",
+  "Etat": "Validé",
+  "RAL": "RAL 250 40 20",
+  "Hex": "3f5c88"
+ },
+ {
+  "Color_ID": "BL026",
+  "Nom couleur": "Bleu Vermeer",
+  "Etat": "Validé",
+  "RAL": "RAL 260 50 35",
+  "Hex": "376fbe"
+ },
+ {
+  "Color_ID": "BL027",
+  "Nom couleur": "Bleu acier",
+  "Etat": "Validé",
+  "RAL": "RAL 250 40 15",
+  "Hex": "3f5464"
+ },
+ {
+  "Color_ID": "BL028",
+  "Nom couleur": "Bleu vienne",
+  "Etat": "Validé",
+  "RAL": "RAL 270 50 35",
+  "Hex": "3c56b4"
+ },
+ {
+  "Color_ID": "BL029",
+  "Nom couleur": "Gris métalique",
+  "Etat": "Validé",
+  "RAL": "RAL 250 50 10",
+  "Hex": "688092"
+ },
+ {
+  "Color_ID": "BL030",
+  "Nom couleur": "Bleu distant",
+  "Etat": "Test",
+  "RAL": "RAL 5023",
+  "Hex": "33507a"
+ },
+ {
+  "Color_ID": "BL032",
+  "Nom couleur": "Bleu éclat de saphir",
+  "Etat": "Validé",
+  "RAL": "RAL 280 50 35",
+  "Hex": "6173cc"
+ },
+ {
+  "Color_ID": "BW000",
+  "Nom couleur": "Brun-rouge tourbe",
+  "Etat": "Validé",
+  "RAL": "030 40 10 ",
+  "Hex": "523a2d"
+ },
+ {
+  "Color_ID": "BW001",
+  "Nom couleur": "Curry brun",
+  "Etat": "Validé",
+  "RAL": "RAL 050 40 30",
+  "Hex": "935b43"
+ },
+ {
+  "Color_ID": "BW002",
+  "Nom couleur": "Rouge cèdre",
+  "Etat": "Validé",
+  "RAL": "RAL 040 60 30",
+  "Hex": "cb644d"
+ },
+ {
+  "Color_ID": "BW003",
+  "Nom couleur": "Brun Vandick",
+  "Etat": "Validé",
+  "RAL": "RAL 040 40 20",
+  "Hex": "703d33"
+ },
+ {
+  "Color_ID": "BW004",
+  "Nom couleur": "Brun caramel",
+  "Etat": "Validé",
+  "RAL": "RAL 050 60 20",
+  "Hex": "9E7D69"
+ },
+ {
+  "Color_ID": "BW005",
+  "Nom couleur": "Brun champignon",
+  "Etat": "Validé",
+  "RAL": "RAL 060 50 20",
+  "Hex": "956a50"
+ },
+ {
+  "Color_ID": "BW006",
+  "Nom couleur": "Brun noyer",
+  "Etat": "Validé",
+  "RAL": "020 40 10",
+  "Hex": "5e5055"
+ },
+ {
+  "Color_ID": "BW007",
+  "Nom couleur": "Brun de café",
+  "Etat": "Validé",
+  "RAL": "060 40 20",
+  "Hex": "a06d4b"
+ },
+ {
+  "Color_ID": "GN002",
+  "Nom couleur": "Vert saule blanc",
+  "Etat": "Validé",
+  "RAL": "RAL 140 50 20",
+  "Hex": "415e31"
+ },
+ {
+  "Color_ID": "GN003",
+  "Nom couleur": "Vert épinard",
+  "Etat": "Validé",
+  "RAL": "RAL 140 60 20 ",
+  "Hex": "6a8e57"
+ },
+ {
+  "Color_ID": "GN004",
+  "Nom couleur": "Vert rosé",
+  "Etat": "Validé",
+  "RAL": "RAL140 70 20",
+  "Hex": "9ab48e"
+ },
+ {
+  "Color_ID": "GN005",
+  "Nom couleur": "Vert email",
+  "Etat": "Validé",
+  "RAL": "RAL 130 80 20",
+  "Hex": "c4d8ba"
+ },
+ {
+  "Color_ID": "GN006",
+  "Nom couleur": "Vert gris pastel",
+  "Etat": "Validé",
+  "RAL": "RAL 140 80 10",
+  "Hex": "d7e8cf"
+ },
+ {
+  "Color_ID": "GN007",
+  "Nom couleur": "Vert ultra léger",
+  "Etat": "Validé",
+  "RAL": "RAL 120 85 10",
+  "Hex": "e8f1e5"
+ },
+ {
+  "Color_ID": "GN008",
+  "Nom couleur": "Bleu ombragé",
+  "Etat": "Validé",
+  "RAL": "RAL 220 50 20",
+  "Hex": "3b6c7d"
+ },
+ {
+  "Color_ID": "GN009",
+  "Nom couleur": "Vert lichen",
+  "Etat": "Validé",
+  "RAL": "RAL 085 60 40",
+  "Hex": "b1ad5d"
+ },
+ {
+  "Color_ID": "GN011",
+  "Nom couleur": "Vert tampon encreur",
+  "Etat": "Validé",
+  "RAL": "RAL 180 60 35",
+  "Hex": "2fb191"
+ },
+ {
+  "Color_ID": "GN012",
+  "Nom couleur": "Lac alpin azur",
+  "Etat": "Validé",
+  "RAL": "RAL 180 70 35",
+  "Hex": "39c6a3"
+ },
+ {
+  "Color_ID": "GN013",
+  "Nom couleur": "Turquoise aquatique",
+  "Etat": "Validé",
+  "RAL": "RAL 180 70 30",
+  "Hex": "63d9bc"
+ },
+ {
+  "Color_ID": "GN014",
+  "Nom couleur": "Vert ciel",
+  "Etat": "Validé",
+  "RAL": "RAL 170 80 20",
+  "Hex": "89e1cb"
+ },
+ {
+  "Color_ID": "GN015",
+  "Nom couleur": "Vert soleil",
+  "Etat": "Validé",
+  "RAL": "RAL 160 80 15",
+  "Hex": "9ce2c7"
+ },
+ {
+  "Color_ID": "GN016",
+  "Nom couleur": "Vert topaze",
+  "Etat": "Validé",
+  "RAL": "RAL 170 85 10",
+  "Hex": "d3f3e1"
+ },
+ {
+  "Color_ID": "GN017",
+  "Nom couleur": "Vert mica",
+  "Etat": "Validé",
+  "RAL": "RAL 160 85 10",
+  "Hex": "e1f4e9"
+ },
+ {
+  "Color_ID": "GN018",
+  "Nom couleur": "Vert toit en cuivre",
+  "Etat": "Validé",
+  "RAL": "RAL 180 60 15",
+  "Hex": "5d8381"
+ },
+ {
+  "Color_ID": "GN019",
+  "Nom couleur": "Vert brochantite",
+  "Etat": "Validé",
+  "RAL": "RAL 200 40 10",
+  "Hex": "3c4b4e"
+ },
+ {
+  "Color_ID": "GN020",
+  "Nom couleur": "Vert tilleul tomenteux",
+  "Etat": "Validé",
+  "RAL": "RAL 140 60 10",
+  "Hex": "91aa88"
+ },
+ {
+  "Color_ID": "GN021",
+  "Nom couleur": "Vert feuille de mûrier",
+  "Etat": "Validé",
+  "RAL": "RAL 170 50 20",
+  "Hex": "3a645c"
+ },
+ {
+  "Color_ID": "GN022",
+  "Nom couleur": "Turquoise menthe",
+  "Etat": "Validé",
+  "RAL": "RAL 6033",
+  "Hex": "467c70"
+ },
+ {
+  "Color_ID": "GN024",
+  "Nom couleur": "Vert mur",
+  "Etat": "Validé",
+  "RAL": "RAL 110 70 20",
+  "Hex": "b9be6f"
+ },
+ {
+  "Color_ID": "GN025",
+  "Nom couleur": "Olive pic-vert",
+  "Etat": "Validé",
+  "RAL": "RAL 100 50 20",
+  "Hex": "767c55"
+ },
+ {
+  "Color_ID": "GN026",
+  "Nom couleur": "Vert jonc",
+  "Etat": "Validé",
+  "RAL": "RAL 6013",
+  "Hex": "7f8f66"
+ },
+ {
+  "Color_ID": "GN027",
+  "Nom couleur": "Vert azurite",
+  "Etat": "Validé",
+  "RAL": "RAL 180 50 20",
+  "Hex": "3e7a72"
+ },
+ {
+  "Color_ID": "GN028",
+  "Nom couleur": "Gris vert sauge",
+  "Etat": "Validé",
+  "RAL": "RAL 150 50 10",
+  "Hex": "5d6b5b"
+ },
+ {
+  "Color_ID": "GN029",
+  "Nom couleur": "Sable brun",
+  "Etat": "Validé",
+  "RAL": "RAL 100 70 20",
+  "Hex": "c9d0a4"
+ },
+ {
+  "Color_ID": "GN030",
+  "Nom couleur": "Vert bleu de Chine",
+  "Etat": "Validé",
+  "RAL": "RAL 210 40 15",
+  "Hex": "30565a"
+ },
+ {
+  "Color_ID": "GN031",
+  "Nom couleur": "Vert jaspe",
+  "Etat": "Validé",
+  "RAL": "RAL 160 40 05",
+  "Hex": "5C6B65"
+ },
+ {
+  "Color_ID": "GN032",
+  "Nom couleur": "Vert lichen d'Arctique",
+  "Etat": "Validé",
+  "RAL": "RAL 160 50 05",
+  "Hex": "747b74"
+ },
+ {
+  "Color_ID": "GN033",
+  "Nom couleur": "Turquoise techno fluo",
+  "Etat": "Test",
+  "RAL": "RAL 160 70 40 fluo",
+  "Hex": "46c878"
+ },
+ {
+  "Color_ID": "GN034",
+  "Nom couleur": "Vert amer fluo",
+  "Etat": "Test",
+  "RAL": "RAL 140 70 40 fluo",
+  "Hex": "9dde7d"
+ },
+ {
+  "Color_ID": "GN036",
+  "Nom couleur": "Jaune bambou",
+  "Etat": "Validé",
+  "RAL": "RAL 080 60 40",
+  "Hex": "b88e47"
+ },
+ {
+  "Color_ID": "OR002",
+  "Nom couleur": "Jaune orangé",
+  "Etat": "Validé",
+  "RAL": "RAL 050 60 50",
+  "Hex": "e67641"
+ },
+ {
+  "Color_ID": "OR004",
+  "Nom couleur": "Orange clair ambré",
+  "Etat": "Validé",
+  "RAL": "RAL 050 70 40 ",
+  "Hex": "f08e60"
+ },
+ {
+  "Color_ID": "OR005",
+  "Nom couleur": "Orange bougie",
+  "Etat": "Validé",
+  "RAL": "RAL 060 70 40",
+  "Hex": "f5a17a"
+ },
+ {
+  "Color_ID": "OR006",
+  "Nom couleur": "Jaune pêche",
+  "Etat": "Validé",
+  "RAL": "RAL 060 70 30",
+  "Hex": "fbb798"
+ },
+ {
+  "Color_ID": "OR007",
+  "Nom couleur": "Jaune bouton d'or",
+  "Etat": "Validé",
+  "RAL": "RAL 070 80 20",
+  "Hex": "f7c7b0"
+ },
+ {
+  "Color_ID": "OR008",
+  "Nom couleur": "Jaune blé clair",
+  "Etat": "Validé",
+  "RAL": "RAL 075 80 20",
+  "Hex": "fbd7c6"
+ },
+ {
+  "Color_ID": "OR009",
+  "Nom couleur": "Sable pastel",
+  "Etat": "Validé",
+  "RAL": "RAL 080 80 10",
+  "Hex": "ffe7db"
+ },
+ {
+  "Color_ID": "OR011",
+  "Nom couleur": "Rouge fourmi",
+  "Etat": "Validé",
+  "RAL": "RAL 040 50 40",
+  "Hex": "ce5f46"
+ },
+ {
+  "Color_ID": "OR012",
+  "Nom couleur": "Brun abricot",
+  "Etat": "Validé",
+  "RAL": "RAL 050 60 40",
+  "Hex": "d77f56"
+ },
+ {
+  "Color_ID": "OR014",
+  "Nom couleur": "Gris ambré",
+  "Etat": "Validé",
+  "RAL": "RAL 050 70 20",
+  "Hex": "ddab92"
+ },
+ {
+  "Color_ID": "OR015",
+  "Nom couleur": "Terre orangée",
+  "Etat": "Validé",
+  "RAL": "RAL 040 60 40",
+  "Hex": "cf694a"
+ },
+ {
+  "Color_ID": "OR018",
+  "Nom couleur": "Jaune bougie",
+  "Etat": "Validé",
+  "RAL": "RAL 060 70 40",
+  "Hex": "fbbc6a"
+ },
+ {
+  "Color_ID": "PP002",
+  "Nom couleur": "Lilas soie",
+  "Etat": "Validé",
+  "RAL": "RAL 300 60 25",
+  "Hex": "9d8fc7"
+ },
+ {
+  "Color_ID": "PP003",
+  "Nom couleur": "Violet dauphinelle",
+  "Etat": "Validé",
+  "RAL": "RAL 300 60 20 ",
+  "Hex": "aa9dcd"
+ },
+ {
+  "Color_ID": "PP005",
+  "Nom couleur": "Violet brume matinalle",
+  "Etat": "Validé",
+  "RAL": "RAL 300 70 10",
+  "Hex": "cdc1ec"
+ },
+ {
+  "Color_ID": "PP006",
+  "Nom couleur": "Bleu tulipe",
+  "Etat": "Validé",
+  "RAL": "RAL 290 80 10",
+  "Hex": "e8e1f9"
+ },
+ {
+  "Color_ID": "PP007",
+  "Nom couleur": "Lilas brume",
+  "Etat": "Validé",
+  "RAL": "RAL 300 80 05",
+  "Hex": "ebe7f4"
+ },
+ {
+  "Color_ID": "PP008",
+  "Nom couleur": "Gris brume",
+  "Etat": "Validé",
+  "RAL": "RAL 000 80 00",
+  "Hex": "f3f1f9"
+ },
+ {
+  "Color_ID": "PP011",
+  "Nom couleur": "Brun moka",
+  "Etat": "Validé",
+  "RAL": "RAL 360 40 10",
+  "Hex": "69494f"
+ },
+ {
+  "Color_ID": "PP012",
+  "Nom couleur": "Mauve pâle",
+  "Etat": "Validé",
+  "RAL": "RAL 010 70 10",
+  "Hex": "ddc0c4"
+ },
+ {
+  "Color_ID": "PP013",
+  "Nom couleur": "Rouge brique",
+  "Etat": "Validé",
+  "RAL": "RAL 010 50 20",
+  "Hex": "8b555d"
+ },
+ {
+  "Color_ID": "PP015",
+  "Nom couleur": "Lilas fleur de montagne",
+  "Etat": "Validé",
+  "RAL": "RAL 290 50 30",
+  "Hex": "7177c1"
+ },
+ {
+  "Color_ID": "PP016",
+  "Nom couleur": "Violet terne",
+  "Etat": "Validé",
+  "RAL": "RAL 350 50 15",
+  "Hex": "966475"
+ },
+ {
+  "Color_ID": "PP017",
+  "Nom couleur": "Lilas clair",
+  "Etat": "Validé",
+  "RAL": "RAL 280 50 30",
+  "Hex": "6677b7"
+ },
+ {
+  "Color_ID": "PP020",
+  "Nom couleur": "Bleu clématis",
+  "Etat": "Validé",
+  "RAL": "RAL 300 40 40",
+  "Hex": "6345b0"
+ },
+ {
+  "Color_ID": "PP021",
+  "Nom couleur": "Lilas limpide",
+  "Etat": "Validé",
+  "RAL": "RAL 300 50 40",
+  "Hex": "7356bd"
+ },
+ {
+  "Color_ID": "PP022",
+  "Nom couleur": "Lilas d'hiver",
+  "Etat": "Validé",
+  "RAL": "RAL 300 50 35",
+  "Hex": "7f65c3"
+ },
+ {
+  "Color_ID": "PP023",
+  "Nom couleur": "Gris améthyste",
+  "Etat": "Validé",
+  "RAL": "RAL 300 60 35",
+  "Hex": "a27ecd"
+ },
+ {
+  "Color_ID": "PP024",
+  "Nom couleur": "Lilas pivoine",
+  "Etat": "Validé",
+  "RAL": "RAL 310 60 30",
+  "Hex": "be9cd8"
+ },
+ {
+  "Color_ID": "PP025",
+  "Nom couleur": "Rose bleu",
+  "Etat": "Validé",
+  "RAL": "RAL 310 70 20",
+  "Hex": "d5b9e4"
+ },
+ {
+  "Color_ID": "PP026",
+  "Nom couleur": "Rouge mat dahlia",
+  "Etat": "Validé",
+  "RAL": "RAL 340 40 20",
+  "Hex": "8b4b73"
+ },
+ {
+  "Color_ID": "PP029",
+  "Nom couleur": "Violet chagrin",
+  "Etat": "Validé",
+  "RAL": "RAL 300 30 10",
+  "Hex": "56455f"
+ },
+ {
+  "Color_ID": "PP031",
+  "Nom couleur": "Violet brun terre",
+  "Etat": "Test",
+  "RAL": "RAL 340 40 15",
+  "Hex": "784a60"
+ },
+ {
+  "Color_ID": "PP032",
+  "Nom couleur": "Rouge velours fluo",
+  "Etat": "Validé",
+  "RAL": "RAL 010 40 35 fluo",
+  "Hex": "ad435a"
+ },
+ {
+  "Color_ID": "PP033",
+  "Nom couleur": "Lilas orchidée fluo",
+  "Etat": "Test",
+  "RAL": "RAL 310 50 40 fluo",
+  "Hex": "9342b3"
+ },
+ {
+  "Color_ID": "PP034",
+  "Nom couleur": "Bleu iris",
+  "Etat": "Validé",
+  "RAL": "RAL 290 40 40",
+  "Hex": "4f4fb0"
+ },
+ {
+  "Color_ID": "PP035",
+  "Nom couleur": "Violet calcédoine",
+  "Etat": "Test",
+  "RAL": "RAL 290 50 35",
+  "Hex": "5957bc"
+ },
+ {
+  "Color_ID": "RD001",
+  "Nom couleur": "Rouge piment",
+  "Etat": "Validé",
+  "RAL": "RAL 030 40 40",
+  "Hex": "862618"
+ },
+ {
+  "Color_ID": "RD004",
+  "Nom couleur": "Vermillon",
+  "Etat": "Validé",
+  "RAL": "RAL 030 50 40",
+  "Hex": "9d4b3f"
+ },
+ {
+  "Color_ID": "RD005",
+  "Nom couleur": "Rose antique",
+  "Etat": "Validé",
+  "RAL": "RAL 030 60 30",
+  "Hex": "c77875"
+ },
+ {
+  "Color_ID": "RD006",
+  "Nom couleur": "Abricot trouble",
+  "Etat": "Validé",
+  "RAL": "RAL 030 70 20",
+  "Hex": "e89c9c"
+ },
+ {
+  "Color_ID": "RD007",
+  "Nom couleur": "Terre de sienne claire",
+  "Etat": "Validé",
+  "RAL": "RAL 040 70 20",
+  "Hex": "f3b0b0"
+ },
+ {
+  "Color_ID": "RD009",
+  "Nom couleur": "Rose thulite",
+  "Etat": "Validé",
+  "RAL": "RAL 040 8010",
+  "Hex": "fbdada"
+ },
+ {
+  "Color_ID": "RD010",
+  "Nom couleur": "Beige pur",
+  "Etat": "Validé",
+  "RAL": "RAL 050 8510",
+  "Hex": "ffebeb"
+ },
+ {
+  "Color_ID": "RD011",
+  "Nom couleur": "Sel rose",
+  "Etat": "Validé",
+  "RAL": "RAL 030 80 10",
+  "Hex": "e9c4cb"
+ },
+ {
+  "Color_ID": "RD012",
+  "Nom couleur": "Rouge canneberge",
+  "Etat": "Validé",
+  "RAL": "RAL 030 40 20",
+  "Hex": "7b3c32"
+ },
+ {
+  "Color_ID": "RD050",
+  "Nom couleur": "Magenta fluo max",
+  "Etat": "Test",
+  "RAL": "???",
+  "Hex": "ff3dab"
+ },
+ {
+  "Color_ID": "RD051",
+  "Nom couleur": "Magenta fluo",
+  "Etat": "Test",
+  "RAL": "???",
+  "Hex": "ff52b4"
+ },
+ {
+  "Color_ID": "RD052",
+  "Nom couleur": "Magenta flash",
+  "Etat": "Test",
+  "RAL": "???",
+  "Hex": "ff66bd"
+ },
+ {
+  "Color_ID": "RD053",
+  "Nom couleur": "Rose bonbon",
+  "Etat": "Test",
+  "RAL": "???",
+  "Hex": "ff7ac6"
+ },
+ {
+  "Color_ID": "RD054",
+  "Nom couleur": "Rose vif ardent",
+  "Etat": "Test",
+  "RAL": "RAL 340 70 35",
+  "Hex": "ff9ed5"
+ },
+ {
+  "Color_ID": "RD055",
+  "Nom couleur": "Rose vif clair",
+  "Etat": "Test",
+  "RAL": "RAL 350 80 20",
+  "Hex": "ffb8e0"
+ },
+ {
+  "Color_ID": "RD056",
+  "Nom couleur": "Rose scandale",
+  "Etat": "Test",
+  "RAL": "RAL 340 80 15",
+  "Hex": "ffd1eb"
+ },
+ {
+  "Color_ID": "RD057",
+  "Nom couleur": "Rose vénitiens",
+  "Etat": "Test",
+  "RAL": "RAL 360 80 10",
+  "Hex": "ffe5f4"
+ },
+ {
+  "Color_ID": "RD060",
+  "Nom couleur": "Brun brique",
+  "Etat": "Validé",
+  "RAL": "RAL 030 40 30",
+  "Hex": "ab4236"
+ },
+ {
+  "Color_ID": "RD061",
+  "Nom couleur": "Rouille",
+  "Etat": "Validé",
+  "RAL": "RAL 040 50 30",
+  "Hex": "ba503b"
+ },
+ {
+  "Color_ID": "RD062",
+  "Nom couleur": "Vermillon fluo",
+  "Etat": "Test",
+  "RAL": "RAL 030 50 40 fluo",
+  "Hex": "d35a45"
+ },
+ {
+  "Color_ID": "RD063",
+  "Nom couleur": "Rose industriel fluo",
+  "Etat": "Test",
+  "RAL": "RAL 040 70 30 fluo",
+  "Hex": "ff936b"
+ },
+ {
+  "Color_ID": "RD064",
+  "Nom couleur": "Tomate claire",
+  "Etat": "Test",
+  "RAL": "RAL 030 60 40",
+  "Hex": "eb6060"
+ },
+ {
+  "Color_ID": "RD070",
+  "Nom couleur": "Airelle rouge",
+  "Etat": "Validé",
+  "RAL": "RAL 020 50 58",
+  "Hex": "e24053"
+ },
+ {
+  "Color_ID": "RD071",
+  "Nom couleur": "Rosé",
+  "Etat": "Validé",
+  "RAL": "RAL 3017",
+  "Hex": "e65b6b"
+ },
+ {
+  "Color_ID": "RD072",
+  "Nom couleur": "Smoothie à la fraise",
+  "Etat": "Validé",
+  "RAL": "RAL 010 60 40",
+  "Hex": "ed7885"
+ },
+ {
+  "Color_ID": "RD073",
+  "Nom couleur": "Fleur de cerisier",
+  "Etat": "Validé",
+  "RAL": "RAL 010 70 30",
+  "Hex": "f1939e"
+ },
+ {
+  "Color_ID": "RD074",
+  "Nom couleur": "Rose clair",
+  "Etat": "Validé",
+  "RAL": "RAL 3015",
+  "Hex": "f4aeb6"
+ },
+ {
+  "Color_ID": "RD075",
+  "Nom couleur": "Rose vif givré",
+  "Etat": "Validé",
+  "RAL": "RAL 010 80 15",
+  "Hex": "f9c8cd"
+ },
+ {
+  "Color_ID": "WT000",
+  "Nom couleur": "Blanc",
+  "Etat": "Validé",
+  "RAL": "RAL 090 90 05",
+  "Hex": "f7f7f7"
+ },
+ {
+  "Color_ID": "WT001",
+  "Nom couleur": "Beige biscuit",
+  "Etat": "Validé",
+  "RAL": "RAL 060 80 20",
+  "Hex": "e6b89c"
+ },
+ {
+  "Color_ID": "WT002",
+  "Nom couleur": "Grège clair",
+  "Etat": "Validé",
+  "RAL": "RAL 060 80 10",
+  "Hex": "eed0b9"
+ },
+ {
+  "Color_ID": "WT003",
+  "Nom couleur": "Beurre de cacahuète",
+  "Etat": "Validé",
+  "RAL": "RAL 060 70 20",
+  "Hex": "f2c097"
+ },
+ {
+  "Color_ID": "YL001",
+  "Nom couleur": "Jaune nid d'abeille",
+  "Etat": "Validé",
+  "RAL": "RAL 070 70 50",
+  "Hex": "f6b02c"
+ },
+ {
+  "Color_ID": "YL003",
+  "Nom couleur": "Jaune profond bambou",
+  "Etat": "Validé",
+  "RAL": "RAL 075 70 50",
+  "Hex": "f7b945"
+ },
+ {
+  "Color_ID": "YL005",
+  "Nom couleur": "Jaune paille",
+  "Etat": "Validé",
+  "RAL": "RAL 080 80 40",
+  "Hex": "f8c462"
+ },
+ {
+  "Color_ID": "YL006",
+  "Nom couleur": "Jaune Vespa",
+  "Etat": "Validé",
+  "RAL": "RAL 080 85 30",
+  "Hex": "ffda94"
+ },
+ {
+  "Color_ID": "YL007",
+  "Nom couleur": "Blond clair",
+  "Etat": "Validé",
+  "RAL": "RAL 085 85 20",
+  "Hex": "ffe8bd"
+ },
+ {
+  "Color_ID": "YL008",
+  "Nom couleur": "Ivoire clair",
+  "Etat": "Validé",
+  "RAL": "RAL 1015",
+  "Hex": "fbeed5"
+ },
+ {
+  "Color_ID": "YL009",
+  "Nom couleur": "Blanc nature paella",
+  "Etat": "Validé",
+  "RAL": "RAL 090 85 10",
+  "Hex": "fef4e2"
+ },
+ {
+  "Color_ID": "YL010",
+  "Nom couleur": "Blanc crème",
+  "Etat": "Validé",
+  "RAL": "RAL 9001",
+  "Hex": "fff8eb"
+ },
+ {
+  "Color_ID": "YL012",
+  "Nom couleur": "Jaune chamotté",
+  "Etat": "Validé",
+  "RAL": "RAL 075 50 30",
+  "Hex": "977b3f"
+ },
+ {
+  "Color_ID": "GN035",
+  "Nom couleur": "Vert mosaïque orientale",
+  "Etat": "Test",
+  "RAL": "RAL 170 70 25",
+  "Hex": "76c6a3"
+ },
+ {
+  "Color_ID": "GN040",
+  "Nom couleur": "Vert fluo 1",
+  "Etat": "Test",
+  "RAL": "RAL 140 70 50 fluo",
+  "Hex": "64e335"
+ },
+ {
+  "Color_ID": "GN041",
+  "Nom couleur": "Vert fluo 2",
+  "Etat": "Test",
+  "RAL": "RAL 140 80 40 fluo",
+  "Hex": "86ea62"
+ },
+ {
+  "Color_ID": "GN042",
+  "Nom couleur": "Vert fluo 3",
+  "Etat": "Test",
+  "RAL": "RAL 140 80 40 fluo",
+  "Hex": "a3f386"
+ },
+ {
+  "Color_ID": "GN043",
+  "Nom couleur": "Vert fluo 4",
+  "Etat": "Test",
+  "RAL": "RAL 140 80 40 fluo",
+  "Hex": "b4f79c"
+ },
+ {
+  "Color_ID": "GN044",
+  "Nom couleur": "Vert fluo 5",
+  "Etat": "Test",
+  "RAL": "RAL 140 80 30 fluo",
+  "Hex": "c5fbb1"
+ },
+ {
+  "Color_ID": "GN045",
+  "Nom couleur": "Vert fluo 6",
+  "Etat": "Test",
+  "RAL": "RAL 6019 fluo",
+  "Hex": "e0f9d7"
+ },
+ {
+  "Color_ID": "GN050",
+  "Nom couleur": "Vert criard fluo",
+  "Etat": "Test",
+  "RAL": "RAL 160 70 45",
+  "Hex": "37d278"
+ },
+ {
+  "Color_ID": "GN055",
+  "Nom couleur": "Turquoise bijoux fluo",
+  "Etat": "Test",
+  "RAL": "RAL 190 50 35",
+  "Hex": "0ca699"
+ },
+ {
+  "Color_ID": "GN051",
+  "Nom couleur": "Vert expressionnisme fluo",
+  "Etat": "Test",
+  "RAL": "RAL 170 70 40",
+  "Hex": "51c88a"
+ },
+ {
+  "Color_ID": "GN052",
+  "Nom couleur": "Vert randonnée fluo",
+  "Etat": "Test",
+  "RAL": "RAL 140 50 30",
+  "Hex": "75a064"
+ },
+ {
+  "Color_ID": "GN054",
+  "Nom couleur": "Bleu aigue marine fluo",
+  "Etat": "Test",
+  "RAL": "RAL 200 60 30",
+  "Hex": "38b5b7"
+ },
+ {
+  "Color_ID": "GN056",
+  "Nom couleur": "Vert laurier fluo",
+  "Etat": "Test",
+  "RAL": "RAL 090 60 40",
+  "Hex": "beab4b"
+ },
+ {
+  "Color_ID": "RD080",
+  "Nom couleur": "Rose fluo 1",
+  "Etat": "Test",
+  "RAL": "Rose fluo 1",
+  "Hex": "ff6198"
+ },
+ {
+  "Color_ID": "RD081",
+  "Nom couleur": "Rose fluo 2",
+  "Etat": "Test",
+  "RAL": "Rose fluo 2",
+  "Hex": "fb6fa0"
+ },
+ {
+  "Color_ID": "RD082",
+  "Nom couleur": "Rose fluo 3",
+  "Etat": "Test",
+  "RAL": "Rose fluo 2",
+  "Hex": "fb7eaa"
+ },
+ {
+  "Color_ID": "RD083",
+  "Nom couleur": "Rose fluo 4",
+  "Etat": "Test",
+  "RAL": "Rose fluo 2",
+  "Hex": "fb8eb4"
+ },
+ {
+  "Color_ID": "RD084",
+  "Nom couleur": "Rose fluo 5",
+  "Etat": "Test",
+  "RAL": "Rose fluo 2",
+  "Hex": "ffa3c3"
+ },
+ {
+  "Color_ID": "RD085",
+  "Nom couleur": "Rose fluo 6",
+  "Etat": "Test",
+  "RAL": "Rose fluo 2",
+  "Hex": "fbacc8"
+ },
+ {
+  "Color_ID": "RD086",
+  "Nom couleur": "Rose fluo 7",
+  "Etat": "Test",
+  "RAL": "Rose fluo 2",
+  "Hex": "fbbcd2"
+ },
+ {
+  "Color_ID": "RD058",
+  "Nom couleur": "Rouge piment",
+  "Etat": "Validé",
+  "RAL": "RAL 030 40 40",
+  "Hex": "be1a0e"
+ },
+ {
+  "Color_ID": "RD059",
+  "Nom couleur": "Rouge trèfle",
+  "Etat": "Validé",
+  "RAL": "RAL 020 50 40",
+  "Hex": "e3463b"
+ }
+]

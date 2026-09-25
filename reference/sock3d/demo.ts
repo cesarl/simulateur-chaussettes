@@ -11,6 +11,102 @@ import type { SockShapeInput } from './sockShape';
 import { DEFAULT_CALEPINAGE, GENERATED_PRESETS, normalizePresets, type CalepinageSpec } from '../calepinage/calepinage';
 import { samplePattern } from '../calepinage/sampler';
 import rawPresets from '../calepinage/calepinages.json';
+import { paletteOptions, recolorSvg, suggestZoneColors, visibleCollections, yarnColors, zoneHex, type Catalogue, type Collection, type NuancierColor } from '../collections/collections';
+
+// ---------- collections du simulateur de carreaux (public/carreaux, produit par npm run sync:carreaux)
+let CATALOGUE: Catalogue | null = null;
+let NUANCIER = new Map<string, NuancierColor>();
+async function loadCatalogue() {
+  try {
+    const r = await fetch('/carreaux/catalogue.json');
+    if (!r.ok) return;
+    CATALOGUE = (await r.json()) as Catalogue;
+    NUANCIER = new Map(CATALOGUE.nuancier.map((c) => [c.id, c]));
+    const sel = document.getElementById('coll') as HTMLSelectElement;
+    for (const c of visibleCollections(CATALOGUE)) {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = `${c.nom} (${c.variations.length} motif${c.variations.length > 1 ? 's' : ''})`;
+      sel.appendChild(o);
+    }
+  } catch {
+    /* pas de catalogue : la démo reste sur les carreaux d'exemple */
+  }
+}
+
+async function rasterSvg(svgText: string, px = 256): Promise<ImageData> {
+  const url = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml' }));
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = c.height = px;
+    const ctx = c.getContext('2d')!;
+    ctx.drawImage(img, 0, 0, px, px);
+    return ctx.getImageData(0, 0, px, px);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function fillPaletteSelect(c: Collection) {
+  const sel = document.getElementById('pal') as HTMLSelectElement;
+  sel.innerHTML = '';
+  for (const p of paletteOptions(c, NUANCIER)) {
+    const o = document.createElement('option');
+    o.value = p.id;
+    o.textContent = p.label;
+    sel.appendChild(o);
+  }
+}
+
+/** Grille à partir d'une collection : SVG recolorés par zone, palette = couleurs de fil des zones. */
+async function makeCollectionGrid(c: Collection, paletteId: string, choice: string, size: keyof typeof SIZES, cuff: boolean) {
+  const pal = paletteOptions(c, NUANCIER, true).find((p) => p.id === paletteId) ?? paletteOptions(c, NUANCIER)[0]!;
+  const hexes = zoneHex(pal.colors, NUANCIER);
+  const tiles = await Promise.all(
+    c.variations.map(async (v) => rasterSvg(recolorSvg(await (await fetch(`/carreaux/${v.file}`)).text(), hexes))),
+  );
+  const yarns = yarnColors(c, pal.colors, NUANCIER);
+  const zc = suggestZoneColors(yarns);
+  const d = SIZES[size];
+  const W = d.needles;
+  const cuffRows = cuff ? d.cuffRows : 0;
+  const H = cuffRows + d.legRows + d.heelRows + d.footRows + d.toeRows;
+  // calepinage : celui choisi dans le menu, sinon celui par défaut de la collection
+  let spec: CalepinageSpec = { ...DEFAULT_CALEPINAGE, graine: 3 };
+  let preset = null;
+  const presetId = choice.startsWith('p:') ? choice.slice(2) : !choice ? c.calepinageParDefaut : null;
+  if (presetId) {
+    preset = PRESETS.find((p) => p.id === presetId) ?? null;
+    spec = { ...spec, source: 'prereglage', presetId };
+  } else {
+    const g = GENERATED_PRESETS.find((x) => x.id === choice)!;
+    spec = { ...spec, genere: g.genere, appareil: g.appareil ?? 'droit' };
+  }
+  const tw = W / 6;
+  const geo = { needles: W, tileStitches: tw, tileRows: Math.round(tw / 0.75), gapStitches: 0, gapRows: 0, offsetStitches: 0, offsetRows: 0, appareil: spec.appareil };
+  const rows = d.legRows + d.footRows;
+  const rgb = samplePattern(tiles.map((t) => ({ width: t.width, height: t.height, rgba: t.data })), spec, geo, preset, { rows, gapColor: [255, 255, 255], sampling: 'majoritaire' });
+  const yarnHex = yarns.map((y) => y.hex);
+  const palette = [...yarnHex, zc.cuff, zc.heel, zc.toe];
+  const pr = yarnHex.map(hex);
+  const nearest = (o: number) => {
+    let best = 0, bd = Infinity;
+    pr.forEach((p, i) => { const dd = (p[0] - rgb[o]!) ** 2 + (p[1] - rgb[o + 1]!) ** 2 + (p[2] - rgb[o + 2]!) ** 2; if (dd < bd) { bd = dd; best = i; } });
+    return best;
+  };
+  const colorIndex = new Uint8Array(W * H);
+  const n = yarnHex.length;
+  let pRow = 0;
+  for (let r = 0; r < H; r++) {
+    const zone = r < cuffRows ? 'c' : r < cuffRows + d.legRows ? 'l' : r < cuffRows + d.legRows + d.heelRows ? 'h' : r < H - d.toeRows ? 'f' : 't';
+    for (let col = 0; col < W; col++) colorIndex[r * W + col] = zone === 'c' ? n : zone === 'h' ? n + 1 : zone === 't' ? n + 2 : nearest((pRow * W + col) * 3);
+    if (zone === 'l' || zone === 'f') pRow++;
+  }
+  return { grid: { width: W, height: H, palette, colorIndex } as GridLike, heel: zc.heel, toe: zc.toe };
+}
 
 const { presets: PRESETS } = normalizePresets(rawPresets);
 const ALL_TILES = ['carreau-test-etoile.svg', 'carreau-test-quart.svg', 'carreau-test-damier.png'];
@@ -149,7 +245,13 @@ async function rebuild() {
   const choice = sel('calep').value;
   let pal = PALETTES[file]!;
   let grid: GridLike;
-  if (choice) {
+  const collId = sel('coll').value;
+  const coll = CATALOGUE?.collections.find((c) => c.id === collId);
+  if (coll) {
+    const res = await makeCollectionGrid(coll, sel('pal').value || 'defaut', choice, size, cuff);
+    grid = res.grid;
+    pal = { tile: [], cuff: '', heel: res.heel, toe: res.toe };
+  } else if (choice) {
     pal = MULTI_PAL;
     const tiles = await Promise.all(ALL_TILES.map((f) => loadTile(`/fixtures/${f}`)));
     grid = makeMultiGrid(tiles, choice, size, cuff);
@@ -181,7 +283,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
     controls.update();
   }),
 );
-['size', 'tile', 'cuff', 'heelH', 'heelD', 'heelS', 'calep'].forEach((id) => sel(id).addEventListener('change', rebuild));
+['size', 'tile', 'cuff', 'heelH', 'heelD', 'heelS', 'calep', 'pal'].forEach((id) => sel(id).addEventListener('change', rebuild));
 
 renderer.setAnimationLoop(() => {
   controls.update();
@@ -189,8 +291,16 @@ renderer.setAnimationLoop(() => {
 });
 
 declare global {
-  interface Window { __DEMO__?: { ready: boolean; capture: (v: ViewName, size: number) => Promise<string>; set: (o: { calep?: string; size?: string; tile?: string; cuff?: boolean; heelH?: number; heelD?: number; heelS?: number }) => Promise<void> } }
+  interface Window { __DEMO__?: { ready: boolean; capture: (v: ViewName, size: number) => Promise<string>; set: (o: { coll?: string; pal?: string; calep?: string; size?: string; tile?: string; cuff?: boolean; heelH?: number; heelD?: number; heelS?: number }) => Promise<void> } }
 }
+await loadCatalogue();
+sel('coll').addEventListener('change', () => {
+  const c = CATALOGUE?.collections.find((x) => x.id === sel('coll').value);
+  if (c) fillPaletteSelect(c);
+  else (document.getElementById('pal') as HTMLSelectElement).innerHTML = '';
+  sel('calep').value = '';
+  void rebuild();
+});
 await rebuild();
 window.__DEMO__ = {
   ready: true,
@@ -199,6 +309,12 @@ window.__DEMO__ = {
     return await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(blob); });
   },
   async set(o) {
+    if (o.coll !== undefined) {
+      sel('coll').value = o.coll;
+      const c = CATALOGUE?.collections.find((x) => x.id === o.coll);
+      if (c) fillPaletteSelect(c);
+    }
+    if (o.pal !== undefined) sel('pal').value = o.pal;
     if (o.calep !== undefined) sel('calep').value = o.calep;
     if (o.size) sel('size').value = o.size;
     if (o.tile) sel('tile').value = o.tile;

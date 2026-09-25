@@ -1,0 +1,114 @@
+[
+ {
+  "id": "medina",
+  "nom": "Medina par Bleu Cobalt",
+  "description": "Best-seller de la maison.",
+  "format": "20x20",
+  "variations": 4,
+  "defaut_layout": "aleatoire",
+  "layouts": [
+   "aleatoire",
+   "damier_4",
+   "damier_4_random",
+   "iflip_4"
+  ],
+  "category": "signature",
+  "colors": [
+   "OR008",
+   "WT001",
+   "BL017",
+   "BW002"
+  ],
+  "collection_url": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/medina-terracotta-bleu-cobalt",
+  "collection_image": "https://images.squarespace-cdn.com/content/v1/62aa0fad790ae54c0b65723b/1720469053011-AJEAUMTICOR1XYB903FF/medina-par-bleu-cobalt-carreaux-de-ciment-708365.jpg?format=500w",
+  "carton_distribution_by_pattern": {
+   "VAR1": 4,
+   "VAR2": 4,
+   "VAR3": 4,
+   "VAR4": 4
+  }
+ },
+ {
+  "id": "lianes",
+  "nom": "Lianes par Baptiste Vandaele",
+  "description": "Des lianes qui se déploient chez vous.",
+  "format": "20x20",
+  "variations": 2,
+  "defaut_layout": "Liane_1",
+  "layouts": [
+   "Liane_1",
+   "Liane_2",
+   "Liane_3",
+   "Miroir_2",
+   "damier",
+   "iflip_1",
+   "iflip_2"
+  ],
+  "category": "signature",
+  "colors": [
+   "GN002",
+   "GN005",
+   "WT000"
+  ],
+  "collection_url": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/lianes-baptiste-vandaele",
+  "collection_image": "https://images.squarespace-cdn.com/content/v1/62aa0fad790ae54c0b65723b/323af0a6-a0bd-4158-8fa6-a6f9c29dd769/SESSION+09-145.jpg?format=500w",
+  "artist_recommendations": [
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=GN007&zone-2=GN020&zone-3=GN002",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=GN007&zone-2=GN020&zone-3=YL010",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=GN021&zone-2=PP008&zone-3=BL023",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=BL010&zone-2=BL007&zone-3=BL011",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=OR006&zone-2=OR012&zone-3=YL009",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=GN029&zone-2=YL009&zone-3=GN020",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=BL016&zone-2=YL008&zone-3=BL028",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=BL011&zone-2=BL010&zone-3=BL007",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=GN028&zone-2=GN004&zone-3=GN006",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=OR018&zone-2=YL007&zone-3=YL010",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=WT001&zone-2=YL008&zone-3=OR006",
+   "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-ciment?dev=true&collection=lianes&zone-1=OR011&zone-2=OR006&zone-3=YL009"
+  ],
+  "carton_distribution_by_pattern": {
+   "VAR1": 4,
+   "VAR2": 12
+  }
+ },
+ {
+  "id": "FLEURKE",
+  "nom": "Pins de Fleurke",
+  "description": "Ces trois carreaux de ciment sont le résultat d’une envie de collaborer artisanalement pour évoquer les arbres emblématiques de la région de Fleurke de façon ludique et colorée.",
+  "format": "20x20",
+  "variations": 3,
+  "defaut_layout": "damier_3",
+  "layouts": [
+   "damier_3"
+  ],
+  "category": "signature",
+  "colors": [
+   "GN009",
+   "BL001",
+   "YL001",
+   "GN012",
+   "YL005"
+  ],
+  "collection_url": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/pins-landais-par-fleurke",
+  "collection_image": "https://images.squarespace-cdn.com/content/v1/62aa0fad790ae54c0b65723b/1720455330084-GYYH9IZEC4E8AMRHOB7P/pins-par-fleurke-carreaux-de-ciment-110610.jpg",
+  "carton_distribution_text": "5 carreaux de chaque + 1 aléatoire"
+ },
+ {
+  "id": "fantome",
+  "nom": "Collection sans SVG",
+  "description": "",
+  "format": "20x20",
+  "variations": 2,
+  "defaut_layout": "inexistant",
+  "layouts": [
+   "inexistant"
+  ],
+  "colors": [
+   "ZZ999"
+  ],
+  "collection_image": "",
+  "artist_recommendations": [
+   "https://https://x?collection=fantome&zone-1=BL017www.x?zone-2=OR008"
+  ]
+ }
+]

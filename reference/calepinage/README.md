@@ -37,16 +37,16 @@ Communs aux deux : appareillage `droit` / `quinconce-h` / `quinconce-v`, rotatio
 
 ## Conventions (vérifiées)
 
-- **Rotation dans le sens horaire** (comme `rotate()` en CSS). Vérifié sur les préréglages « Rosace » et « Rosace renversée », qui ne sont cohérents entre eux que dans ce sens.
+- **Rotation dans le sens horaire** : le simulateur de carreaux applique `transform="rotate(angle, cx, cy)"` en SVG (repère y vers le bas → sens horaire). Cohérent avec les préréglages « Rosace » et « Rosace renversée ».
 - Case (cx, cy) : cx vers la droite (autour de la jambe), cy vers le bas.
-- Motifs numérotés à partir de 0 dans le code (le JSON commence à 1). S'il y a moins de carreaux importés que le préréglage n'en demande, les motifs sont réutilisés (numéro modulo nombre de carreaux) : l'interface doit l'afficher.
+- Motifs numérotés à partir de 0 dans le code (le JSON commence à 1). Comme dans le simulateur de carreaux (`getCellSpec` de `script.js`) : un numéro de motif trop grand prend le **dernier** carreau disponible ; `tile` peut aussi être une liste `[2,3]` (tirage au hasard parmi ces motifs). L'interface doit signaler quand des motifs manquent.
 - **Hasard déterministe** : il ne dépend que de (case, graine). Changer la taille ou une couleur ne rebat pas les cartes ; seul « Nouveau tirage » (graine + 1) le fait.
 - **Raccord au dos** (`raccord()`) : la répétition horizontale (bloc du préréglage, nombre de motifs pour « à la suite », 2 pour rosace/miroir, 4 pour +90°…) doit diviser le nombre de carreaux sur le tour. L'aléatoire boucle sur le tour quand la largeur du carreau divise le nombre d'aiguilles → pas de couture. `fittingTileWidths()` propose les largeurs de carreau qui tombent juste.
 
-## Anomalies du fichier de César (corrigées à l'import)
+## Anomalies du fichier de César (lues comme le simulateur de carreaux)
 
-`normalizePresets()` corrige ces cas ; ceux qui changent le sens du fichier (opale, Amour) sont aussi renvoyés dans `warnings`, à afficher discrètement (console + info-bulle) :
-- `opale` (5,0) : rotation `1800` → lue comme 180° (faute de frappe probable) ;
+`normalizePresets()` applique exactement les règles du simulateur de carreaux et signale les cas douteux dans `warnings` (à afficher discrètement) :
+- `opale` (5,0) : rotation `1800` → **0°** (le simulateur de carreaux l'affiche à 0° ; probablement 180° voulu : à corriger dans le fichier source) ;
 - `rosace revert` (1,1) : rotation `360` → 0° ;
 - `aleatoire_no_rotation` : rotation `"0"` (texte) → 0° ;
-- `Amour` : bloc déclaré 6×12 mais des cases en rangée 13 → bloc agrandi à 6×13.
+- `Amour` : bloc 6×12 mais 6 cases en rangée 13 → ignorées (comme dans le simulateur de carreaux ; bloc probablement 6×13 voulu).

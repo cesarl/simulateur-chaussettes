@@ -12,7 +12,8 @@
  * Conventions :
  *  - case (cx, cy) : cx vers la droite (tour de la jambe), cy vers le bas (du haut de la chaussette vers le pied) ;
  *  - rotation dans le sens des aiguilles d'une montre (comme `transform: rotate()` en CSS) ;
- *  - motifs numérotés à partir de 0 dans ce module (le JSON commence à 1) ;
+ *  - motifs numérotés à partir de 0 dans ce module (le JSON commence à 1) ; comme dans le simulateur de
+ *    carreaux, un numéro de motif plus grand que le nombre de carreaux prend le dernier carreau ;
  *  - l'aléatoire dépend seulement de (case, graine) : changer un autre réglage ne rebat pas les cartes ;
  *  - raccord : quand la largeur de la répétition divise le tour, l'aléatoire boucle aussi sur le tour
  *    (la colonne `tilesAround` = colonne 0) → pas de couture visible au dos.
@@ -32,7 +33,8 @@ export interface Placement {
 // ======================================================================================
 
 export interface PresetCell {
-  tile: number | 'any';
+  /** index du motif (0-based), « any » = au hasard, ou liste de motifs parmi lesquels tirer au hasard */
+  tile: number | 'any' | number[];
   rot: Rot | 'random';
 }
 
@@ -54,20 +56,12 @@ export interface NormalizeResult {
 }
 
 function normRot(v: unknown, where: string, warnings: string[]): Rot | 'random' {
+  // Même règle que le simulateur de carreaux (getCellSpec) : « random », ou 0/90/180/270 ; tout le reste → 0°.
   if (v === 'random') return 'random';
-  let n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN;
-  if (!Number.isFinite(n)) {
-    warnings.push(`${where} : rotation « ${String(v)} » illisible → 0°`);
-    return 0;
-  }
-  if (n > 360 && n % 10 === 0 && (n / 10) % 90 === 0) {
-    warnings.push(`${where} : rotation ${n} lue comme ${n / 10}° (faute de frappe probable)`);
-    n = n / 10;
-  }
-  let r = ((Math.round(n / 90) * 90) % 360 + 360) % 360;
-  if (n % 90 !== 0) warnings.push(`${where} : rotation ${n} arrondie à ${r}°`);
-  if (r !== 0 && r !== 90 && r !== 180 && r !== 270) r = 0;
-  return r as Rot;
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN;
+  if (n === 0 || n === 90 || n === 180 || n === 270) return n;
+  warnings.push(`${where} : rotation « ${String(v)} » non reconnue → 0° (comme dans le simulateur de carreaux)`);
+  return 0;
 }
 
 function famille(id: string): string {
@@ -102,16 +96,14 @@ export function normalizePresets(raw: unknown): NormalizeResult {
       continue;
     }
     seen.add(id);
-    let blockW = Math.max(1, Math.round(Number(bs[0])));
-    let blockH = Math.max(1, Math.round(Number(bs[1])));
-    const cellsRaw = matrix as Array<Record<string, unknown>>;
-    const maxX = Math.max(...cellsRaw.map((c) => Number(c.x)));
-    const maxY = Math.max(...cellsRaw.map((c) => Number(c.y)));
-    if (maxX >= blockW || maxY >= blockH) {
-      warnings.push(`${id} : des cases dépassent le bloc ${blockW}×${blockH} → bloc agrandi à ${Math.max(blockW, maxX + 1)}×${Math.max(blockH, maxY + 1)}`);
-      blockW = Math.max(blockW, maxX + 1);
-      blockH = Math.max(blockH, maxY + 1);
-    }
+    const blockW = Math.max(1, Math.round(Number(bs[0])));
+    const blockH = Math.max(1, Math.round(Number(bs[1])));
+    const cellsRaw = (matrix as Array<Record<string, unknown>>).filter((c) => {
+      const inside = Number(c.x) >= 0 && Number(c.x) < blockW && Number(c.y) >= 0 && Number(c.y) < blockH;
+      return inside;
+    });
+    const outside = (matrix as unknown[]).length - cellsRaw.length;
+    if (outside) warnings.push(`${id} : ${outside} case(s) hors du bloc ${blockW}×${blockH}, ignorée(s) (comme dans le simulateur de carreaux)`);
     const cells: Array<PresetCell | undefined> = new Array(blockW * blockH);
     let tilesUsed = 0;
     let aleatoire = false;
@@ -119,9 +111,14 @@ export function normalizePresets(raw: unknown): NormalizeResult {
       const x = Math.round(Number(c.x));
       const y = Math.round(Number(c.y));
       const where = `${id} (${x},${y})`;
-      let tile: number | 'any';
+      let tile: number | 'any' | number[];
       if (c.tile === 'any' || c.tile === 'random') {
         tile = 'any';
+        aleatoire = true;
+      } else if (Array.isArray(c.tile)) {
+        const list = (c.tile as unknown[]).map((t) => Math.round(Number(t))).filter((t) => Number.isFinite(t) && t >= 1);
+        tile = list.length ? list.map((t) => t - 1) : 0;
+        for (const t of list) tilesUsed = Math.max(tilesUsed, t);
         aleatoire = true;
       } else {
         const t = Math.round(Number(c.tile));
@@ -245,7 +242,14 @@ export function planPlacements(spec: CalepinageSpec, ctx: PlanContext, nx: numbe
       let p: Placement;
       if (preset) {
         const cell = preset.cells[mod(cy, preset.blockH) * preset.blockW + mod(cx, preset.blockW)]!;
-        const tile = cell.tile === 'any' ? Math.floor(hash01(cx, cy, seed, 1) * N) : cell.tile % N;
+        // comme le simulateur de carreaux : un numéro de motif trop grand prend le dernier motif disponible
+        const t = cell.tile;
+        const tile =
+          t === 'any'
+            ? Math.floor(hash01(cx, cy, seed, 1) * N)
+            : Array.isArray(t)
+              ? Math.min(N - 1, t[Math.floor(hash01(cx, cy, seed, 3) * t.length)]!)
+              : Math.min(N - 1, t);
         const rot = cell.rot === 'random' ? ROTS[Math.floor(hash01(cx, cy, seed, 2) * 4)]! : cell.rot;
         p = { tile, rot, flipX: false, flipY: false };
       } else {

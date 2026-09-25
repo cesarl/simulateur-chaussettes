@@ -18,9 +18,10 @@ describe('import des préréglages du configurateur', () => {
     expect(byId('aleatoire').aleatoire).toBe(true);
   });
   it('corrige et signale les anomalies', () => {
-    expect(byId('opale').cells.some((c) => c.rot === 180)).toBe(true); // 1800 → 180
-    expect(byId('rosace revert').cells[3]!.rot).toBe(0); // 360 → 0
-    expect(byId('Amour').blockH).toBe(13); // rangée en trop → bloc agrandi
+    // mêmes règles que getCellSpec() du simulateur de carreaux
+    expect(byId('opale').cells[5]!.rot).toBe(0); // 1800 → 0° (non reconnu)
+    expect(byId('rosace revert').cells[3]!.rot).toBe(0); // 360 → 0°
+    expect(byId('Amour').blockH).toBe(12); // la 13ᵉ rangée hors bloc est ignorée
     expect(warnings.some((w) => w.includes('opale'))).toBe(true);
     expect(warnings.some((w) => w.includes('Amour'))).toBe(true);
   });
@@ -33,9 +34,15 @@ describe('placements', () => {
     expect(plan.slice(6, 8).map((p) => p.rot)).toEqual([0, 270]);
     expect(plan[2]!.rot).toBe(90); // le bloc se répète
   });
-  it('réutilise les motifs quand il en manque (modulo)', () => {
-    const plan = planPlacements(spec({ source: 'prereglage' }), { tileCount: 3, preset: byId('damier_4'), tilesAround: 6 }, 6, 4);
-    expect(Math.max(...plan.map((p) => p.tile))).toBeLessThan(3);
+  it('motif manquant → dernier motif disponible (comme le simulateur de carreaux)', () => {
+    const plan = planPlacements(spec({ source: 'prereglage' }), { tileCount: 3, preset: byId('damier_4'), tilesAround: 8 }, 8, 1);
+    expect(plan.slice(0, 4).map((p) => p.tile)).toEqual([0, 1, 2, 2]);
+  });
+  it('accepte une liste de motifs dans une case (tirage parmi la liste)', () => {
+    const { presets: [p] } = normalizePresets([{ id: 'liste', nom: 'Liste', block_size: [1, 1], matrix: [{ x: 0, y: 0, tile: [2, 3], rot: 0 }] }]);
+    const plan = planPlacements(spec({ source: 'prereglage' }), { tileCount: 4, preset: p!, tilesAround: 12 }, 12, 6);
+    const used = new Set(plan.map((x) => x.tile));
+    expect([...used].sort()).toEqual([1, 2]);
   });
   it('« à la suite » enchaîne les motifs et décale chaque rangée', () => {
     const plan = planPlacements(spec({ genere: { ordre: 'suite', pasRangee: 1, rotation: 'aucune', rotationFixe: 0 } }), { tileCount: 3, tilesAround: 6 }, 6, 2);
