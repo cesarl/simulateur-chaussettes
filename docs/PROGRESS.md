@@ -17,3 +17,10 @@ Reste / risques : <…>
 Statut : terminée (préparé par Claude avant le lancement de l'agent)
 Fait : Vite 8 + TypeScript 7 + Three.js 0.186 + Vitest 5 + Playwright 1.63. Scène 3D avec cylindre provisoire, `config/sizes.json` provisoire, types centraux, 3 carreaux de test dans `public/fixtures/`.
 Vérification : `npm run verify` ✅ (3 tests unitaires, 1 test e2e).
+
+## T01 — Prise en main du squelette — 2026-09-25 06:36
+Statut : terminée
+Fait : Lecture du cahier, de l'architecture, des types et de `config/sizes.json`. `npm install` et `npx playwright install chromium` (Chromium 153). Aucune modification du code source.
+Vérification : Node v22.14.0, npm 10.9.7. `npm run verify` ✅ (3 tests unitaires, 1 test e2e).
+Décisions : aucune
+Reste / risques : le cylindre 3D est provisoire ; les valeurs de tailles restent à confirmer avec le fabricant.

@@ -8,15 +8,15 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ## Jalon 1 — démo fabricant (lundi)
 
-### [ ] T01 — Prise en main du squelette
+### [x] T01 — Prise en main du squelette
 **Objectif** : vérifier que l'environnement fonctionne avant d'écrire du code.
 - Lire `docs/CAHIER_DES_CHARGES.md`, `docs/ARCHITECTURE.md`, `src/core/types.ts`, `config/sizes.json`.
 - `npm install`, puis `npx playwright install chromium` si le navigateur de test manque.
 - Lancer `npm run verify`.
 
 **Critères**
-- [ ] `npm run verify` passe sans modification du code.
-- [ ] `docs/PROGRESS.md` contient une entrée T01 avec la version de Node et le résultat.
+- [x] `npm run verify` passe sans modification du code.
+- [x] `docs/PROGRESS.md` contient une entrée T01 avec la version de Node et le résultat.
 
 ---
 
