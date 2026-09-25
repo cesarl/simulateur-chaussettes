@@ -87,7 +87,7 @@ La colonne 0 est sur le **côté intérieur** de la jambe. Colonnes `[0, needles
 `stitchAspect = stitchesPerCm / rowsPerCm` (≈ 0,75). Un carreau carré de `W` mailles de large fait donc `round(W / aspect)` rangs de haut. La vue à plat et la 3D dessinent les mailles à ce rapport.
 
 ### Maillage 3D anatomique (module `sock3d`)
-Le maillage n’est plus « 1 quad par maille » : la géométrie suit une forme portée (mollet, cheville, poche du talon, semelle à plat, pointe). La correspondance motif ↔ surface passe par `fabricAt` + atlas (`sockAtlas.ts`) : chaque texel d’atlas lit la maille de la `StitchGrid`. Le relief jersey et le chevron sont dans `sockObject.ts`. Référence visuelle : `reference/sock3d/captures/`.
+Le maillage n’est plus « 1 quad par maille » : la géométrie suit une forme portée par **loft** (profils arrière/avant ANSUR II + largeurs asymétriques), semelle à plat, talon arrondi, pointe fermée. La correspondance motif ↔ surface passe par `fabricAt` + atlas (`sockAtlas.ts`) : chaque texel d’atlas lit la maille de la `StitchGrid`. Le relief jersey et le chevron sont dans `sockObject.ts`. Référence visuelle : `reference/sock3d/captures/`.
 
 ### Performances
 - Budget : recalcul complet < 300 ms pour 200 aiguilles × 600 rangs ; rendu 3D fluide (60 i/s) pendant la rotation.

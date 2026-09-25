@@ -113,5 +113,10 @@ Options : champ dans `SockDesign` / état d’affichage ; cloner le mesh interac
 Choix : `footSide` dans l’état d’application (comme `knitFidelity`), hors JSON projet. Export paire : deux objets temporaires (droite + gauche), gauche en retrait Z et yaw +15°, cadrage commun `trois-quarts` via `capturePng` sur un `Group`.
 Conséquence : changer Pied reconstruit la géométrie (`setShape`). L’export paire ne modifie pas la vue interactive.
 
+## D21 — Forme anatomique v2 loft ANSUR II (T23)
+Contexte : César a jugé la forme v1 difforme (bosse sur le dessus du pied). `reference/sock3d/sockShape.ts` a été réécrit (loft profils avant/arrière + largeurs asymétriques, mesures ANSUR II) et les captures régénérées.
+Options : réécrire localement / remplacer à l’identique depuis la référence.
+Choix : copie littérale de `reference/sock3d/sockShape.ts` vers `src/render/sock3d/sockShape.ts`. Les autres fichiers du module sont inchangés (sauf `setChevron` déjà ajouté en T19 sur `sockObject`). Les tests unitaires `sock3d.test.ts` importent depuis `src/render/sock3d/` (comme T19). Architecture mise à jour pour mentionner le loft.
+Conséquence : silhouette T21 recalée sur les nouvelles captures ; plus de bosse parasite sur le dessus du pied.
 
 
