@@ -149,4 +149,16 @@ Options : exiger le dossier / charger à l’exécution avec repli.
 Choix : `loadCatalogue('./carreaux/')` au boot ; si absent ou invalide → `catalogueMissing` + bandeau `catalogue-missing` ; galerie garde `config/calepinages.json`. Si présent, remplace `calepPresets` par `calepinages.json` synchronisé. Calepinage aligné sur le simulateur de carreaux (rotations hors 0/90/180/270 → 0°, motif trop grand → dernier, listes de motifs).
 Conséquence : l’app reste utilisable sans sync ; e2e simule l’absence via `page.route` (corps `{}` pour éviter le bruit console 404).
 
+## D27 — Mode collection vs carreaux manuels (T30)
+Contexte : César veut choisir une collection entière plutôt qu’importer des PNG un par un.
+Options : remplacer la section Carreaux / section séparée au-dessus.
+Choix : section « Collection » en tête ; « Mes carreaux » pour l’import manuel. Sélection → rasterisation des SVG recolorés (`recolorSvg` + couleurs d’origine), `activeCollectionId` + `zoneColors` dans l’état. Import manuel (ou exemple) remet `activeCollectionId` à null. Galerie : groupe « Calepinages de la collection » en premier.
+Conséquence : l’historique annule aussi collection / couleurs de zones.
+
+## D28 — Palette forcée en mode collection (T31)
+Contexte : une zone SVG = un fil ; k-means introduirait des couleurs parasites.
+Options : laisser quantize auto / forcer manuelle sur les hex de zones.
+Choix : en mode collection, `recompute` impose `paletteMode: 'manuelle'` avec `yarnColors(...)`. Changer une suggestion ou une pastille recolore les SVG puis re-rasterise. Légende plat/planche : `CODE · Nom` via `paletteLabels`.
+Conséquence : sans collection, le comportement V1/V3 (auto ou manuel utilisateur) est inchangé.
+
 

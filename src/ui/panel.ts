@@ -23,6 +23,7 @@ import {
 import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
 import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
+import { mountPalettePanel } from './palettePanel';
 import {
   details,
   makeCheckbox,
@@ -162,6 +163,7 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   host.appendChild(catalogueHint);
 
   const collectionPicker = mountCollectionPicker(host);
+  const palettePanel = mountPalettePanel(host);
 
   const section = details('Mes carreaux', 'section-tiles');
 
@@ -240,9 +242,12 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   subscribe(render);
   render();
 
-  // Keep collection picker in sync when catalogue / selection change.
-  subscribe(() => collectionPicker.sync());
+  subscribe(() => {
+    collectionPicker.sync();
+    palettePanel.sync();
+  });
   collectionPicker.sync();
+  palettePanel.sync();
 
   panel.addEventListener('dragover', (event) => {
     event.preventDefault();

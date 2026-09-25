@@ -19,17 +19,17 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Si des tâches de `tasks/TA
 - [x] `collections.test.ts` et `calepinage.test.ts` fournis verts.
 - [x] e2e : sans `public/carreaux/`, aucune erreur console et le message s'affiche (simuler l'absence en interceptant la requête).
 
-### [ ] T30 — Choisir une collection
+### [x] T30 — Choisir une collection
 - Nouvelle section en tête du panneau : **« Collection »**, avec recherche par nom, groupes par catégorie (Signature, Classiques, Nouveautés, Autres), vignette = SVG VAR1 recoloré avec ses couleurs d'origine, badge « N motifs ». Collections `dev_only` masquées (case « afficher les collections en développement »).
 - Choisir une collection : ses variations deviennent les carreaux (VAR1 = motif 1, VAR2 = motif 2…), son calepinage par défaut est appliqué, et la galerie de calepinages (T26) affiche en premier un groupe **« Calepinages de la collection »** (ses `calepinages`).
 - Les carreaux importés à la main restent possibles (« Mes carreaux ») ; importer un carreau à la main quitte le mode collection.
 - `data-testid` : `coll-search`, `coll-item-<id>`, `coll-current`.
 
 **Critères**
-- [ ] e2e (avec un catalogue de test servi par Playwright via `page.route`, construit depuis `tests/fixtures/configurateur-mini`) : choisir `medina` → 4 vignettes de carreaux, calepinage `aleatoire` sélectionné, groupe « Calepinages de la collection » contenant `damier_4`.
-- [ ] Capture 3D de 3 vraies collections (si `public/carreaux/` existe dans le dépôt) ouverte et décrite dans `PROGRESS.md`.
+- [x] e2e (avec un catalogue de test servi par Playwright via `page.route`, construit depuis `tests/fixtures/configurateur-mini`) : choisir `medina` → 4 vignettes de carreaux, calepinage `aleatoire` sélectionné, groupe « Calepinages de la collection » contenant `damier_4`.
+- [x] Capture 3D de 3 vraies collections (si `public/carreaux/` existe dans le dépôt) ouverte et décrite dans `PROGRESS.md`.
 
-### [ ] T31 — Palettes et couleurs de fil
+### [x] T31 — Palettes et couleurs de fil
 - Les SVG sont **recolorés par zone** (`recolorSvg`) puis pixelisés. La palette de la chaussette est **exactement** l'ensemble des couleurs de zones (réduction de couleurs forcée en mode manuel sur ces couleurs ; pas de k-means en mode collection).
 - Bloc « Couleurs » : bandes cliquables « Couleurs d'origine » puis « Suggestion de l'artiste 1, 2… » (`paletteOptions`, seulement les couleurs validées ; case « afficher les couleurs en test »).
 - Sous les bandes : une pastille par zone (zone-1, zone-2…) ; clic → sélecteur du nuancier (recherche par nom ou code, regroupé par famille BL, GN, OR…, affiche nom, code, RAL). Changer une couleur recolore les carreaux et met à jour 3D et vue à plat.
@@ -39,9 +39,9 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Si des tâches de `tasks/TA
 - `data-testid` : `pal-option-<id>`, `zone-swatch-<zone>`, `nuancier-search`, `match-zones`.
 
 **Critères**
-- [ ] Test unitaire : grille issue de `medina` avec ses couleurs d'origine → palette du motif = exactement les 4 hex de BW002, OR008, WT001, BL017.
-- [ ] e2e : choisir « Suggestion de l'artiste 1 » de `lianes` change la palette de la grille ; changer zone-1 via le nuancier aussi ; `match-zones` change bord-côte/talon/pointe.
-- [ ] Captures (vue à plat + 3D) avec deux palettes différentes de la même collection, décrites dans `PROGRESS.md`.
+- [x] Test unitaire : grille issue de `medina` avec ses couleurs d'origine → palette du motif = exactement les 4 hex de BW002, OR008, WT001, BL017.
+- [x] e2e : choisir « Suggestion de l'artiste 1 » de `lianes` change la palette de la grille ; changer zone-1 via le nuancier aussi ; `match-zones` change bord-côte/talon/pointe.
+- [x] Captures (vue à plat + 3D) avec deux palettes différentes de la même collection, décrites dans `PROGRESS.md`.
 
 ### [ ] T32 — Projets, synchronisation et bilan
 - Le fichier projet enregistre : collection (id), couleurs par zone (codes), calepinage, et le commit de synchronisation (`catalogue.source.commit`). À la réouverture après une nouvelle synchronisation, tout se recharge ; si la collection n'existe plus, les carreaux enregistrés dans le projet sont utilisés et un message l'indique.

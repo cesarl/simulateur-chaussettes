@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { checkFabrication } from './core/checks';
+import { yarnColors } from './core/collections';
 import { composeGrid, gridFingerprint } from './core/grid';
 import { layoutRaccord, samplePattern, seamMismatch } from './core/layout';
 import { resolvePreset } from './core/presets';
@@ -18,6 +19,7 @@ import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
 import { mountPanel, renderChecks, renderStatus } from './ui/panel';
+import { yarnLegendLabels } from './ui/palettePanel';
 
 const viewport = document.getElementById('viewport');
 const panel = document.getElementById('panel');
@@ -236,7 +238,7 @@ function publish(): void {
 
 function recompute(): void {
   const started = performance.now();
-  const { design, tiles, calepPresets } = getState();
+  const { design, tiles, calepPresets, catalogue, activeCollectionId, zoneColors } = getState();
   let pattern: Uint8Array | null = null;
   patternPalette = [];
   patternCounts = [];
@@ -249,7 +251,21 @@ function recompute(): void {
       design.quantize.sampling,
       calepPresets,
     );
-    const reduced = quantize(rgb, design.dimensions.needles, design.quantize);
+    let quantizeSettings = design.quantize;
+    if (catalogue && activeCollectionId && zoneColors) {
+      const collection = catalogue.collections.find((c) => c.id === activeCollectionId);
+      if (collection) {
+        const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));
+        const yarns = yarnColors(collection, zoneColors, nuancier);
+        quantizeSettings = {
+          ...design.quantize,
+          paletteMode: 'manuelle',
+          palette: yarns.map((y) => y.hex),
+          maxColors: Math.max(2, Math.min(8, yarns.length || 2)),
+        };
+      }
+    }
+    const reduced = quantize(rgb, design.dimensions.needles, quantizeSettings);
     pattern = reduced.indices;
     patternPalette = reduced.palette;
     patternCounts = reduced.counts;
@@ -339,6 +355,7 @@ async function boot(): Promise<void> {
             rim: design.zones.cuffEnabled ? design.zones.cuffColor : undefined,
           },
           mirrorView: footSide === 'gauche',
+          paletteLabels: yarnLegendLabels(),
         },
         request,
       );

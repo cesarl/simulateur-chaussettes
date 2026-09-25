@@ -3,6 +3,7 @@
  */
 import {
   visibleCollections,
+  yarnColors,
   type Catalogue,
   type Collection,
 } from '../core/collections';
@@ -104,6 +105,7 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
       const nuancier = nuancierMap(cat);
       const colors = { ...c.couleursParDefaut };
       const tiles = await tilesFromCollection(c, colors, nuancier);
+      const yarns = yarnColors(c, colors, nuancier);
       update({
         tiles,
         activeCollectionId: c.id,
@@ -112,6 +114,11 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
         design: {
           layout: { calepinage: calepinageForCollection(c) },
           name: c.nom,
+          quantize: {
+            paletteMode: 'manuelle',
+            palette: yarns.map((y) => y.hex),
+            maxColors: Math.max(2, Math.min(8, yarns.length)),
+          },
         },
         error: null,
       });

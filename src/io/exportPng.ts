@@ -52,6 +52,8 @@ export interface ExportSource {
   pairZones: ZoneColorsLike;
   /** Inverser l’azimut de cadrage (chaussette gauche seule). */
   mirrorView: boolean;
+  /** Légende fabricant : hex → « CODE · Nom ». */
+  paletteLabels?: Map<string, string> | Record<string, string>;
 }
 
 function slug(value: string): string {
@@ -205,7 +207,21 @@ function readableCells(aspect: number): { w: number; h: number } {
   return { w, h };
 }
 
-async function renderReadable(grid: StitchGrid, aspect: number): Promise<Blob> {
+function labelForColor(
+  color: string,
+  labels?: Map<string, string> | Record<string, string>,
+): string | null {
+  if (!labels) return null;
+  const key = color.toLowerCase();
+  if (labels instanceof Map) return labels.get(key) ?? labels.get(color) ?? null;
+  return labels[key] ?? labels[color] ?? null;
+}
+
+async function renderReadable(
+  grid: StitchGrid,
+  aspect: number,
+  paletteLabels?: Map<string, string> | Record<string, string>,
+): Promise<Blob> {
   const { w, h } = readableCells(aspect);
   const marginLeft = 120;
   const marginTop = 28;
@@ -293,7 +309,11 @@ async function renderReadable(grid: StitchGrid, aspect: number): Promise<Blob> {
     context.fillRect(marginLeft, legendY, 16, 16);
     context.fillStyle = '#1d1d1b';
     context.textAlign = 'left';
-    context.fillText(`${color} · ${counts[index] ?? 0} mailles`, marginLeft + 24, legendY + 8);
+    const named = labelForColor(color, paletteLabels);
+    const text = named
+      ? `${named} · ${counts[index] ?? 0} mailles`
+      : `${color} · ${counts[index] ?? 0} mailles`;
+    context.fillText(text, marginLeft + 24, legendY + 8);
     legendY += 22;
   });
 
@@ -388,7 +408,11 @@ async function renderBoard(source: ExportSource, background: string): Promise<Bl
     context.fillStyle = color;
     context.fillRect(gap, legendY, 16, 16);
     context.fillStyle = '#1d1d1b';
-    context.fillText(`${color} · ${counts[index] ?? 0} mailles`, gap + 24, legendY + 8);
+    const named = labelForColor(color, source.paletteLabels);
+    const text = named
+      ? `${named} · ${counts[index] ?? 0}`
+      : `${color} · ${counts[index] ?? 0}`;
+    context.fillText(text, gap + 24, legendY + 8);
     legendY += 22;
   });
 
@@ -428,7 +452,7 @@ export async function runExports(source: ExportSource, request: ExportRequest): 
   if (request.flats.includes('lisible')) {
     jobs.push({
       filename: exportFileName(source.modelName, source.sizeId, 'plat-lisible'),
-      render: () => renderReadable(source.grid, source.aspect),
+      render: () => renderReadable(source.grid, source.aspect, source.paletteLabels),
     });
   }
   if (request.bmp) {

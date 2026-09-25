@@ -279,3 +279,14 @@ Fait : `npm run sync:carreaux` ; `src/core/collections.ts` + `calepinage.ts` ali
 Vérification : unitaires collections + calepinage verts ; e2e catalogue (absent / présent) verts ; `npm run verify` en cours de boucle.
 Décisions : D26.
 Reste / risques : T30 choix de collection.
+
+## T30 — Choisir une collection — 2026-09-25 15:15
+Statut : terminée
+Fait : section Collection (recherche, catégories, vignettes SVG recolorées, show-dev) ; sélection → carreaux VAR1…N + calepinage défaut + groupe « Calepinages de la collection » ; import manuel quitte le mode collection.
+Vérification : e2e medina (mini catalogue via route) vert ; captures T30 ouvertes.
+Contrôle visuel :
+- `visuel-T30-medina.png` : trois-quarts ; motif géométrique mosaïque (marine / terracotta / crème / beige) sur tige et pied ; bord-côte marine côtelé ; talon terracotta ; pointe sombre ; ombre de contact ; silhouette anatomique propre.
+- `visuel-T30-lianes.png` : motifs verts à volutes / cercles crème sur fond vert ; bord-côte marine ; talon rouge ; pointe noire ; même cadrage studio.
+- `visuel-T30-ophis.png` : fond bleu clair, figures serpentines olive/crème à œil rouge, petits blocs bruns ; bord-côte marine ; talon rouille ; pointe noire.
+Décisions : D27.
+Reste / risques : T31 palettes / nuancier.
