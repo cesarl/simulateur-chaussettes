@@ -8,6 +8,53 @@ import { createSockObject, type SockObject } from './sockObject';
 import { capturePng, createStudio, frameView, type ViewName } from './studio';
 import type { GridLike } from './sockAtlas';
 import type { SockShapeInput } from './sockShape';
+import { DEFAULT_CALEPINAGE, GENERATED_PRESETS, normalizePresets, type CalepinageSpec } from '../calepinage/calepinage';
+import { samplePattern } from '../calepinage/sampler';
+import rawPresets from '../calepinage/calepinages.json';
+
+const { presets: PRESETS } = normalizePresets(rawPresets);
+const ALL_TILES = ['carreau-test-etoile.svg', 'carreau-test-quart.svg', 'carreau-test-damier.png'];
+const MULTI_PAL = { tile: ['#f1e9dc', '#1f3a5f', '#c0392b', '#2e6b4f', '#d9a441', '#1d1d1b'], cuff: '#1f3a5f', heel: '#c0392b', toe: '#c0392b' };
+
+/** Grille multi-motifs via le moteur de calepinage de référence. */
+function makeMultiGrid(tiles: ImageData[], choice: string, size: keyof typeof SIZES, cuff: boolean): GridLike {
+  const d = SIZES[size];
+  const W = d.needles;
+  const cuffRows = cuff ? d.cuffRows : 0;
+  const H = cuffRows + d.legRows + d.heelRows + d.footRows + d.toeRows;
+  let spec: CalepinageSpec = { ...DEFAULT_CALEPINAGE, graine: 3 };
+  let preset = null;
+  let use = tiles;
+  if (choice.startsWith('p:')) {
+    preset = PRESETS.find((p) => p.id === choice.slice(2)) ?? null;
+    spec = { ...spec, source: 'prereglage', presetId: preset?.id ?? null };
+    if (choice === 'p:rosace') use = [tiles[1]!];
+  } else {
+    const g = GENERATED_PRESETS.find((x) => x.id === choice)!;
+    spec = { ...spec, genere: g.genere, appareil: g.appareil ?? 'droit' };
+  }
+  const tw = W / 6;
+  const geo = { needles: W, tileStitches: tw, tileRows: Math.round(tw / 0.75), gapStitches: 0, gapRows: 0, offsetStitches: 0, offsetRows: 0, appareil: spec.appareil };
+  const rows = d.legRows + d.footRows;
+  const rgb = samplePattern(use.map((t) => ({ width: t.width, height: t.height, rgba: t.data })), spec, geo, preset, { rows, gapColor: [241, 233, 220], sampling: 'majoritaire' });
+  const palette = [...MULTI_PAL.tile, MULTI_PAL.cuff, MULTI_PAL.heel, MULTI_PAL.toe];
+  const pr = MULTI_PAL.tile.map(hex);
+  const nearest = (o: number) => {
+    let best = 0, bd = Infinity;
+    pr.forEach((p, i) => { const dd = (p[0] - rgb[o]!) ** 2 + (p[1] - rgb[o + 1]!) ** 2 + (p[2] - rgb[o + 2]!) ** 2; if (dd < bd) { bd = dd; best = i; } });
+    return best;
+  };
+  const colorIndex = new Uint8Array(W * H);
+  let pRow = 0;
+  for (let r = 0; r < H; r++) {
+    const zone = r < cuffRows ? 'c' : r < cuffRows + d.legRows ? 'l' : r < cuffRows + d.legRows + d.heelRows ? 'h' : r < H - d.toeRows ? 'f' : 't';
+    for (let c = 0; c < W; c++) {
+      colorIndex[r * W + c] = zone === 'c' ? 6 : zone === 'h' ? 7 : zone === 't' ? 8 : nearest((pRow * W + c) * 3);
+    }
+    if (zone === 'l' || zone === 'f') pRow++;
+  }
+  return { width: W, height: H, palette, colorIndex };
+}
 
 const SIZES = {
   homme: { needles: 168, cuffRows: 30, legRows: 180, heelRows: 56, footRows: 200, toeRows: 50 },
@@ -99,11 +146,25 @@ async function rebuild() {
   const size = sel('size').value as keyof typeof SIZES;
   const file = sel('tile').value;
   const cuff = sel('cuff').checked;
-  const pal = PALETTES[file]!;
-  const tile = await loadTile(`/fixtures/${file}`);
-  const grid = makeGrid(tile, size, cuff, pal);
+  const choice = sel('calep').value;
+  let pal = PALETTES[file]!;
+  let grid: GridLike;
+  if (choice) {
+    pal = MULTI_PAL;
+    const tiles = await Promise.all(ALL_TILES.map((f) => loadTile(`/fixtures/${f}`)));
+    grid = makeMultiGrid(tiles, choice, size, cuff);
+  } else {
+    const tile = await loadTile(`/fixtures/${file}`);
+    grid = makeGrid(tile, size, cuff, pal);
+  }
   const d = SIZES[size];
-  const shape: SockShapeInput = { ...d, cuffRows: cuff ? d.cuffRows : 0, rowsPerCm: 10, size };
+  const heelHeight = +sel('heelH').value;
+  const heelDepth = +sel('heelD').value;
+  const heelSpread = +sel('heelS').value / 100;
+  document.getElementById('heelHv')!.textContent = String(heelHeight);
+  document.getElementById('heelDv')!.textContent = String(heelDepth);
+  document.getElementById('heelSv')!.textContent = String(Math.round(heelSpread * 100));
+  const shape: SockShapeInput = { ...d, cuffRows: cuff ? d.cuffRows : 0, rowsPerCm: 10, size, heelHeight, heelDepth, heelSpread };
   if (sock) { scene.remove(sock.mesh); sock.dispose(); }
   sock = createSockObject(shape, grid, { heel: pal.heel, toe: pal.toe });
   scene.add(sock.mesh);
@@ -120,7 +181,7 @@ document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
     controls.update();
   }),
 );
-['size', 'tile', 'cuff'].forEach((id) => sel(id).addEventListener('change', rebuild));
+['size', 'tile', 'cuff', 'heelH', 'heelD', 'heelS', 'calep'].forEach((id) => sel(id).addEventListener('change', rebuild));
 
 renderer.setAnimationLoop(() => {
   controls.update();
@@ -128,7 +189,7 @@ renderer.setAnimationLoop(() => {
 });
 
 declare global {
-  interface Window { __DEMO__?: { ready: boolean; capture: (v: ViewName, size: number) => Promise<string>; set: (o: { size?: string; tile?: string; cuff?: boolean }) => Promise<void> } }
+  interface Window { __DEMO__?: { ready: boolean; capture: (v: ViewName, size: number) => Promise<string>; set: (o: { calep?: string; size?: string; tile?: string; cuff?: boolean; heelH?: number; heelD?: number; heelS?: number }) => Promise<void> } }
 }
 await rebuild();
 window.__DEMO__ = {
@@ -138,9 +199,13 @@ window.__DEMO__ = {
     return await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(blob); });
   },
   async set(o) {
+    if (o.calep !== undefined) sel('calep').value = o.calep;
     if (o.size) sel('size').value = o.size;
     if (o.tile) sel('tile').value = o.tile;
     if (o.cuff !== undefined) sel('cuff').checked = o.cuff;
+    if (o.heelH !== undefined) sel('heelH').value = String(o.heelH);
+    if (o.heelD !== undefined) sel('heelD').value = String(o.heelD);
+    if (o.heelS !== undefined) sel('heelS').value = String(o.heelS);
     await rebuild();
   },
 };

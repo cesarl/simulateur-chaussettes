@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildSockMesh, fabricAt, heelWeight, sockLayout, ZONE_FOOT, ZONE_HEEL, ZONE_LEG, type SockShapeInput } from '../../src/render/sock3d/sockShape';
-import { buildSockAtlas } from '../../src/render/sock3d/sockAtlas';
-import { buildKnitMaps } from '../../src/render/sock3d/knitMaps';
+import { buildSockMesh, fabricAt, heelWeight, sockLayout, ZONE_FOOT, ZONE_HEEL, ZONE_LEG, type SockShapeInput } from '../../reference/sock3d/sockShape';
+import { buildSockAtlas } from '../../reference/sock3d/sockAtlas';
+import { buildKnitMaps } from '../../reference/sock3d/knitMaps';
 
 const HOMME: SockShapeInput = { needles: 168, cuffRows: 30, legRows: 180, heelRows: 56, footRows: 200, toeRows: 50, rowsPerCm: 10, size: 'homme' };
 
@@ -104,5 +104,23 @@ describe('cartes de maille', () => {
     let diff = 0;
     for (let y = 0; y < 32; y++) diff += Math.abs(k.height[y * 32]! - k.height[y * 32 + 31]!);
     expect(diff / 32).toBeLessThan(0.25);
+  });
+});
+
+describe('réglages du talon', () => {
+  it('la hauteur et la profondeur du talon se règlent', () => {
+    const low = sockLayout({ ...HOMME, heelHeight: 40, heelDepth: 60 });
+    const high = sockLayout({ ...HOMME, heelHeight: 95, heelDepth: 110 });
+    // point du dos à ~70 mm du sol
+    const ringAt70 = (L: ReturnType<typeof sockLayout>) => L.rings.find((r) => r.by <= 0.07)!.s;
+    expect(fabricAt(low, Math.PI / 2, ringAt70(low)).zone).toBe(ZONE_LEG);
+    expect(fabricAt(high, Math.PI / 2, ringAt70(high)).zone).toBe(ZONE_HEEL);
+    expect(high.heelEnd).toBeGreaterThan(low.heelEnd);
+  });
+  it('un talon plus étroit laisse les côtés au motif', () => {
+    const narrow = sockLayout({ ...HOMME, heelSpread: 0.5 });
+    const mid = (narrow.heelStart + narrow.heelEnd) / 2;
+    expect(fabricAt(narrow, Math.PI / 2, mid).zone).toBe(ZONE_HEEL);
+    expect(fabricAt(narrow, Math.PI * 0.12, mid).zone).not.toBe(ZONE_HEEL);
   });
 });

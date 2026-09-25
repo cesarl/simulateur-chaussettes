@@ -9,6 +9,7 @@
       html, body { margin: 0; height: 100%; background: #ecebe8; font-family: system-ui, sans-serif; }
       #v { position: fixed; inset: 0; }
       #bar { position: fixed; left: 12px; top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+      #bar .rg { background:#fff; padding:6px 10px; border-radius:6px; border:1px solid #ccc; font-size:13px; }
       #bar button, #bar select { font: inherit; padding: 6px 10px; border: 1px solid #ccc; background: #fff; border-radius: 6px; cursor: pointer; }
     </style>
   </head>
@@ -21,7 +22,19 @@
         <option value="carreau-test-quart.svg">Quart de cercle</option>
         <option value="carreau-test-damier.png">Damier</option>
       </select>
+      <select id="calep">
+        <option value="">Calepinage : 1 carreau, quinconce</option>
+        <option value="g-suite">3 carreaux à la suite</option>
+        <option value="g-suite-rot90">3 carreaux, +90° à chaque carreau</option>
+        <option value="g-suite-rotalea">3 carreaux, rotation aléatoire</option>
+        <option value="g-alea-voisins">3 carreaux aléatoires sans voisins</option>
+        <option value="p:rosace">Préréglage « Rosace » (quart de cercle)</option>
+        <option value="p:ophis_tressage_4x4">Préréglage « Ophis Tressage »</option>
+      </select>
       <label style="background:#fff;padding:6px 10px;border-radius:6px;border:1px solid #ccc"><input type="checkbox" id="cuff" checked /> bord-côte</label>
+      <label class="rg">Talon hauteur <input type="range" id="heelH" min="25" max="110" value="55" /> <span id="heelHv">55</span> mm</label>
+      <label class="rg">profondeur <input type="range" id="heelD" min="40" max="130" value="72" /> <span id="heelDv">72</span> mm</label>
+      <label class="rg">largeur <input type="range" id="heelS" min="50" max="100" value="100" /> <span id="heelSv">100</span> %</label>
       <button data-view="trois-quarts">3/4</button>
       <button data-view="profil-exterieur">Profil ext.</button>
       <button data-view="face">Face</button>

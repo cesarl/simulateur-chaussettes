@@ -36,7 +36,16 @@ export interface SockShapeInput {
   side?: 'droite' | 'gauche';
   /** Côtes du bord-côte : nombre de mailles endroit/envers (2 = côtes 2×2). */
   ribWidth?: number;
+  /** Hauteur où monte le talon au milieu du dos, en mm au-dessus du sol (taille homme ; mise à l'échelle pour femme). */
+  heelHeight?: number;
+  /** Jusqu'où le talon s'étend sous le pied, en mm depuis l'arrière du talon (taille homme ; mise à l'échelle). */
+  heelDepth?: number;
+  /** Largeur du talon autour de la cheville : 1 = moitié arrière complète (défaut), < 1 = plus étroit. */
+  heelSpread?: number;
 }
+
+/** Valeurs par défaut du talon (mm, taille homme). */
+export const HEEL_DEFAULTS = { heelHeight: 55, heelDepth: 72, heelSpread: 1 } as const;
 
 const TAU = Math.PI * 2;
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
@@ -180,7 +189,7 @@ function table3(t: Array<[number, number, number]>, x: number): [number, number]
 // ======================================================================================
 
 /** Un anneau : relie le point arrière B au point avant F (plan y-z), + largeurs. En mètres. */
-interface Ring {
+export interface Ring {
   s: number; // abscisse le long du chemin des centres (m), 0 = haut du tissu
   bz: number; by: number; // point arrière
   fz: number; fy: number; // point avant
@@ -212,7 +221,7 @@ const Z_SHIFT_MM = 52; // centre la jambe sur l'axe vertical (x = 0, z ≈ 0)
 const layoutCache = new Map<string, SockLayout>();
 
 export function sockLayout(raw: SockShapeInput): SockLayout {
-  const input: Required<SockShapeInput> = { side: 'droite', ribWidth: 2, ...raw };
+  const input: Required<SockShapeInput> = { side: 'droite', ribWidth: 2, ...HEEL_DEFAULTS, ...raw };
   const key = JSON.stringify(input);
   const cached = layoutCache.get(key);
   if (cached) return cached;
@@ -299,14 +308,43 @@ export function sockLayout(raw: SockShapeInput): SockLayout {
     sBendEnd: sC,
     sToeStart: sD,
     sTip,
-    heelStart: lerp(sB, sC, 0.12), // le talon monte jusqu'aux malléoles, pas plus haut
-    heelEnd: sC + 0.008 * k,
+    ...heelRange(rings, input, k),
     frontSplit: lerp(sB, sC, 0.45),
     topY: topY * mm,
     rings,
   };
   layoutCache.set(key, L);
   return L;
+}
+
+/**
+ * Étendue du talon au milieu du dos, sur l'abscisse s : il commence quand la ligne arrière descend
+ * sous `heelHeight` et finit quand la semelle atteint `heelDepth` depuis l'arrière du talon.
+ */
+function heelRange(rings: Ring[], input: Required<SockShapeInput>, k: number) {
+  const mm = 0.001;
+  const hY = clamp(input.heelHeight, 15, 160) * k * mm;
+  const hZ = clamp(input.heelDepth, 25, 160) * k * mm - Z_SHIFT_MM * k * mm; // repère décalé
+  let start = rings[0]!.s;
+  let i = 0;
+  for (; i < rings.length; i++) {
+    if (rings[i]!.by <= hY) {
+      start = rings[i]!.s;
+      break;
+    }
+  }
+  // point le plus en arrière / le plus bas du talon, puis on avance sous le pied
+  let j = i;
+  while (j < rings.length - 1 && rings[j]!.by > 0.001) j++;
+  let end = rings[j]!.s;
+  for (let q = j; q < rings.length; q++) {
+    if (rings[q]!.bz >= hZ) {
+      end = rings[q]!.s;
+      break;
+    }
+  }
+  if (end < start + 0.005 * k) end = start + 0.005 * k;
+  return { heelStart: start, heelEnd: end };
 }
 
 /** Anneau interpolé à l'abscisse s (≥ 0). */
@@ -346,10 +384,14 @@ export const ZONE_FOOT = 3;
 export const ZONE_TOE = 4;
 
 /** Poids du talon selon l'angle autour de la jambe : 1 au milieu du dos, 0 sur les côtés et devant. */
-export function heelWeight(phi: number): number {
+export function heelWeight(phi: number, spread = 1): number {
   const p = ((phi % TAU) + TAU) % TAU;
   if (p >= Math.PI) return 0;
-  return Math.pow(Math.sin(p), 0.55);
+  // spread < 1 : le talon se resserre vers le milieu du dos
+  const sp = clamp(spread, 0.3, 1);
+  const q = Math.PI / 2 + (p - Math.PI / 2) / sp;
+  if (q <= 0 || q >= Math.PI) return 0;
+  return Math.pow(Math.sin(q), 0.55);
 }
 
 export interface FabricPoint {
@@ -364,16 +406,16 @@ export function fabricAt(L: SockLayout, phi: number, s: number): FabricPoint {
   if (s < L.sCuffEnd) return { zone: ZONE_CUFF, row: (s / L.sCuffEnd) * cuffRows };
   // Espacement régulier des rangs ; le talon « recouvre » le dos en coin (bords en diagonale),
   // devant la tige et le pied se suivent sans trou.
-  const w = heelWeight(phi);
+  const w = heelWeight(phi, L.input.heelSpread);
   const legEnd = lerp(L.frontSplit, L.heelStart, w);
   const footStart = lerp(L.frontSplit, L.heelEnd, w);
   const toeStart = L.sToeStart - 0.004 * L.k;
   const r0 = cuffRows;
-  if (s < legEnd) return { zone: ZONE_LEG, row: r0 + ((s - L.sCuffEnd) / (L.frontSplit - L.sCuffEnd)) * legRows };
+  if (s < legEnd) return { zone: ZONE_LEG, row: Math.min(r0 + legRows - 1e-3, r0 + ((s - L.sCuffEnd) / (L.frontSplit - L.sCuffEnd)) * legRows) };
   const r1 = r0 + legRows;
   if (s < footStart) return { zone: ZONE_HEEL, row: r1 + ((s - legEnd) / (footStart - legEnd)) * heelRows };
   const r2 = r1 + heelRows;
-  if (s < toeStart) return { zone: ZONE_FOOT, row: r2 + ((s - L.frontSplit) / (toeStart - L.frontSplit)) * footRows };
+  if (s < toeStart) return { zone: ZONE_FOOT, row: Math.max(r2, r2 + ((s - L.frontSplit) / (toeStart - L.frontSplit)) * footRows) };
   const r3 = r2 + footRows;
   return { zone: ZONE_TOE, row: r3 + clamp((s - toeStart) / (L.sTip - toeStart), 0, 1) * toeRows };
 }
