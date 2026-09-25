@@ -190,7 +190,7 @@ Vérification : `npm run verify` ✅ (48 unitaires, 22 e2e dont IoU ≥ 0,90). C
 - `visuel-T21-profil-exterieur.png` : profil L anatomique, Achille creusé, instep lisse, semelle plate, talon et pointe rouges nets — comparable à la réf. profil.
 - `visuel-T21-dos.png` : talon rouge centré arrondi, tige qui s’affine vers la cheville, motif qui remonte, ombre au sol.
 Décisions : D21.
-Reste / risques : T18 toujours bloquée (tailles fabricant).
+Reste / risques : T18 toujours bloquée (tailles fabricant). CI GitHub a eu un flake e2e (`sock.spec` distinctColors / vignettes lentes sur SwiftShader) — timeouts et attente paint renforcés (commit suivant).
 
 ## Point pour César
 
