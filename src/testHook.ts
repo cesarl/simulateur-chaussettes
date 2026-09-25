@@ -24,6 +24,8 @@ export interface SimHook {
   textureUpdates: number;
   /** Mode de frontière des mailles en 3D. */
   knitFidelity: KnitFidelity;
+  cameraPosition: { x: number; y: number; z: number };
+  cameraTarget: { x: number; y: number; z: number };
   warnings: string[];
   loadFixture: (name: string) => Promise<void>;
   setDesign: (partial: DesignPatch) => void;

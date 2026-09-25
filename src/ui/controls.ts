@@ -21,12 +21,35 @@ export function details(title: string, testId: string): HTMLDetailsElement {
   return section;
 }
 
-export function field(labelText: string, control: HTMLElement, unit?: string): HTMLElement {
+export function field(
+  labelText: string,
+  control: HTMLElement,
+  unit?: string,
+  help?: string,
+  helpId?: string,
+): HTMLElement {
   const row = document.createElement('label');
   row.className = 'field';
   const span = document.createElement('span');
+  span.className = 'field-label';
   span.textContent = labelText;
-  row.append(span, control);
+  row.append(span);
+  if (help) {
+    const tip = document.createElement('button');
+    tip.type = 'button';
+    tip.className = 'help';
+    tip.textContent = '?';
+    tip.title = help;
+    tip.setAttribute('aria-label', help);
+    tip.dataset.testid = `help-${helpId ?? control.dataset.testid ?? 'field'}`;
+    tip.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    span.appendChild(tip);
+    row.title = help;
+  }
+  row.append(control);
   if (unit) {
     const unitEl = document.createElement('span');
     unitEl.className = 'unit';
@@ -47,6 +70,7 @@ export function makeSelect(
   options: readonly SelectOption[],
   value: string,
   onChange: (value: string) => void,
+  help?: string,
 ): { root: HTMLElement; input: HTMLSelectElement } {
   const input = document.createElement('select');
   input.dataset.testid = testId;
@@ -58,7 +82,7 @@ export function makeSelect(
   }
   input.value = value;
   input.addEventListener('change', () => onChange(input.value));
-  return { root: field(labelText, input), input };
+  return { root: field(labelText, input, undefined, help), input };
 }
 
 export function makeCheckbox(
@@ -66,13 +90,14 @@ export function makeCheckbox(
   testId: string,
   checked: boolean,
   onChange: (checked: boolean) => void,
+  help?: string,
 ): { root: HTMLElement; input: HTMLInputElement } {
   const input = document.createElement('input');
   input.type = 'checkbox';
   input.dataset.testid = testId;
   input.checked = checked;
   input.addEventListener('change', () => onChange(input.checked));
-  return { root: field(labelText, input), input };
+  return { root: field(labelText, input, undefined, help), input };
 }
 
 export function makeColor(
@@ -80,6 +105,7 @@ export function makeColor(
   testId: string,
   value: string,
   onChange: (value: string) => void,
+  help?: string,
 ): { root: HTMLElement; input: HTMLInputElement } {
   const input = document.createElement('input');
   input.type = 'color';
@@ -87,7 +113,7 @@ export function makeColor(
   input.value = value;
   const emit = debounce(() => onChange(input.value));
   input.addEventListener('input', emit);
-  return { root: field(labelText, input), input };
+  return { root: field(labelText, input, undefined, help), input };
 }
 
 export interface SliderNumber {
@@ -105,6 +131,7 @@ export function makeSliderNumber(options: {
   step: number;
   value: number;
   unit?: string;
+  help?: string;
   onChange: (value: number) => void;
 }): SliderNumber {
   const wrap = document.createElement('span');
@@ -140,7 +167,7 @@ export function makeSliderNumber(options: {
   input.addEventListener('input', fromNumber);
   wrap.append(range, input);
   return {
-    root: field(options.label, wrap, options.unit),
+    root: field(options.label, wrap, options.unit, options.help, options.testId),
     input,
     setValue(value: number, force = false): void {
       if (!force && (document.activeElement === input || document.activeElement === range)) return;

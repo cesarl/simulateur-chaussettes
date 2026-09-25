@@ -170,7 +170,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 **Critères** : captures avant/après examinées et décrites ; aucune régression des tests d'export (le plat exact ne dépend pas du shader).
 
-### [~] T15 — Export BMP indexé et planche
+### [x] T15 — Export BMP indexé et planche
 - BMP 8 bits indexé, 1 px = 1 maille (format courant des logiciels jacquard — à confirmer avec le fabricant).
 - Planche PNG : 4 vues + grille à plat + palette sur une seule image, titre du modèle.
 
@@ -178,10 +178,10 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ## Jalon 3 — finitions
 
-### [ ] T16 — Finitions de l'interface
+### [x] T16 — Finitions de l'interface
 - Raccourcis (R : réinitialiser la vue, F : face…), bulles d'aide sur chaque réglage (vocabulaire du tricot expliqué simplement), état vide accueillant, responsive ≥ 1280 px, accessibilité clavier des contrôles.
 
-### [ ] T17 — Intégration continue et publication
+### [~] T17 — Intégration continue et publication
 - Workflow GitHub Actions `npm ci && npx playwright install --with-deps chromium && npm run verify` (le fichier `.github/workflows/ci.yml` existe déjà : le vérifier).
 - Documenter dans `README.md` le déploiement du dossier `dist/` (Cloudflare Pages ou GitHub Pages), sans le faire.
 

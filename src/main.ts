@@ -10,6 +10,7 @@ import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
 import { createKnitMaterial, type KnitMaterial } from './render/knitTexture';
 import { createSockMesh } from './render/sockGeometry';
+import { viewById, type ViewId } from './render/views';
 import { getState, subscribe, update, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
@@ -49,19 +50,27 @@ function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings): string {
   ].join('|');
 }
 
-function frameCamera(): void {
+function frameCamera(direction: THREE.Vector3 = new THREE.Vector3(0.78, 0.22, 0.58)): void {
   if (!mesh) return;
   const box = new THREE.Box3().setFromObject(mesh);
   const center = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
   const radius = Math.max(size.x, size.y, size.z) * 0.5;
+  const dir = direction.clone().normalize();
   const distance = (radius / Math.sin((handle.camera.fov * Math.PI) / 360)) * 1.2;
   handle.controls.target.copy(center);
-  handle.camera.position.set(center.x + distance * 0.78, center.y + distance * 0.22, center.z + distance * 0.58);
+  handle.camera.position.copy(center).addScaledVector(dir, distance);
   handle.camera.near = Math.max(distance / 200, 0.001);
   handle.camera.far = distance * 30;
   handle.camera.updateProjectionMatrix();
   handle.controls.update();
+  handle.requestRender();
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
 function cuffRowsOf(dims: SockDimensions, zones: ZoneSettings): number {
@@ -139,6 +148,16 @@ function publish(): void {
     geometryBuilds,
     textureUpdates,
     knitFidelity: getState().knitFidelity,
+    cameraPosition: {
+      x: handle.camera.position.x,
+      y: handle.camera.position.y,
+      z: handle.camera.position.z,
+    },
+    cameraTarget: {
+      x: handle.controls.target.x,
+      y: handle.controls.target.y,
+      z: handle.controls.target.z,
+    },
     warnings: [...warnings],
     loadFixture,
     setDesign,
@@ -248,6 +267,45 @@ async function boot(): Promise<void> {
   subscribe(recompute);
   subscribe(scheduleSave);
   recompute();
+
+  handle.controls.addEventListener('change', () => {
+    const sim = window.__SIM__;
+    if (!sim) return;
+    sim.cameraPosition = {
+      x: handle.camera.position.x,
+      y: handle.camera.position.y,
+      z: handle.camera.position.z,
+    };
+    sim.cameraTarget = {
+      x: handle.controls.target.x,
+      y: handle.controls.target.y,
+      z: handle.controls.target.z,
+    };
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (isTypingTarget(event.target)) return;
+    const key = event.key.toLowerCase();
+    if (key === 'r') {
+      event.preventDefault();
+      frameCamera();
+      publish();
+      return;
+    }
+    const byKey: Record<string, ViewId> = {
+      f: 'face',
+      t: 'trois-quarts',
+      e: 'profil-exterieur',
+      d: 'dos',
+      i: 'profil-interieur',
+    };
+    const viewId = byKey[key];
+    if (!viewId) return;
+    event.preventDefault();
+    const view = viewById(viewId);
+    frameCamera(new THREE.Vector3(...view.direction));
+    publish();
+  });
 }
 
 void boot();

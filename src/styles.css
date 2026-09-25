@@ -10,7 +10,21 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); }
-#app { display: grid; grid-template-columns: 1fr 380px; height: 100vh; }
+#app {
+  display: grid;
+  grid-template-columns: 1fr min(420px, 34vw);
+  height: 100vh;
+}
+@media (max-width: 1279px) {
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(48vh, 1fr) minmax(40vh, auto);
+  }
+  #panel {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+}
 #viewport { position: relative; min-width: 0; min-height: 0; }
 #viewport canvas { display: block; width: 100%; height: 100%; }
 .view-switch {
@@ -25,6 +39,20 @@ html, body { margin: 0; height: 100%; background: var(--bg); }
   background: var(--ink);
   color: #fff;
   border-color: var(--ink);
+}
+.view-shortcuts {
+  position: absolute;
+  z-index: 3;
+  left: 12px;
+  top: 12px;
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  pointer-events: none;
 }
 .flat-layer { position: absolute; inset: 0; z-index: 1; background: var(--bg); }
 .flat-layer[hidden] { display: none; }
@@ -55,6 +83,30 @@ button {
   cursor: pointer;
 }
 button:hover { border-color: var(--accent); }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+.help:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--muted);
+  vertical-align: middle;
+}
+.help:hover { color: var(--accent); border-color: var(--accent); }
 .drop {
   border: 1px dashed var(--line);
   border-radius: 8px;
@@ -99,7 +151,7 @@ details.section summary { cursor: pointer; font-weight: 600; font-size: 14px; }
   font-size: 13px;
   margin: 8px 0;
 }
-.field > span:first-child { flex: 1 1 140px; }
+.field-label { flex: 1 1 140px; }
 .slider-number { display: flex; gap: 6px; align-items: center; }
 .field input[type='number'] { width: 72px; }
 .field input[type='range'] { width: 108px; }

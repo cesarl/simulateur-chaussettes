@@ -57,7 +57,11 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
   buttonFlat.textContent = 'À plat';
   buttonFlat.setAttribute('aria-pressed', 'false');
   switcher.append(button3d, buttonFlat);
-  viewport.append(layer, switcher);
+  const shortcuts = document.createElement('p');
+  shortcuts.className = 'view-shortcuts';
+  shortcuts.dataset.testid = 'view-shortcuts';
+  shortcuts.textContent = 'R : réinitialiser · F : face · T : ¾ · E : extérieur · D : dos · I : intérieur';
+  viewport.append(layer, switcher, shortcuts);
 
   let grid: StitchGrid | null = null;
   let floatMask: Uint8Array | null = null;

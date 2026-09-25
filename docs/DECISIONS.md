@@ -100,3 +100,9 @@ Contexte : le cahier demande une option simple/fidèle sans fixer l’amplitude 
 Options : champ dans `SockDesign` / état d’affichage seul ; warp sur toutes les zones / hors bord-côte.
 Choix : `knitFidelity` dans l’état d’application seulement (défaut `fidele`), pas dans le JSON projet. Décalage horizontal `(0,5 − ly) × 0,32 × signe(lx − 0,5)` hors bord-côte. `wrapS` de la grille en `RepeatWrapping` pour le raccord circulaire.
 Conséquence : le plat exact et le BMP restent des pixels droits. Le détail est dans `src/render/knitTexture.ts`.
+
+## D16 — BMP indexé et contenu de la planche (T15)
+Contexte : le cahier demande un BMP 8 bits et une planche, sans fixer biClrUsed ni quelles 4 vues.
+Options : toujours 256 entrées de palette / seulement les couleurs utilisées ; 5 vues / 4 vues.
+Choix : palette = couleurs de la grille (`biClrUsed` = longueur), lignes bas → haut, padding 4 octets. Planche = face, trois-quarts, profil extérieur, dos (512²) + grille agrandie ×4 + légende, titre = nom du modèle.
+Conséquence : à valider avec le fabricant pour le BMP. Fichiers `src/io/exportBmp.ts` et `renderBoard` dans `exportPng.ts`.

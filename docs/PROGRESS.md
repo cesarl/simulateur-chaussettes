@@ -122,3 +122,17 @@ Fait : Dans `onBeforeCompile`, la lecture de `map` est décalée horizontalement
 Vérification : `npm run verify` ✅ (41 tests unitaires, 16 e2e). Contrôle visuel : `visuel-t14-simple.png` — motif étoile crème/marine/rouge, cellules de couleur à bords plutôt droits, relief jersey présent ; talon rouge. `visuel-t14-fidele.png` — même cadrage et motif, mais les frontières de couleur dentelées en chevron le long des V ; fichiers nettement différents (≈445 ko vs 438 ko). Export plat exact toujours téléchargé, indépendant du shader. Les tests d’export T10 passent.
 Décisions : D15.
 Reste / risques : l’effet est surtout visible au zoom sur un motif contrasté.
+
+## T15 — Export BMP indexé et planche — 2026-09-25 07:35
+Statut : terminée
+Fait : BMP 8 bits indexé (`encodeIndexedBmp`) 1 px = 1 maille, palette BGRA, lignes bas→haut, padding 4 octets. Planche PNG : titre, 4 vues 512² (face, trois-quarts, profil extérieur, dos), grille agrandie, légende palette. Cases `export-bmp` et `export-board`.
+Vérification : `npm run verify` ✅ (43 tests unitaires, 17 e2e). BMP `modele_homme_grille.bmp` : signature BM, 8 bits, dimensions = aiguilles × rangs. Planche PNG > 500×500.
+Décisions : D16.
+Reste / risques : format BMP à confirmer avec le fabricant.
+
+## T16 — Finitions de l'interface — 2026-09-25 07:40
+Statut : terminée
+Fait : Raccourcis R/F/T/E/D/I, bandeau d’aide, bulles « ? » sur les réglages principaux, état vide accueillant, CSS responsive (colonne sous 1280 px), focus visible clavier. Caméra exposée dans `__SIM__` et mise à jour pendant l’orbite.
+Vérification : `npm run verify` ✅ (43 tests unitaires, 18 e2e).
+Décisions : D17 (raccourcis et aides).
+Reste / risques : pas de bulles sur chaque export individuel (les réglages métier sont couverts).

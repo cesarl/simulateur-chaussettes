@@ -165,7 +165,8 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   const empty = document.createElement('p');
   empty.className = 'hint';
   empty.dataset.testid = 'tile-empty';
-  empty.textContent = 'Aucun carreau pour l’instant.';
+  empty.textContent =
+    'Bienvenue. Chargez un exemple ou importez un carreau PNG/SVG pour commencer le motif.';
   section.appendChild(empty);
 
   const list = document.createElement('ul');
@@ -428,10 +429,17 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   let paletteKey = '';
 
   const layout = details('Calepinage', 'section-layout');
-  const kind = makeSelect('Calepinage', 'ctl-layout-kind', LAYOUT_OPTIONS, design.layout.kind, (value) => {
-    if (!isLayoutKind(value)) return;
-    update({ design: { layout: { kind: value } } });
-  });
+  const kind = makeSelect(
+    'Calepinage',
+    'ctl-layout-kind',
+    LAYOUT_OPTIONS,
+    design.layout.kind,
+    (value) => {
+      if (!isLayoutKind(value)) return;
+      update({ design: { layout: { kind: value } } });
+    },
+    'Façon d’assembler les carreaux sur la chaussette : grille droite, quinconce (comme des briques), rotations, miroirs…',
+  );
   const tileWidth = makeSliderNumber({
     label: 'Largeur du carreau',
     testId: 'ctl-tile-width',
@@ -440,6 +448,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.layout.tileStitches,
     unit: 'mailles',
+    help: 'Nombre de mailles (aiguilles) que fait un motif sur le tour de jambe.',
     onChange: (value) => {
       const tileStitches = Math.max(1, Math.round(value));
       const next: { tileStitches: number; tileRows?: number } = { tileStitches };
@@ -455,24 +464,31 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.layout.tileRows,
     unit: 'rangs',
+    help: 'Nombre de rangs (lignes tricotées) d’un motif. Un rang = un tour de cylindre.',
     onChange: (value) => {
       keepRatio = false;
       keepBox.input.checked = false;
       update({ design: { layout: { tileRows: Math.max(1, Math.round(value)) } } });
     },
   });
-  const keepBox = makeCheckbox('Garder les proportions', 'ctl-keep-ratio', true, (checked) => {
-    keepRatio = checked;
-    if (!checked) return;
-    const current = getState().design;
-    update({
-      design: {
-        layout: {
-          tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(current.dimensions)),
+  const keepBox = makeCheckbox(
+    'Garder les proportions',
+    'ctl-keep-ratio',
+    true,
+    (checked) => {
+      keepRatio = checked;
+      if (!checked) return;
+      const current = getState().design;
+      update({
+        design: {
+          layout: {
+            tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(current.dimensions)),
+          },
         },
-      },
-    });
-  });
+      });
+    },
+    'Recalcule la hauteur pour qu’un carreau carré reste carré à la jauge actuelle.',
+  );
   const gapStitches = makeSliderNumber({
     label: 'Joint horizontal',
     testId: 'ctl-gap-stitches',
@@ -481,6 +497,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.layout.gapStitches,
     unit: 'mailles',
+    help: 'Bande unie entre deux carreaux sur le tour (0 = carreaux collés).',
     onChange: (value) => update({ design: { layout: { gapStitches: Math.max(0, Math.round(value)) } } }),
   });
   const gapRows = makeSliderNumber({
@@ -491,11 +508,18 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.layout.gapRows,
     unit: 'rangs',
+    help: 'Bande unie entre deux rangées de carreaux.',
     onChange: (value) => update({ design: { layout: { gapRows: Math.max(0, Math.round(value)) } } }),
   });
-  const gapColor = makeColor('Couleur du joint', 'ctl-gap-color', design.layout.gapColor, (value) => {
-    update({ design: { layout: { gapColor: value } } });
-  });
+  const gapColor = makeColor(
+    'Couleur du joint',
+    'ctl-gap-color',
+    design.layout.gapColor,
+    (value) => {
+      update({ design: { layout: { gapColor: value } } });
+    },
+    'Couleur du fil utilisé pour les joints entre carreaux.',
+  );
   const rotation = makeSelect(
     'Rotation',
     'ctl-rotation',
@@ -585,6 +609,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       legWarned = false;
       update({ design: { dimensions: defaultDimensions(value) } });
     },
+    'Préréglage d’aiguilles et de rangs (valeurs fabricant). Change toute la chaussette.',
   );
   const legMessage = document.createElement('p');
   legMessage.className = 'leg-message';
@@ -598,6 +623,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.dimensions.legRows,
     unit: 'rangs',
+    help: 'Hauteur de la jambe (zone motif). On peut raccourcir, pas allonger au-delà du max.',
     onChange: (value) => {
       const currentSize = getState().design.dimensions.size;
       const max = SIZE_PRESETS[currentSize].legRowsMax;
@@ -714,6 +740,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       if (value !== 'majoritaire' && value !== 'moyenne') return;
       update({ design: { quantize: { sampling: value } } });
     },
+    'Comment choisir la couleur d’une maille à partir du carreau : la plus fréquente (net) ou la moyenne (plus doux).',
   );
   const maxColors = makeSliderNumber({
     label: 'Couleurs du motif',
@@ -722,6 +749,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     max: 8,
     step: 1,
     value: design.quantize.maxColors,
+    help: 'Nombre max de fils pour le motif (hors bord-côte, talon, pointe). La machine a une limite.',
     onChange: (value) => update({ design: { quantize: { maxColors: Math.round(value) } } }),
   });
   const paletteMode = makeSelect(
@@ -740,10 +768,17 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       }
       update({ design: { quantize: quantizePatch } });
     },
+    'Automatique : l’outil choisit les fils. Manuelle : vous imposez les couleurs du fabricant.',
   );
-  const despeckle = makeCheckbox('Nettoyer les mailles isolées', 'ctl-despeckle', design.quantize.despeckle, (checked) => {
-    update({ design: { quantize: { despeckle: checked } } });
-  });
+  const despeckle = makeCheckbox(
+    'Nettoyer les mailles isolées',
+    'ctl-despeckle',
+    design.quantize.despeckle,
+    (checked) => {
+      update({ design: { quantize: { despeckle: checked } } });
+    },
+    'Remplace une maille seule entourée d’une autre couleur — évite les points parasites.',
+  );
   const manual = document.createElement('div');
   manual.dataset.testid = 'ctl-palette-manual';
   swatches = document.createElement('div');
@@ -752,9 +787,15 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   pixels.append(sampling.root, maxColors.root, paletteMode.root, despeckle.root, manual, swatches);
 
   const zones = details('Zones', 'section-zones');
-  const cuff = makeCheckbox('Bord-côte', 'ctl-cuff-enabled', design.zones.cuffEnabled, (checked) => {
-    update({ design: { zones: { cuffEnabled: checked } } });
-  });
+  const cuff = makeCheckbox(
+    'Bord-côte',
+    'ctl-cuff-enabled',
+    design.zones.cuffEnabled,
+    (checked) => {
+      update({ design: { zones: { cuffEnabled: checked } } });
+    },
+    'Bande élastique en haut de la chaussette, sans motif jacquard.',
+  );
   const cuffRows = makeSliderNumber({
     label: 'Hauteur du bord-côte',
     testId: 'ctl-cuff-rows',
@@ -793,6 +834,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     (value) => {
       if (value === 'simple' || value === 'fidele') update({ knitFidelity: value });
     },
+    'Fidèle : les frontières de couleur suivent le V du jersey. Simple : pixels droits (plus net pour contrôler le motif).',
   );
   zones.appendChild(fidelity.root);
 
