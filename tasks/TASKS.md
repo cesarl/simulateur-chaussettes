@@ -20,7 +20,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T02 — Carte des zones et composition de la grille (`src/core/grid.ts`, `src/core/color.ts`)
+### [x] T02 — Carte des zones et composition de la grille (`src/core/grid.ts`, `src/core/color.ts`)
 **Objectif** : produire une `StitchGrid` complète, sans motif (tige et pied remplis d'une couleur de fond).
 - `color.ts` : `hexToRgb`, `rgbToHex`, `colorDistance` (distance perceptuelle simple, ex. « redmean » ou Lab).
 - `grid.ts` :
@@ -29,8 +29,8 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
   - `composeGrid(dims, zones, patternColors | null, patternPalette)` → `StitchGrid` : palette = couleurs de zones + palette du motif, sans doublons.
 
 **Critères**
-- [ ] Tests : hauteur totale = somme des zones ; sans bord-côte, la ligne 0 est dans la tige ; talon exactement `needles/2` mailles actives par rang ; couleurs de zones présentes dans la palette ; aucune couleur en double.
-- [ ] Aucune dépendance au DOM ni à Three.js dans `src/core`.
+- [x] Tests : hauteur totale = somme des zones ; sans bord-côte, la ligne 0 est dans la tige ; talon exactement `needles/2` mailles actives par rang ; couleurs de zones présentes dans la palette ; aucune couleur en double.
+- [x] Aucune dépendance au DOM ni à Three.js dans `src/core`.
 
 ---
 

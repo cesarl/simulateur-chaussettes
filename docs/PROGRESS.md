@@ -24,3 +24,10 @@ Fait : Lecture du cahier, de l'architecture, des types et de `config/sizes.json`
 Vérification : Node v22.14.0, npm 10.9.7. `npm run verify` ✅ (3 tests unitaires, 1 test e2e).
 Décisions : aucune
 Reste / risques : le cylindre 3D est provisoire ; les valeurs de tailles restent à confirmer avec le fabricant.
+
+## T02 — Carte des zones et composition de la grille — 2026-09-25 06:38
+Statut : terminée
+Fait : `color.ts` (hex ↔ RVB, distance redmean) et `grid.ts` (`rowRanges`, `buildZoneMap`, `composeGrid`). Talon et pointe sur la moitié arrière `[0, needles/2)`, le reste `Zone.Empty`. Palette = couleurs de zones présentes + palette de motif, sans doublon. Sans échantillon, la tige (et le pied si motif) prend le fond `#f4f1ea`.
+Vérification : `npm run verify` ✅ (11 tests unitaires, 1 e2e).
+Décisions : D03 (couleurs de fond et hors tricot).
+Reste / risques : l'ordre des indices de motif (rang majeur, mailles de motif seulement) doit être respecté par le calepinage en T04.
