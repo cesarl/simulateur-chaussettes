@@ -3,6 +3,7 @@ import { hexToRgb } from '../core/color';
 import type { StitchGrid } from '../core/types';
 import { Zone } from '../core/types';
 import { viewById, type ViewId } from '../render/views';
+import { encodeIndexedBmp } from './exportBmp';
 
 /** Échelle du plat lisible : au moins 8 px de large par maille, hauteur au rapport réel. */
 const READABLE_SCALE = 8;
@@ -25,6 +26,10 @@ export interface ExportRequest {
   size: 1024 | 2048 | 4096;
   background: string;
   transparent: boolean;
+  /** BMP 8 bits indexé (1 px = 1 maille). */
+  bmp: boolean;
+  /** Planche : 4 vues + grille + palette. */
+  board: boolean;
 }
 
 export interface ExportSource {
@@ -298,6 +303,132 @@ async function renderReadable(grid: StitchGrid, aspect: number): Promise<Blob> {
   });
 }
 
+/** Quatre vues de la planche (face, trois-quarts, profil extérieur, dos). */
+export const BOARD_VIEWS: readonly ViewId[] = ['face', 'trois-quarts', 'profil-exterieur', 'dos'];
+
+const BOARD_TILE = 512;
+const BOARD_GAP = 16;
+const BOARD_FLAT_SCALE = 4;
+
+async function renderViewPixels(
+  source: ExportSource,
+  viewId: ViewId,
+  size: number,
+  background: string,
+): Promise<Uint8ClampedArray> {
+  if (!source.mesh) throw new Error('La chaussette n’est pas prête.');
+  const view = viewById(viewId);
+  const direction = new THREE.Vector3(...view.direction).normalize();
+  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+  const box = new THREE.Box3().setFromObject(source.mesh);
+  if (box.isEmpty()) throw new Error('Rien à exporter.');
+  placeCamera(camera, box, direction);
+
+  const target = new THREE.WebGLRenderTarget(size, size, {
+    format: THREE.RGBAFormat,
+    type: THREE.UnsignedByteType,
+    colorSpace: THREE.SRGBColorSpace,
+  });
+  const previousTarget = source.renderer.getRenderTarget();
+  const previousBackground = source.scene.background;
+  const previousColor = source.renderer.getClearColor(new THREE.Color());
+  const previousAlpha = source.renderer.getClearAlpha();
+  try {
+    source.scene.background = new THREE.Color(background);
+    source.renderer.setClearColor(background, 1);
+    source.renderer.setRenderTarget(target);
+    source.renderer.clear();
+    source.renderer.render(source.scene, camera);
+    const pixels = new Uint8Array(size * size * 4);
+    source.renderer.readRenderTargetPixels(target, 0, 0, size, size, pixels);
+    return flipY(pixels, size, size);
+  } finally {
+    source.scene.background = previousBackground;
+    source.renderer.setClearColor(previousColor, previousAlpha);
+    source.renderer.setRenderTarget(previousTarget);
+    target.dispose();
+    source.redraw();
+  }
+}
+
+async function renderBoard(source: ExportSource, background: string): Promise<Blob> {
+  const title = source.modelName || 'modele';
+  const tile = BOARD_TILE;
+  const gap = BOARD_GAP;
+  const flatW = source.grid.width * BOARD_FLAT_SCALE;
+  const flatH = Math.max(1, Math.round(source.grid.height * BOARD_FLAT_SCALE * source.aspect));
+  const legendH = 28 + source.grid.palette.length * 22;
+  const headerH = 48;
+  const viewsW = tile * 2 + gap;
+  const viewsH = tile * 2 + gap;
+  const width = Math.max(viewsW, flatW) + gap * 2;
+  const height = headerH + viewsH + gap + flatH + gap + legendH + gap;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas 2D indisponible.');
+  context.fillStyle = '#f4f1ec';
+  context.fillRect(0, 0, width, height);
+  context.fillStyle = '#1d1d1b';
+  context.font = '600 22px system-ui, sans-serif';
+  context.textBaseline = 'middle';
+  context.fillText(title, gap, headerH / 2);
+
+  const viewPixels: Uint8ClampedArray[] = [];
+  for (const viewId of BOARD_VIEWS) {
+    viewPixels.push(await renderViewPixels(source, viewId, tile, background));
+  }
+  for (let index = 0; index < BOARD_VIEWS.length; index++) {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = gap + col * (tile + gap);
+    const y = headerH + row * (tile + gap);
+    const image = context.createImageData(tile, tile);
+    image.data.set(viewPixels[index] ?? new Uint8ClampedArray(tile * tile * 4));
+    context.putImageData(image, x, y);
+    context.fillStyle = '#1d1d1b';
+    context.font = '13px system-ui, sans-serif';
+    context.textBaseline = 'top';
+    const label = viewById(BOARD_VIEWS[index]!).label;
+    context.fillText(label, x + 8, y + 8);
+  }
+
+  const flatY = headerH + viewsH + gap;
+  const flatX = gap;
+  const flatPixels = exactFlatPixels(source.grid);
+  const flatCanvas = document.createElement('canvas');
+  flatCanvas.width = source.grid.width;
+  flatCanvas.height = source.grid.height;
+  const flatCtx = flatCanvas.getContext('2d');
+  if (!flatCtx) throw new Error('Canvas 2D indisponible.');
+  const flatImage = flatCtx.createImageData(source.grid.width, source.grid.height);
+  flatImage.data.set(flatPixels);
+  flatCtx.putImageData(flatImage, 0, 0);
+  context.imageSmoothingEnabled = false;
+  context.drawImage(flatCanvas, flatX, flatY, flatW, flatH);
+
+  let legendY = flatY + flatH + gap;
+  context.font = '14px system-ui, sans-serif';
+  context.textBaseline = 'middle';
+  const counts = new Array<number>(source.grid.palette.length).fill(0);
+  for (const index of source.grid.colorIndex) counts[index] = (counts[index] ?? 0) + 1;
+  source.grid.palette.forEach((color, index) => {
+    context.fillStyle = color;
+    context.fillRect(gap, legendY, 16, 16);
+    context.fillStyle = '#1d1d1b';
+    context.fillText(`${color} · ${counts[index] ?? 0} mailles`, gap + 24, legendY + 8);
+    legendY += 22;
+  });
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Encodage PNG impossible.'));
+    }, 'image/png');
+  });
+}
+
 interface Job {
   filename: string;
   render: () => Promise<Blob>;
@@ -321,6 +452,23 @@ export async function runExports(source: ExportSource, request: ExportRequest): 
     jobs.push({
       filename: exportFileName(source.modelName, source.sizeId, 'plat-lisible'),
       render: () => renderReadable(source.grid, source.aspect),
+    });
+  }
+  if (request.bmp) {
+    jobs.push({
+      filename: exportFileName(source.modelName, source.sizeId, 'grille').replace(/\.png$/, '.bmp'),
+      render: async () => {
+        const encoded = encodeIndexedBmp(source.grid);
+        const copy = new Uint8Array(encoded.byteLength);
+        copy.set(encoded);
+        return new Blob([copy.buffer], { type: 'image/bmp' });
+      },
+    });
+  }
+  if (request.board) {
+    jobs.push({
+      filename: exportFileName(source.modelName, source.sizeId, 'planche'),
+      render: () => renderBoard(source, request.transparent ? '#eeeae4' : request.background),
     });
   }
   if (jobs.length === 0) throw new Error('Cochez au moins une vue.');

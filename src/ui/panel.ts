@@ -305,6 +305,8 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
   }
   const exact = makeCheckbox('Plat exact', 'export-plat-exact', false, () => {});
   const readable = makeCheckbox('Plat lisible', 'export-plat-lisible', false, () => {});
+  const bmp = makeCheckbox('BMP indexé (1 px = 1 maille)', 'export-bmp', false, () => {});
+  const board = makeCheckbox('Planche (4 vues + grille)', 'export-board', false, () => {});
   const size = makeSelect(
     'Taille des vues 3D',
     'export-size',
@@ -343,6 +345,8 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
         size: sizes[pixelSize],
         background: background.input.value,
         transparent: transparent.input.checked,
+        bmp: bmp.input.checked,
+        board: board.input.checked,
       })
       .then(() => {
         status.textContent = 'Export terminé.';
@@ -390,6 +394,8 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
   section.append(
     exact.root,
     readable.root,
+    bmp.root,
+    board.root,
     size.root,
     background.root,
     transparent.root,
