@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { createStudio, setupRenderer, type Studio } from './sock3d/studio';
 
 export interface SceneHandle {
   renderer: THREE.WebGLRenderer;
@@ -7,31 +8,28 @@ export interface SceneHandle {
   camera: THREE.PerspectiveCamera;
   controls: OrbitControls;
   root: THREE.Group;
+  studio: Studio;
   requestRender: () => void;
   dispose: () => void;
 }
 
-/** Scène 3D minimale : fond neutre, éclairage doux, caméra orbitale. Rendu à la demande. */
+/** Scène 3D studio : fond neutre, RoomEnvironment, ombres, caméra orbitale. Rendu à la demande. */
 export function createScene(container: HTMLElement): SceneHandle {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    preserveDrawingBuffer: true,
+    alpha: true,
+  });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  setupRenderer(renderer);
   renderer.domElement.dataset.testid = 'sock-canvas';
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#eeeae4');
+  const studio = createStudio(renderer, scene);
 
-  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
-  camera.position.set(0, 0.1, 1.4);
-
-  scene.add(new THREE.HemisphereLight('#ffffff', '#c8c0b4', 1.35));
-  const key = new THREE.DirectionalLight('#ffffff', 1.7);
-  key.position.set(1.4, 2.2, 1.6);
-  scene.add(key);
-  const fill = new THREE.DirectionalLight('#fff4ea', 0.7);
-  fill.position.set(-1.6, 0.6, 1.2);
-  scene.add(fill);
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 10);
+  camera.position.set(0.4, 0.25, 0.7);
 
   const root = new THREE.Group();
   scene.add(root);
@@ -68,10 +66,12 @@ export function createScene(container: HTMLElement): SceneHandle {
     camera,
     controls,
     root,
+    studio,
     requestRender,
     dispose: () => {
       ro.disconnect();
       controls.dispose();
+      studio.dispose();
       renderer.dispose();
     },
   };

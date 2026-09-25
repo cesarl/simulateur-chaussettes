@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
 import { samplePattern, seamMismatch } from './core/layout';
@@ -8,9 +7,9 @@ import { runExports } from './io/exportPng';
 import { loadLastProject, parseProject, saveLastProject, serializeProject } from './io/project';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
-import { createKnitMaterial, type KnitMaterial } from './render/knitTexture';
-import { createSockMesh } from './render/sockGeometry';
-import { viewById, type ViewId } from './render/views';
+import { createSockObject, type SockObject } from './render/sock3d/sockObject';
+import type { SockShapeInput } from './render/sock3d/sockShape';
+import { frameView, type ViewName } from './render/sock3d/studio';
 import { getState, subscribe, update, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
@@ -29,40 +28,42 @@ let patternPalette: string[] = [];
 let patternCounts: number[] = [];
 let computeId = 0;
 let lastComputeMs = 0;
-let geometryBuilds = 0;
 let textureUpdates = 0;
 let surfaceKey = '';
-let mesh: THREE.Mesh | null = null;
-let knit: KnitMaterial | null = null;
+let sock: SockObject | null = null;
 const warnings: string[] = [];
 
 function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings): string {
   return [
+    dims.size,
     dims.needles,
     dims.cuffRows,
     dims.legRows,
     dims.heelRows,
     dims.footRows,
     dims.toeRows,
-    dims.stitchesPerCm,
     dims.rowsPerCm,
     zones.cuffEnabled ? 1 : 0,
   ].join('|');
 }
 
-function frameCamera(direction: THREE.Vector3 = new THREE.Vector3(0.78, 0.22, 0.58)): void {
-  if (!mesh) return;
-  const box = new THREE.Box3().setFromObject(mesh);
-  const center = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  const radius = Math.max(size.x, size.y, size.z) * 0.5;
-  const dir = direction.clone().normalize();
-  const distance = (radius / Math.sin((handle.camera.fov * Math.PI) / 360)) * 1.2;
+function shapeFromDesign(dims: SockDimensions, zones: ZoneSettings): SockShapeInput {
+  return {
+    needles: dims.needles,
+    cuffRows: zones.cuffEnabled ? dims.cuffRows : 0,
+    legRows: dims.legRows,
+    heelRows: dims.heelRows,
+    footRows: dims.footRows,
+    toeRows: dims.toeRows,
+    rowsPerCm: dims.rowsPerCm,
+    size: dims.size,
+  };
+}
+
+function frameCamera(view: ViewName = 'trois-quarts'): void {
+  if (!sock) return;
+  const center = frameView(handle.camera, sock.mesh, view);
   handle.controls.target.copy(center);
-  handle.camera.position.copy(center).addScaledVector(dir, distance);
-  handle.camera.near = Math.max(distance / 200, 0.001);
-  handle.camera.far = distance * 30;
-  handle.camera.updateProjectionMatrix();
   handle.controls.update();
   handle.requestRender();
 }
@@ -73,32 +74,32 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
 }
 
-function cuffRowsOf(dims: SockDimensions, zones: ZoneSettings): number {
-  return zones.cuffEnabled ? dims.cuffRows : 0;
-}
-
 function syncMesh(next: StitchGrid): void {
   const { design, knitFidelity } = getState();
   const key = surfaceKeyOf(design.dimensions, design.zones);
-  const cuffRows = cuffRowsOf(design.dimensions, design.zones);
-  if (!mesh || !knit || key !== surfaceKey) {
-    if (mesh) {
-      handle.root.remove(mesh);
-      mesh.geometry.dispose();
-    }
-    knit?.dispose();
-    knit = createKnitMaterial(next, handle.renderer);
-    knit.setLayout(design.dimensions.needles, next.height, cuffRows);
-    knit.setFidelity(knitFidelity);
-    mesh = createSockMesh(design.dimensions, design.zones, knit.material);
-    handle.root.add(mesh);
+  const shape = shapeFromDesign(design.dimensions, design.zones);
+  const zones = {
+    heel: design.zones.heelColor,
+    toe: design.zones.toeColor,
+    rim: design.zones.cuffEnabled ? design.zones.cuffColor : undefined,
+  };
+  const chevron = knitFidelity === 'fidele' ? 0.9 : 0;
+
+  if (!sock) {
+    sock = createSockObject(shape, next, zones);
+    sock.setChevron(chevron);
+    handle.root.add(sock.mesh);
     surfaceKey = key;
-    geometryBuilds += 1;
+    frameCamera();
+  } else if (key !== surfaceKey) {
+    sock.setShape(shape);
+    sock.setColors(next, zones);
+    sock.setChevron(chevron);
+    surfaceKey = key;
     frameCamera();
   } else {
-    knit.updateGrid(next);
-    knit.setLayout(design.dimensions.needles, next.height, cuffRows);
-    knit.setFidelity(knitFidelity);
+    sock.setColors(next, zones);
+    sock.setChevron(chevron);
   }
   textureUpdates += 1;
   handle.requestRender();
@@ -145,7 +146,7 @@ function publish(): void {
     grid: { width: grid.width, height: grid.height, palette: [...grid.palette] },
     gridHash: gridFingerprint(grid),
     patternPalette: [...patternPalette],
-    geometryBuilds,
+    geometryBuilds: sock?.geometryBuilds ?? 0,
     textureUpdates,
     knitFidelity: getState().knitFidelity,
     cameraPosition: {
@@ -236,7 +237,7 @@ async function boot(): Promise<void> {
         {
           renderer: handle.renderer,
           scene: handle.scene,
-          mesh,
+          mesh: sock?.mesh ?? null,
           grid,
           aspect: stitchAspect(design.dimensions),
           modelName: design.name,
@@ -283,27 +284,27 @@ async function boot(): Promise<void> {
     };
   });
 
+  const viewKeyToName: Record<string, ViewName> = {
+    f: 'face',
+    t: 'trois-quarts',
+    e: 'profil-exterieur',
+    d: 'dos',
+    i: 'profil-interieur',
+  };
+
   window.addEventListener('keydown', (event) => {
     if (isTypingTarget(event.target)) return;
     const key = event.key.toLowerCase();
     if (key === 'r') {
       event.preventDefault();
-      frameCamera();
+      frameCamera('trois-quarts');
       publish();
       return;
     }
-    const byKey: Record<string, ViewId> = {
-      f: 'face',
-      t: 'trois-quarts',
-      e: 'profil-exterieur',
-      d: 'dos',
-      i: 'profil-interieur',
-    };
-    const viewId = byKey[key];
-    if (!viewId) return;
+    const viewName = viewKeyToName[key];
+    if (!viewName) return;
     event.preventDefault();
-    const view = viewById(viewId);
-    frameCamera(new THREE.Vector3(...view.direction));
+    frameCamera(viewName);
     publish();
   });
 }

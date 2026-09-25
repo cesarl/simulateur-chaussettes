@@ -107,8 +107,9 @@ Options : toujours 256 entrées de palette / seulement les couleurs utilisées ;
 Choix : palette = couleurs de la grille (`biClrUsed` = longueur), lignes bas → haut, padding 4 octets. Planche = face, trois-quarts, profil extérieur, dos (512²) + grille agrandie ×4 + légende, titre = nom du modèle.
 Conséquence : à valider avec le fabricant pour le BMP. Fichiers `src/io/exportBmp.ts` et `renderBoard` dans `exportPng.ts`.
 
-## D17 — Raccourcis et bulles d’aide (T16)
-Contexte : le cahier demande des raccourcis et des aides sans lister toutes les touches ni le format des bulles.
-Options : menu modal / `title` natif + bouton « ? ».
-Choix : touches R (cadrage libre), F/T/E/D/I (vues d’export). Aide = bouton « ? » avec `title`/`aria-label` sur les réglages principaux. Sous 1280 px, panneau sous la vue.
-Conséquence : les raccourcis sont ignorés quand un champ a le focus.
+## D18 — Module sock3d sous `src/render/` (T19)
+Contexte : la forme / atlas / cartes de maille du module de référence sont purs (pas de Three.js ni DOM), mais propres au rendu 3D anatomique, pas à la logique métier de grille.
+Options : les placer dans `src/core/` / les laisser dans `reference/` et importer depuis là / les copier dans `src/render/sock3d/`.
+Choix : copie dans `src/render/sock3d/` (forme, atlas, knitMaps, sockObject, studio). `reference/sock3d/` reste la source de vérité visuelle + démo. `setChevron` ajouté sur `SockObject` pour brancher l’option « rendu simple / fidèle » déjà présente (0 vs 0,9). Anciens `sockGeometry.ts` et `knitTexture.ts` supprimés.
+Conséquence : `src/core/` reste sans code 3D. Le studio (NeutralToneMapping, RoomEnvironment, ombres) remplace l’éclairage provisoire.
+

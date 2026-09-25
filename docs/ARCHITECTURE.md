@@ -25,12 +25,12 @@
                             │
             ┌───────────────┼──────────────────────┐
             ▼               ▼                      ▼
-  render/knitTexture.ts   ui/flatView.ts        io/export*.ts
-  (DataTexture exacte     (canvas 2D, zoom,     (PNG 1px=1maille,
-   + carte de mailles)     repères)              PNG lisible, PNG 3D)
+  render/sock3d/          ui/flatView.ts        io/export*.ts
+  (forme anatomique,      (canvas 2D, zoom,     (PNG 1px=1maille,
+   atlas, maille,          repères)              PNG lisible, PNG 3D)
+   MeshPhysical + studio)
             ▼
-  render/sockGeometry.ts  maillage procédural, 1 quad par maille, UV = (col/aiguilles, rang/rangs)
-  render/scene.ts         scène, lumière, caméra, captures
+  render/scene.ts         scène studio (environnement, ombres, tone mapping Neutral)
 ```
 
 Règle d'or : **tout ce qui est dans `src/core/` est pur** (entrées → sorties, pas de DOM, pas de Three.js, pas d'aléatoire non initialisé). C'est ce qui permet de le tester sans navigateur.
@@ -52,9 +52,13 @@ src/
     color.ts             utilitaires couleur (hex ↔ rgb, distance)
   render/                Three.js
     scene.ts
-    sockGeometry.ts
-    knitTexture.ts
-    views.ts             angles de caméra prédéfinis pour les exports
+    sock3d/              module de chaussette anatomique (réf. `reference/sock3d/`)
+      sockShape.ts       forme pure
+      sockAtlas.ts       atlas couleur pur
+      knitMaps.ts        relief jersey pur
+      sockObject.ts      Mesh + MeshPhysicalMaterial
+      studio.ts          lumière, cadrage, capture
+    views.ts             angles de caméra prédéfinis pour les exports (T20 → studio)
   ui/                    DOM
     panel.ts             construction du panneau
     controls.ts          petits composants (curseur+champ, sélecteur couleur, liste de carreaux)
@@ -82,19 +86,8 @@ La colonne 0 est sur le **côté intérieur** de la jambe. Colonnes `[0, needles
 ### Rapport de maille
 `stitchAspect = stitchesPerCm / rowsPerCm` (≈ 0,75). Un carreau carré de `W` mailles de large fait donc `round(W / aspect)` rangs de haut. La vue à plat et la 3D dessinent les mailles à ce rapport.
 
-### Maillage 3D procédural (pas de modèle importé)
-Le maillage est généré à partir des dimensions : une grille de `(aiguilles+1) × (rangs+1)` sommets, dont la position est donnée par une fonction `position(col, rang)` qui suit la forme d'une chaussette portée :
-- tige verticale (légère forme de mollet), axe qui se courbe au talon, pied horizontal, pointe arrondie ;
-- **talon** : pendant les rangs du talon, seules les aiguilles de la moitié arrière tricotent. Côté avant (cou-de-pied), ces rangs ont une hauteur nulle (sommets confondus) ; côté arrière, ils forment la poche du talon. C'est exactement la géométrie d'une vraie chaussette : l'avant du coude est court, l'arrière est long. Même logique pour la pointe ;
-- UV = `(col / aiguilles, rang / rangsTotal)` : la texture couleur est la grille elle-même, sans conversion.
-
-Ainsi une maille de la grille correspond exactement à un quad du maillage, et le motif est forcément bien placé.
-
-### Texture de mailles
-- `map` : `DataTexture` de la grille (aiguilles × rangs), `NearestFilter`, sRGB.
-- Détail de maille : petites textures générées par programme (un « V » de jersey : carte de normales + occlusion), répétées `(aiguilles, rangs)` fois via `texture.repeat` (Three.js gère une transformation par texture).
-- Bord-côte : autre motif de relief (côtes 1×1 ou 2×2 verticales).
-- Amélioration (T14) : shader qui déforme la frontière entre deux mailles en chevron pour imiter l'emboîtement réel des V.
+### Maillage 3D anatomique (module `sock3d`)
+Le maillage n’est plus « 1 quad par maille » : la géométrie suit une forme portée (mollet, cheville, poche du talon, semelle à plat, pointe). La correspondance motif ↔ surface passe par `fabricAt` + atlas (`sockAtlas.ts`) : chaque texel d’atlas lit la maille de la `StitchGrid`. Le relief jersey et le chevron sont dans `sockObject.ts`. Référence visuelle : `reference/sock3d/captures/`.
 
 ### Performances
 - Budget : recalcul complet < 300 ms pour 200 aiguilles × 600 rangs ; rendu 3D fluide (60 i/s) pendant la rotation.

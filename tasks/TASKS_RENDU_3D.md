@@ -8,7 +8,7 @@ Même boucle de travail que d'habitude (`.cursor/rules/10-workflow.mdc`) : tests
 
 ---
 
-### [ ] T19 — Intégrer la forme et le matériau de référence
+### [x] T19 — Intégrer la forme et le matériau de référence
 - Copier `reference/sock3d/{sockShape,sockAtlas,knitMaps,sockObject,studio}.ts` dans `src/render/sock3d/`. `sockShape`, `sockAtlas` et `knitMaps` restent purs (pas de Three.js, pas de DOM) : noter dans `docs/DECISIONS.md` qu'ils vivent sous `src/render/` car ils sont propres à la 3D.
 - Brancher sur l'état de l'application : dimensions (`SockDimensions`, bord-côte absent ⇒ `cuffRows: 0`), grille (`StitchGrid`), couleurs de talon et de pointe (`ZoneSettings`). Adapter les types si l'application les a fait évoluer, sans changer le comportement du module.
 - Remplacer l'ancienne géométrie et l'ancien matériau (supprimer les fichiers devenus inutiles, et leurs tests). La géométrie n'est reconstruite que si les dimensions changent ; un changement de couleur ou de motif appelle seulement `setColors` (conserver le compteur `geometryBuilds` de `window.__SIM__`).
@@ -17,12 +17,12 @@ Même boucle de travail que d'habitude (`.cursor/rules/10-workflow.mdc`) : tests
 - Renderer : `preserveDrawingBuffer: true`, `alpha: true`, et `setupRenderer`/`createStudio` de `studio.ts` (tone mapping Neutral, ombres, environnement). Retirer l'ancien éclairage.
 
 **Critères**
-- [ ] `npm run verify` vert, dont les 9 tests de `sock3d.test.ts`.
-- [ ] Aucune trace de l'ancienne chaussette (plus de cylindre ni de pavé dans le code).
-- [ ] Changer une couleur de talon ne reconstruit pas la géométrie (e2e via `geometryBuilds`).
-- [ ] Changer taille / hauteur de tige / bord-côte reconstruit la géométrie, sans erreur console.
+- [x] `npm run verify` vert, dont les 9 tests de `sock3d.test.ts`.
+- [x] Aucune trace de l'ancienne chaussette (plus de cylindre ni de pavé dans le code).
+- [x] Changer une couleur de talon ne reconstruit pas la géométrie (e2e via `geometryBuilds`).
+- [x] Changer taille / hauteur de tige / bord-côte reconstruit la géométrie, sans erreur console.
 
-### [ ] T20 — Vues et exports avec le studio
+### [~] T20 — Vues et exports avec le studio
 - Les boutons de vue et les exports PNG utilisent `frameView` et `capturePng` de `studio.ts`. Vues proposées : trois-quarts, profil extérieur, face, dos, profil intérieur, trois-quarts dos (`dessous` reste réservée aux contrôles, non proposée à l'utilisateur).
 - Fond : couleur réglable (défaut `#ecebe8`) ou transparent.
 - La caméra interactive démarre en trois-quarts, cible le centre de la chaussette, zoom borné (on ne traverse pas la chaussette, on ne la perd pas de vue).

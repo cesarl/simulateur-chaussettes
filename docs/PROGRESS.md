@@ -151,15 +151,22 @@ Vérification : non applicable.
 Décisions : aucune.
 Reste / risques : dès que César confirme les tailles, reprendre T18 (tests + captures).
 
+## T19 — Intégrer forme et matériau sock3d — 2026-09-25 08:49
+Statut : terminée
+Fait : Copie de `reference/sock3d/` vers `src/render/sock3d/`. Scène branchée sur `createStudio` (NeutralToneMapping, ombres, RoomEnvironment). `createSockObject` + `setShape`/`setColors`/`setChevron` remplacent `sockGeometry`/`knitTexture` (supprimés). Démo `sock-demo.html` en 2ᵉ entrée Vite. Tests unitaires sock3d déplacés (imports seuls).
+Vérification : `npm run verify` ✅ (48 unitaires dont 9 sock3d, 19 e2e). Contrôle visuel `visuel-t06-homme.png` : chaussette anatomique (mollet, talon en poche, pied, pointe), bord-côte marine côtelé, talon terracotta, pointe noire, ombre de contact, plus de cylindre/pavé. Comparaison avec `reference/sock3d/captures/homme-etoile-trois-quarts.png` : même silhouette et studio.
+Décisions : D18.
+Reste / risques : exports 3D encore via l’ancien cadrage `views.ts` (T20).
+
 ## Point pour César
 
-Ce qui marche : import PNG/SVG et exemple, calepinage, réduction de couleurs, chaussette 3D texturée (simple/fidèle), vue à plat, exports PNG (5 angles, plat exact, plat lisible), BMP indexé, planche, projet JSON + IndexedDB, contrôles de fabrication, raccourcis clavier, CI documentée.
+Ce qui marche : import PNG/SVG et exemple, calepinage, réduction de couleurs, **chaussette 3D anatomique** (module sock3d), vue à plat, exports PNG/BMP/planche, projet JSON + IndexedDB, contrôles de fabrication, raccourcis, CI.
 
 Tester en 3 étapes :
-1. `npm install` puis `npm run dev`, ouvrir l’adresse affichée.
-2. « Charger un exemple », basculer Rendu fidèle / simple, exporter Face + BMP + Planche.
-3. Touches R (cadrage) et F (face) hors d’un champ de saisie.
+1. `npm install` puis `npm run dev`, ouvrir l’adresse affichée (optionnel : `/sock-demo.html` pour la démo référence).
+2. « Charger un exemple », basculer Rendu fidèle / simple, tourner la vue — la forme doit être une chaussette portée, pas un tube.
+3. Touches R (cadrage ¾) et F/T/E/D/I.
 
-Décisions à relire : D03 à D17 dans `docs/DECISIONS.md`.
+Décisions à relire : D03 à D18 dans `docs/DECISIONS.md`.
 
-Blocages : T18 en attente de `config/sizes.json` confirmé par le fabricant (ne pas modifier ce fichier tant que César n’a pas validé).
+Blocages : T18 en attente de `config/sizes.json` confirmé par le fabricant.
