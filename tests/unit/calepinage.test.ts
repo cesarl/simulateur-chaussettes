@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import {
+  seamColumn, tileWidthForCount, tileRowsFor,
   cellAtStitch, DEFAULT_CALEPINAGE, fittingTileWidths, normalizePresets, planPlacements, raccord, tileUV,
   type CalepinageSpec, type Placement, type TileGeometry,
-} from '../../src/core/calepinage';
+} from '../../reference/calepinage/calepinage';
 
-const raw = JSON.parse(fs.readFileSync(new URL('../../config/calepinages.json', import.meta.url), 'utf8'));
+const raw = JSON.parse(fs.readFileSync(new URL('../../reference/calepinage/calepinages.json', import.meta.url), 'utf8'));
 const { presets, warnings } = normalizePresets(raw);
 const byId = (id: string) => presets.find((p) => p.id === id)!;
 const geo: TileGeometry = { needles: 168, tileStitches: 28, tileRows: 37, gapStitches: 0, gapRows: 0, offsetStitches: 0, offsetRows: 0, appareil: 'droit' };
@@ -113,5 +114,28 @@ describe('géométrie', () => {
     for (const x of w) expect(raccord({ ...geo, tileStitches: x }, s, 4).seamless).toBe(true);
     const pre = raccord(geo, spec({ source: 'prereglage' }), 8, byId('ramo'));
     expect(pre.seamless).toBe(false); // 6 cases, bloc de 4
+  });
+});
+
+describe('raccord réglable', () => {
+  it('« N carreaux sur le tour » tombe toujours juste, même avec une largeur fractionnaire', () => {
+    const w = tileWidthForCount(168, 5); // 33,6 mailles
+    expect(w).toBeCloseTo(33.6, 6);
+    const r = raccord({ ...geo, tileStitches: w, tileRows: tileRowsFor(w, 7.5, 10) }, spec({}), 5);
+    expect(r.tilesAround).toBe(5);
+    expect(r.seamless).toBe(true);
+  });
+  it('la couture se place au dos, devant, à l’intérieur ou à l’extérieur', () => {
+    expect(seamColumn('interieur', 168)).toBe(0);
+    expect(seamColumn('dos', 168)).toBe(42);
+    expect(seamColumn('exterieur', 168)).toBe(84);
+    expect(seamColumn('devant', 168)).toBe(126);
+    // un carreau commence exactement sur la colonne de couture
+    const g = { ...geo, tileStitches: 25, offsetStitches: seamColumn('dos', 168) };
+    expect(cellAtStitch(g, 42.01, 0).u).toBeLessThan(0.01);
+    expect(cellAtStitch(g, 41.99, 0).cx).toBe(-1);
+  });
+  it('un carreau réellement carré garde ses proportions selon la jauge', () => {
+    expect(tileRowsFor(28, 7.5, 10)).toBeCloseTo(37.33, 2);
   });
 });

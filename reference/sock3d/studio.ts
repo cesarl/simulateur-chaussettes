@@ -118,9 +118,11 @@ export async function capturePng(
   size = 2048,
   background: string | null = '#ecebe8',
   mirror = false,
+  beforeRender?: (camera: THREE.PerspectiveCamera, target: THREE.Vector3) => void,
 ): Promise<Blob> {
   const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 10);
-  frameView(cam, object, view, 0.92, mirror);
+  const target = frameView(cam, object, view, 0.92, mirror);
+  beforeRender?.(cam, target);
   const prevBg = scene.background;
   const prevSize = renderer.getSize(new THREE.Vector2());
   const prevRatio = renderer.getPixelRatio();

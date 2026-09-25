@@ -10,6 +10,7 @@ import type { GridLike } from './sockAtlas';
 import type { SockShapeInput } from './sockShape';
 import { DEFAULT_CALEPINAGE, GENERATED_PRESETS, normalizePresets, type CalepinageSpec } from '../calepinage/calepinage';
 import { samplePattern } from '../calepinage/sampler';
+import { buildTileSurface, createDecor, DEFAULT_DECOR, type DecorHandle, type DecorMode } from '../decor/tileSurface';
 import rawPresets from '../calepinage/calepinages.json';
 import { paletteOptions, recolorSvg, suggestZoneColors, visibleCollections, yarnColors, zoneHex, type Catalogue, type Collection, type NuancierColor } from '../collections/collections';
 
@@ -105,7 +106,7 @@ async function makeCollectionGrid(c: Collection, paletteId: string, choice: stri
     for (let col = 0; col < W; col++) colorIndex[r * W + col] = zone === 'c' ? n : zone === 'h' ? n + 1 : zone === 't' ? n + 2 : nearest((pRow * W + col) * 3);
     if (zone === 'l' || zone === 'f') pRow++;
   }
-  return { grid: { width: W, height: H, palette, colorIndex } as GridLike, heel: zc.heel, toe: zc.toe };
+  return { grid: { width: W, height: H, palette, colorIndex } as GridLike, heel: zc.heel, toe: zc.toe, tiles, spec, preset };
 }
 
 const { presets: PRESETS } = normalizePresets(rawPresets);
@@ -217,12 +218,35 @@ function makeGrid(tile: ImageData, size: keyof typeof SIZES, cuff: boolean, pal:
   return { width: W, height: H, palette, colorIndex };
 }
 
+let decor: DecorHandle | null = null;
+let studioRef: ReturnType<typeof createStudio> | null = null;
+function imageDataToCanvas(d: ImageData): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = d.width;
+  c.height = d.height;
+  c.getContext('2d')!.putImageData(d, 0, 0);
+  return c;
+}
+function setDecor(mode: DecorMode, tiles: ImageData[], spec: CalepinageSpec, preset: import('../calepinage/calepinage').Preset | null) {
+  if (decor) {
+    scene.remove(decor.group);
+    decor.dispose();
+    decor = null;
+  }
+  if (studioRef) studioRef.ground.visible = mode === 'aucun' || mode === 'mur';
+  if (mode === 'aucun' || !tiles.length) return;
+  const o = { ...DEFAULT_DECOR, mode };
+  const maps = buildTileSurface({ tiles: tiles.map(imageDataToCanvas), spec, preset, cols: o.tilesPerSide, rows: o.tilesPerSide, options: o });
+  decor = createDecor(maps, o, new THREE.Vector3(0, 0, 0.02), renderer);
+  scene.add(decor.group);
+}
+
 const host = document.getElementById('v')!;
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 host.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-createStudio(renderer, scene);
+studioRef = createStudio(renderer, scene);
 const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 10);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -247,10 +271,16 @@ async function rebuild() {
   let grid: GridLike;
   const collId = sel('coll').value;
   const coll = CATALOGUE?.collections.find((c) => c.id === collId);
+  let decorTiles: ImageData[] = [];
+  let decorSpec: CalepinageSpec = { ...DEFAULT_CALEPINAGE, genere: { ordre: 'suite', pasRangee: 1, rotation: 'aleatoire-90', rotationFixe: 0 } };
+  let decorPreset: import('../calepinage/calepinage').Preset | null = null;
   if (coll) {
     const res = await makeCollectionGrid(coll, sel('pal').value || 'defaut', choice, size, cuff);
     grid = res.grid;
     pal = { tile: [], cuff: '', heel: res.heel, toe: res.toe };
+    decorTiles = res.tiles;
+    decorSpec = res.spec;
+    decorPreset = res.preset;
   } else if (choice) {
     pal = MULTI_PAL;
     const tiles = await Promise.all(ALL_TILES.map((f) => loadTile(`/fixtures/${f}`)));
@@ -267,6 +297,8 @@ async function rebuild() {
   document.getElementById('heelDv')!.textContent = String(heelDepth);
   document.getElementById('heelSv')!.textContent = String(Math.round(heelSpread * 100));
   const shape: SockShapeInput = { ...d, cuffRows: cuff ? d.cuffRows : 0, rowsPerCm: 10, size, heelHeight, heelDepth, heelSpread };
+  if (!decorTiles.length) decorTiles = await Promise.all(ALL_TILES.map((f) => loadTile(`/fixtures/${f}`)));
+  setDecor(sel('decor').value as DecorMode, decorTiles, decorSpec, decorPreset);
   if (sock) { scene.remove(sock.mesh); sock.dispose(); }
   sock = createSockObject(shape, grid, { heel: pal.heel, toe: pal.toe });
   scene.add(sock.mesh);
@@ -283,15 +315,16 @@ document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
     controls.update();
   }),
 );
-['size', 'tile', 'cuff', 'heelH', 'heelD', 'heelS', 'calep', 'pal'].forEach((id) => sel(id).addEventListener('change', rebuild));
+['size', 'tile', 'cuff', 'heelH', 'heelD', 'heelS', 'calep', 'pal', 'decor'].forEach((id) => sel(id).addEventListener('change', rebuild));
 
 renderer.setAnimationLoop(() => {
   controls.update();
+  decor?.faceCamera(camera, controls.target);
   renderer.render(scene, camera);
 });
 
 declare global {
-  interface Window { __DEMO__?: { ready: boolean; capture: (v: ViewName, size: number) => Promise<string>; set: (o: { coll?: string; pal?: string; calep?: string; size?: string; tile?: string; cuff?: boolean; heelH?: number; heelD?: number; heelS?: number }) => Promise<void> } }
+  interface Window { __DEMO__?: { ready: boolean; capture: (v: ViewName, size: number) => Promise<string>; set: (o: { decor?: string; coll?: string; pal?: string; calep?: string; size?: string; tile?: string; cuff?: boolean; heelH?: number; heelD?: number; heelS?: number }) => Promise<void> } }
 }
 await loadCatalogue();
 sel('coll').addEventListener('change', () => {
@@ -305,10 +338,11 @@ await rebuild();
 window.__DEMO__ = {
   ready: true,
   async capture(view, size) {
-    const blob = await capturePng(renderer, scene, sock!.mesh, view, size);
+    const blob = await capturePng(renderer, scene, sock!.mesh, view, size, '#ecebe8', false, (cam, target) => decor?.faceCamera(cam, target));
     return await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(blob); });
   },
   async set(o) {
+    if (o.decor !== undefined) sel('decor').value = o.decor;
     if (o.coll !== undefined) {
       sel('coll').value = o.coll;
       const c = CATALOGUE?.collections.find((x) => x.id === o.coll);
