@@ -3,7 +3,8 @@ import { composeGrid } from './core/grid';
 import { defaultDimensions } from './core/sizes';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
-import { createSockMesh, updateSockColors } from './render/sockGeometry';
+import { createKnitMaterial, type KnitMaterial } from './render/knitTexture';
+import { createSockMesh } from './render/sockGeometry';
 import { getState, subscribe, update, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
@@ -19,8 +20,10 @@ let grid: StitchGrid = composeGrid(getState().design.dimensions, getState().desi
 let computeId = 0;
 let lastComputeMs = 0;
 let geometryBuilds = 0;
+let textureUpdates = 0;
 let surfaceKey = '';
 let mesh: THREE.Mesh | null = null;
+let knit: KnitMaterial | null = null;
 const warnings: string[] = [];
 
 function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings): string {
@@ -52,25 +55,32 @@ function frameCamera(): void {
   handle.controls.update();
 }
 
+function cuffRowsOf(dims: SockDimensions, zones: ZoneSettings): number {
+  return zones.cuffEnabled ? dims.cuffRows : 0;
+}
+
 function syncMesh(next: StitchGrid): void {
   const { design } = getState();
   const key = surfaceKeyOf(design.dimensions, design.zones);
-  if (!mesh || key !== surfaceKey) {
+  const cuffRows = cuffRowsOf(design.dimensions, design.zones);
+  if (!mesh || !knit || key !== surfaceKey) {
     if (mesh) {
       handle.root.remove(mesh);
       mesh.geometry.dispose();
-      const material = mesh.material;
-      if (Array.isArray(material)) material.forEach((entry) => entry.dispose());
-      else material.dispose();
     }
-    mesh = createSockMesh(design.dimensions, design.zones, next);
+    knit?.dispose();
+    knit = createKnitMaterial(next, handle.renderer);
+    knit.setLayout(design.dimensions.needles, next.height, cuffRows);
+    mesh = createSockMesh(design.dimensions, design.zones, knit.material);
     handle.root.add(mesh);
     surfaceKey = key;
     geometryBuilds += 1;
     frameCamera();
   } else {
-    updateSockColors(mesh, next, design.dimensions.needles, next.height);
+    knit.updateGrid(next);
+    knit.setLayout(design.dimensions.needles, next.height, cuffRows);
   }
+  textureUpdates += 1;
   handle.requestRender();
 }
 
@@ -114,6 +124,7 @@ function publish(): void {
     design,
     grid: { width: grid.width, height: grid.height, palette: [...grid.palette] },
     geometryBuilds,
+    textureUpdates,
     warnings: [...warnings],
     loadFixture,
     setDesign,

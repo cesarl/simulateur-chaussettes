@@ -52,3 +52,9 @@ Contexte : l'architecture décrit la chaussette portée sans donner les courbes 
 Options : tube coudé à rayon constant / poche de talon par Bézier avec avant immobile / modèle sculpté.
 Choix : cylindre de jambe légèrement évasé au mollet ; pendant le talon, la moitié avant reste immobile et la moitié arrière suit une Bézier qui descend et recule (semelle plate) ; le pied s'extrude vers l'avant ; la pointe rejoint un seul point. Les quads d'aire nulle (avant du talon) ne sont pas émis, pour éviter des normales NaN. Échelle : `0,01 / jauge` mètre par maille ou par rang.
 Conséquence : la forme est entièrement dans `src/render/sockGeometry.ts`. Le côté de la pointe reste celui de la grille (moitié arrière active).
+
+## D08 — Relief de maille (T07)
+Contexte : il faut un V de jersey et des côtes, sur un seul matériau, sans que la couleur de la grille soit floutée.
+Options : deux maillages / un shader qui choisit le relief selon la zone / tout en V.
+Choix : `DataTexture` NearestFilter pour la couleur ; normales et occlusion du V répétées (aiguilles × rangs), mipmaps et anisotropie max ; dans le bord-côte (`vMapUv.y`), ces cartes sont remplacées par des côtes verticales (une côte pour deux mailles). L'intérieur (face arrière) est multiplié par 0,38. Three r186 n'expose pas `vUv` dès qu'une carte est présente : on lit `vMapUv`.
+Conséquence : le mélange est dans `onBeforeCompile` de `src/render/knitTexture.ts`.

@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import { hexToRgb } from '../core/color';
 import { rowRanges } from '../core/grid';
-import type { SockDimensions, StitchGrid, ZoneSettings } from '../core/types';
+import type { SockDimensions, ZoneSettings } from '../core/types';
 
 /**
  * Chaussette portée, générée en grille (aiguilles + 1) × (rangs + 1).
@@ -173,26 +172,6 @@ export function buildSockBuffers(dims: SockDimensions, zones: ZoneSettings): Soc
   };
 }
 
-function writeColors(colors: Float32Array, grid: StitchGrid, needles: number, rows: number): void {
-  const stride = needles + 1;
-  const sample = new THREE.Color();
-  for (let row = 0; row <= rows; row++) {
-    const stitchRow = Math.min(row, Math.max(0, grid.height - 1));
-    for (let col = 0; col <= needles; col++) {
-      const stitchCol = grid.width > 0 ? col % grid.width : 0;
-      const cell = stitchRow * grid.width + stitchCol;
-      const paletteIndex = grid.colorIndex[cell] ?? 0;
-      const hex = grid.palette[paletteIndex] ?? '#d9d4cc';
-      const rgb = hexToRgb(hex);
-      sample.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255, THREE.SRGBColorSpace);
-      const offset = (row * stride + col) * 3;
-      colors[offset] = sample.r;
-      colors[offset + 1] = sample.g;
-      colors[offset + 2] = sample.b;
-    }
-  }
-}
-
 function sanitizeNormals(geometry: THREE.BufferGeometry): void {
   const attribute = geometry.getAttribute('normal');
   if (!(attribute instanceof THREE.BufferAttribute)) return;
@@ -210,30 +189,15 @@ function sanitizeNormals(geometry: THREE.BufferGeometry): void {
   attribute.needsUpdate = true;
 }
 
-/** Maillage Three.js : 1 quad par maille, couleurs de zones, normales calculées. */
-export function createSockMesh(dims: SockDimensions, zones: ZoneSettings, grid: StitchGrid): THREE.Mesh {
+/** Maillage Three.js : 1 quad par maille, normales et tangentes pour le relief. */
+export function createSockMesh(dims: SockDimensions, zones: ZoneSettings, material: THREE.Material): THREE.Mesh {
   const buffers = buildSockBuffers(dims, zones);
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(buffers.positions, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(buffers.uvs, 2));
-  const colors = new Float32Array(buffers.positions.length);
-  writeColors(colors, grid, buffers.needles, buffers.rows);
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geometry.setIndex(new THREE.BufferAttribute(buffers.indices, 1));
   geometry.computeVertexNormals();
   sanitizeNormals(geometry);
-  const material = new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 0.92,
-    metalness: 0,
-    side: THREE.DoubleSide,
-  });
+  geometry.computeTangents();
   return new THREE.Mesh(geometry, material);
-}
-
-export function updateSockColors(mesh: THREE.Mesh, grid: StitchGrid, needles: number, rows: number): void {
-  const attribute = mesh.geometry.getAttribute('color');
-  if (!(attribute instanceof THREE.BufferAttribute) || !(attribute.array instanceof Float32Array)) return;
-  writeColors(attribute.array, grid, needles, rows);
-  attribute.needsUpdate = true;
 }

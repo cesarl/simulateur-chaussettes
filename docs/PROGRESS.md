@@ -59,3 +59,10 @@ Fait : `sockPositions` / `sockUvs` purs, maillage (aiguilles+1)×(rangs+1), UV e
 Vérification : `npm run verify` ✅ (35 tests unitaires, 6 e2e). Contrôle visuel de `test-results/visuel-t06-homme.png` et `visuel-t06-femme.png` : fond gris-beige ; ouverture sombre en haut ; bord-côte bleu marine ; tige crème quasi cylindrique ; renflement terracotta à l'arrière (talon) ; pied horizontal crème, plus bas que la tige ; pointe sombre et arrondie qui ferme le volume. La femme a la même silhouette, un peu plus petite dans le cadre. Tige, talon, pied et pointe sont reconnaissables.
 Décisions : D07 (courbe de talon, semelle, pointe).
 Reste / risques : les mailles sont encore des aplats de couleur (texture tricot en T07). Le motif des carreaux n'est pas encore projeté.
+
+## T07 — Texture de mailles — 2026-09-25 07:00
+Statut : terminée
+Fait : `DataTexture` de la grille (NearestFilter, sRGB, `needsUpdate` sans reconstruire le maillage). Relief de jersey (normales + occlusion) répété par maille, mipmaps et anisotropie max. Bord-côte en côtes verticales. Matériau rugueux, sans métal, double face, intérieur assombri.
+Vérification : `npm run verify` ✅ (35 tests unitaires, 7 e2e). Contrôle visuel de `test-results/visuel-t07-mailles.png` (vue zoomée) : on ne voit pas des carrés plats. La tige et le pied portent des mailles en V, creusées au centre, répétées. Le bord-côte bleu en haut est en bandes verticales, distinct du jersey. Talon terracotta et pointe sombre restent identifiables. Changer la couleur du talon incrémente `textureUpdates` et laisse `geometryBuilds` inchangé. Aucun avertissement WebGL.
+Décisions : D08 (relief, `vMapUv`, intérieur × 0,38).
+Reste / risques : le motif des carreaux n'est pas encore recalculé depuis le panneau (T08).

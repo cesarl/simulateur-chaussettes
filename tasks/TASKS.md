@@ -91,7 +91,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T07 — Texture de mailles (`src/render/knitTexture.ts`)
+### [x] T07 — Texture de mailles (`src/render/knitTexture.ts`)
 **Objectif** : la grille devient une vraie texture tricotée.
 - `DataTexture` de la grille (NearestFilter, sRGB, `needsUpdate` à chaque recalcul, sans recréer la géométrie).
 - Texture de détail procédurale d'une maille jersey (V) : carte de normales + occlusion ambiante, générée sur canvas, répétée `(needles, rows)`. Mipmaps et anisotropie max pour éviter le moiré.
@@ -99,9 +99,9 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 - Matériau `MeshStandardMaterial` (rugosité élevée, pas de reflet plastique), `side: DoubleSide`, intérieur plus sombre.
 
 **Critères**
-- [ ] e2e : capture d'écran zoomée — l'agent vérifie visuellement qu'on distingue les mailles (et non des carrés plats) ; description dans `PROGRESS.md`.
-- [ ] Changer une couleur de zone met à jour la texture sans reconstruire la géométrie (compteur exposé dans `__SIM__`).
-- [ ] Aucun avertissement WebGL dans la console.
+- [x] e2e : capture d'écran zoomée — l'agent vérifie visuellement qu'on distingue les mailles (et non des carrés plats) ; description dans `PROGRESS.md`.
+- [x] Changer une couleur de zone met à jour la texture sans reconstruire la géométrie (compteur exposé dans `__SIM__`).
+- [x] Aucun avertissement WebGL dans la console.
 
 ---
 

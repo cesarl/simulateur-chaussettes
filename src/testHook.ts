@@ -16,6 +16,8 @@ export interface SimHook {
   design: SockDesign;
   grid: { width: number; height: number; palette: string[] };
   geometryBuilds: number;
+  /** Nombre de mises à jour de la texture de couleur, sans reconstruire le maillage. */
+  textureUpdates: number;
   warnings: string[];
   loadFixture: (name: string) => Promise<void>;
   setDesign: (partial: DesignPatch) => void;
