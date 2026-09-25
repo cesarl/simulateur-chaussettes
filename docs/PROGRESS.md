@@ -182,20 +182,29 @@ Vérification : `npm run verify` ✅ (48 unitaires, 22 e2e). Capture `visuel-T22
 Décisions : D20.
 Reste / risques : T18 toujours bloquée.
 
+## T23 — Forme anatomique v2 (loft ANSUR II) — 2026-09-25 12:04
+Statut : terminée
+Fait : Copie littérale de `reference/sock3d/sockShape.ts` (loft profils avant/arrière + largeurs asymétriques ANSUR II) vers `src/render/sock3d/`. Autres fichiers du module inchangés (sauf `setChevron` déjà présent). Tests unitaires réorientés vers `src/render/sock3d/`. e2e T21 silhouette vs nouvelles captures.
+Vérification : `npm run verify` ✅ (48 unitaires, 22 e2e dont IoU ≥ 0,90). Captures ouvertes :
+- `visuel-T21-trois-quarts.png` : mollet → cheville sans rupture ; **dessus du pied en pente régulière (pas de bosse)** ; talon rouge arrondi en poche ; semelle posée à plat ; pointe rouge arrondie ; motif étoile crème/marine/rouge ; relief jersey + côtes bord-côte marine ; ombre de contact ; pas de trou / cratère / couture / facettes. Aligné sur `homme-etoile-trois-quarts.png`.
+- `visuel-T21-profil-exterieur.png` : profil L anatomique, Achille creusé, instep lisse, semelle plate, talon et pointe rouges nets — comparable à la réf. profil.
+- `visuel-T21-dos.png` : talon rouge centré arrondi, tige qui s’affine vers la cheville, motif qui remonte, ombre au sol.
+Décisions : D21.
+Reste / risques : T18 toujours bloquée (tailles fabricant).
+
 ## Point pour César
 
-Ce qui marche : **rendu 3D sock3d** (T19–T22) — forme anatomique alignée sur `reference/sock3d/captures/` (IoU ≥ 0,90), exports studio (transparent, paire), pied droit/gauche. Vue à plat, réglages et exports plats inchangés (bons en V1).
+Ce qui marche : **forme 3D v2** (T23) — loft ANSUR II, silhouette IoU ≥ 0,90 vs nouvelles captures `reference/sock3d/captures/`. T19–T22 restent valides (studio, exports, paire, pied G/D). Vue à plat / réglages / exports plats inchangés.
 
-Captures (repo `test-results/` + store `media/`) :
-- T21 : `visuel-T21-trois-quarts.png`, `visuel-T21-profil-exterieur.png`, `visuel-T21-dos.png`
-- T22 : `visuel-T22-paire.png`
-- Réf. : `reference/sock3d/captures/homme-etoile-*.png`
+Captures produites (repo `test-results/` + store `media/`) :
+- T23 / T21 : `visuel-T21-trois-quarts.png`, `visuel-T21-profil-exterieur.png`, `visuel-T21-dos.png`
+- Réf. cibles : `reference/sock3d/captures/homme-etoile-{trois-quarts,profil-exterieur,dos}.png`
 
 Tester en 3 étapes :
-1. `npm install` puis `npm run dev` (démo réf. optionnelle : `/sock-demo.html`).
-2. Charger exemple étoile ; exporter Trois-quarts / Paire 2048.
-3. Basculer Pied → Gauche ; touches R / F / T / E / D / I.
+1. `npm install` puis `npm run dev`.
+2. Charger exemple étoile ; vue Trois-quarts — vérifier le dessus du pied (pente régulière, sans bosse).
+3. Exporter Profil extérieur / Dos 1200 et comparer aux captures de `reference/sock3d/captures/`.
 
-Décisions à relire : D18–D20 (sock3d, studio, paire).
+Décisions à relire : D21 (forme v2) ; D18–D20 si pas encore lues.
 
 Blocages : T18 — `config/sizes.json` fabricant.

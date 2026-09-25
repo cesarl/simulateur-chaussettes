@@ -51,12 +51,12 @@ Même boucle de travail que d'habitude (`.cursor/rules/10-workflow.mdc`) : tests
 
 ---
 
-### [~] T23 — Forme anatomique v2 (mise à jour du module de référence)
+### [x] T23 — Forme anatomique v2 (mise à jour du module de référence)
 César a trouvé la première forme difforme (bosse sur le dessus du pied). `reference/sock3d/sockShape.ts` a été réécrit (profils anatomiques ANSUR II, voir le `README.md` du module) et les captures de `reference/sock3d/captures/` ont été régénérées.
 - Remplacer `src/render/sock3d/sockShape.ts` par la nouvelle version de `reference/sock3d/sockShape.ts` (et reporter les éventuelles adaptations de types faites en T19). Les autres fichiers du module n'ont pas changé sur le fond : comparer et ne reporter que les différences.
 - Le test `tests/unit/sock3d.test.ts` fourni doit toujours passer.
 - Relancer T21 (recouvrement de silhouette ≥ 0,90 avec les NOUVELLES captures) et décrire les nouvelles captures dans `PROGRESS.md` : dessus du pied en pente régulière (pas de bosse), talon arrondi, semelle à plat.
 
 **Critères**
-- [ ] `npm run verify` vert.
-- [ ] T21 repassé avec les nouvelles captures ; description visuelle écrite.
+- [x] `npm run verify` vert.
+- [x] T21 repassé avec les nouvelles captures ; description visuelle écrite.
