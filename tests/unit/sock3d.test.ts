@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildSockMesh, fabricAt, heelWeight, sockLayout, ZONE_FOOT, ZONE_HEEL, ZONE_LEG, type SockShapeInput } from '../../src/render/sock3d/sockShape';
-import { buildSockAtlas } from '../../src/render/sock3d/sockAtlas';
-import { buildKnitMaps } from '../../src/render/sock3d/knitMaps';
+import { buildSockMesh, fabricAt, heelWeight, sockLayout, ZONE_FOOT, ZONE_HEEL, ZONE_LEG, type SockShapeInput } from '../../reference/sock3d/sockShape';
+import { buildSockAtlas } from '../../reference/sock3d/sockAtlas';
+import { buildKnitMaps } from '../../reference/sock3d/knitMaps';
 
 const HOMME: SockShapeInput = { needles: 168, cuffRows: 30, legRows: 180, heelRows: 56, footRows: 200, toeRows: 50, rowsPerCm: 10, size: 'homme' };
 
