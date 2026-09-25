@@ -34,7 +34,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T03 — Import des carreaux (`src/io/tiles.ts`, début de `src/ui/`, `src/state.ts`)
+### [x] T03 — Import des carreaux (`src/io/tiles.ts`, début de `src/ui/`, `src/state.ts`)
 **Objectif** : pouvoir importer des PNG/SVG et les voir dans le panneau.
 - `state.ts` : store minimal (`getState`, `update(partiel)`, `subscribe`), état initial = design par défaut (taille homme, calepinage grille, 4 couleurs auto, bord-côte présent).
 - `tiles.ts` : `loadTileFromFile(File)` et `loadTileFromUrl(url)` → `TileAsset`. SVG : rasterisé à 512 px de côté minimum en gardant les proportions. PNG : taille native (réduite à 1024 px max).
@@ -42,9 +42,9 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 - `window.__SIM__.loadFixture(nom)` pour les tests.
 
 **Critères**
-- [ ] e2e : importer `public/fixtures/carreau-test-etoile.svg` via l'input fichier → 1 vignette visible (`data-testid="tile-thumb"`).
-- [ ] e2e : importer 2 fichiers d'un coup → 2 vignettes ; supprimer → 1.
-- [ ] Un fichier non image affiche un message d'erreur lisible, sans exception console.
+- [x] e2e : importer `public/fixtures/carreau-test-etoile.svg` via l'input fichier → 1 vignette visible (`data-testid="tile-thumb"`).
+- [x] e2e : importer 2 fichiers d'un coup → 2 vignettes ; supprimer → 1.
+- [x] Un fichier non image affiche un message d'erreur lisible, sans exception console.
 
 ---
 

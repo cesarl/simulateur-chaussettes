@@ -31,3 +31,10 @@ Fait : `color.ts` (hex ↔ RVB, distance redmean) et `grid.ts` (`rowRanges`, `bu
 Vérification : `npm run verify` ✅ (11 tests unitaires, 1 e2e).
 Décisions : D03 (couleurs de fond et hors tricot).
 Reste / risques : l'ordre des indices de motif (rang majeur, mailles de motif seulement) doit être respecté par le calepinage en T04.
+
+## T03 — Import des carreaux — 2026-09-25 06:42
+Statut : terminée
+Fait : Store (`getState`, `update` par fusion, `subscribe`) avec modèle homme, grille, 4 couleurs auto, bord-côte. Import PNG/SVG (`loadTileFromFile`, `loadTileFromUrl`) : SVG au moins 512 px sur le petit côté, PNG natif plafonné à 1024 px. Panneau Carreaux : import multiple, glisser-déposer, vignettes, suppression, ordre, exemple. `window.__SIM__.loadFixture`.
+Vérification : `npm run verify` ✅ (13 tests unitaires, 5 e2e).
+Décisions : D04 (valeurs du modèle par défaut).
+Reste / risques : la grille affichée ignore encore le motif (calepinage en T04). Le cylindre 3D reste provisoire.

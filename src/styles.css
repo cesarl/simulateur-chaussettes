@@ -15,4 +15,51 @@ html, body { margin: 0; height: 100%; background: var(--bg); }
 #viewport canvas { display: block; width: 100%; height: 100%; }
 #panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 16px; }
 #panel h1 { font-size: 18px; margin: 0 0 12px; }
-.hint { color: var(--muted); font-size: 13px; }
+.hint { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+.section { margin-top: 4px; }
+.section h2 { font-size: 14px; margin: 0 0 8px; letter-spacing: 0.02em; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button {
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+.drop {
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.drop.over { border-color: var(--accent); background: #fbf7f4; }
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.tile-error { color: var(--accent); font-size: 13px; margin: 8px 0; }
+.tile-list { list-style: none; margin: 0; padding: 0; }
+.tile {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.tile img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+.tile-name { margin: 0; font-size: 13px; word-break: break-all; }
+.tile-actions { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.tile-actions button { padding: 4px 8px; font-size: 12px; }

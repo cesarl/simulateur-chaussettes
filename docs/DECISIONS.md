@@ -28,3 +28,9 @@ Contexte : `composeGrid` doit toujours produire une couleur par maille, y compri
 Options : laisser l'index 0 / couleur dédiée documentée / omettre ces cellules de la palette.
 Choix : couleur dédiée — `#f4f1ea` (fond, seulement si la palette de motif est vide) et `#d9d4cc` (hors tricot). Les deux sont dédupliquées avec le reste de la palette.
 Conséquence : la vue à plat pourra distinguer le hors-tricot ; remplacer ces constantes dans `src/core/grid.ts` si le fabricant impose une autre convention.
+
+## D04 — Modèle par défaut (T03)
+Contexte : le cahier impose taille homme, calepinage grille, 4 couleurs auto et bord-côte, pas les autres valeurs initiales.
+Options : tout à zéro / valeurs de démonstration lisibles.
+Choix : carreau de 24 mailles × `round(24 / rapport)` rangs (32 avec la jauge actuelle), motif aussi sur le pied, couleurs bord-côte `#1f3a5f`, talon `#b5462f`, pointe `#1d1d1b`, pied `#f4f1ea`, nom de fichier `modele`.
+Conséquence : tout est modifiable dans le panneau ; les défauts sont regroupés dans `defaultDesign()` (`src/state.ts`).
