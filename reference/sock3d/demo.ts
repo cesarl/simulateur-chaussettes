@@ -10,7 +10,19 @@ import type { GridLike } from './sockAtlas';
 import type { SockShapeInput } from './sockShape';
 import { DEFAULT_CALEPINAGE, GENERATED_PRESETS, normalizePresets, type CalepinageSpec } from '../calepinage/calepinage';
 import { samplePattern } from '../calepinage/sampler';
-import { buildTileSurface, createDecor, DEFAULT_DECOR, type DecorHandle, type DecorMode } from '../decor/tileSurface';
+import { buildTileSurface, createDecor, DEFAULT_DECOR, tileCmFromFormat, type DecorHandle, type DecorMode } from '../decor/tileSurface';
+
+let GRAIN: HTMLImageElement | null = null;
+async function loadGrain() {
+  try {
+    const img = new Image();
+    img.src = '/textures/grain-ciment.jpg';
+    await img.decode();
+    GRAIN = img;
+  } catch {
+    GRAIN = null;
+  }
+}
 import rawPresets from '../calepinage/calepinages.json';
 import { paletteOptions, recolorSvg, suggestZoneColors, visibleCollections, yarnColors, zoneHex, type Catalogue, type Collection, type NuancierColor } from '../collections/collections';
 
@@ -227,7 +239,7 @@ function imageDataToCanvas(d: ImageData): HTMLCanvasElement {
   c.getContext('2d')!.putImageData(d, 0, 0);
   return c;
 }
-function setDecor(mode: DecorMode, tiles: ImageData[], spec: CalepinageSpec, preset: import('../calepinage/calepinage').Preset | null) {
+function setDecor(mode: DecorMode, tiles: ImageData[], spec: CalepinageSpec, preset: import('../calepinage/calepinage').Preset | null, format = '20x20') {
   if (decor) {
     scene.remove(decor.group);
     decor.dispose();
@@ -235,8 +247,9 @@ function setDecor(mode: DecorMode, tiles: ImageData[], spec: CalepinageSpec, pre
   }
   if (studioRef) studioRef.ground.visible = mode === 'aucun' || mode === 'mur';
   if (mode === 'aucun' || !tiles.length) return;
-  const o = { ...DEFAULT_DECOR, mode };
-  const maps = buildTileSurface({ tiles: tiles.map(imageDataToCanvas), spec, preset, cols: o.tilesPerSide, rows: o.tilesPerSide, options: o });
+  const tileCm = tileCmFromFormat(format);
+  const o = { ...DEFAULT_DECOR, mode, tileCm, tilesPerSide: Math.round(240 / tileCm) };
+  const maps = buildTileSurface({ tiles: tiles.map(imageDataToCanvas), grain: GRAIN, spec, preset, cols: o.tilesPerSide, rows: o.tilesPerSide, options: o, pxPerTile: tileCm <= 10 ? 160 : 256 });
   decor = createDecor(maps, o, new THREE.Vector3(0, 0, 0.02), renderer);
   scene.add(decor.group);
 }
@@ -298,7 +311,7 @@ async function rebuild() {
   document.getElementById('heelSv')!.textContent = String(Math.round(heelSpread * 100));
   const shape: SockShapeInput = { ...d, cuffRows: cuff ? d.cuffRows : 0, rowsPerCm: 10, size, heelHeight, heelDepth, heelSpread };
   if (!decorTiles.length) decorTiles = await Promise.all(ALL_TILES.map((f) => loadTile(`/fixtures/${f}`)));
-  setDecor(sel('decor').value as DecorMode, decorTiles, decorSpec, decorPreset);
+  setDecor(sel('decor').value as DecorMode, decorTiles, decorSpec, decorPreset, coll?.format || '20x20');
   if (sock) { scene.remove(sock.mesh); sock.dispose(); }
   sock = createSockObject(shape, grid, { heel: pal.heel, toe: pal.toe });
   scene.add(sock.mesh);
@@ -327,6 +340,7 @@ declare global {
   interface Window { __DEMO__?: { ready: boolean; capture: (v: ViewName, size: number) => Promise<string>; set: (o: { decor?: string; coll?: string; pal?: string; calep?: string; size?: string; tile?: string; cuff?: boolean; heelH?: number; heelD?: number; heelS?: number }) => Promise<void> } }
 }
 await loadCatalogue();
+await loadGrain();
 sel('coll').addEventListener('change', () => {
   const c = CATALOGUE?.collections.find((x) => x.id === sel('coll').value);
   if (c) fillPaletteSelect(c);

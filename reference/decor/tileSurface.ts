@@ -28,20 +28,31 @@ export interface DecorOptions {
   tilesPerSide: number;
   /** Distance du mur au centre de la chaussette (m). */
   wallDistance: number;
-  /** 0 = couleurs franches, 1 = décor très pâle : laisse la chaussette ressortir. */
+  /** 0 = couleurs franches (défaut), 1 = décor très pâle. */
   attenuation: number;
+  /** Intensité du grain de ciment (texture photo) : 0 à 1. */
+  grainStrength: number;
 }
 
 export const DEFAULT_DECOR: DecorOptions = {
   mode: 'aucun',
   tileCm: 20,
-  groutMm: 2,
-  groutColor: '#d9d3c7',
-  patina: 0.35,
+  groutMm: 1.5,
+  groutColor: '#f3f1ec', // joint blanc cassé, comme une pose soignée
+  patina: 0.3,
   tilesPerSide: 12,
   wallDistance: 0.45,
-  attenuation: 0.25,
+  attenuation: 0,
+  grainStrength: 0.7,
 };
+
+/** Côté du carreau en cm d'après le champ `format` de la collection (« 20x20 », « 10x10 »…). */
+export function tileCmFromFormat(format: string | null | undefined, fallback = 20): number {
+  const m = /(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)/i.exec(format ?? '');
+  if (!m) return fallback;
+  const a = parseFloat(m[1]!.replace(',', '.'));
+  return a > 0 && a <= 60 ? a : fallback;
+}
 
 export type TileSource = CanvasImageSource & { width: number; height: number };
 
@@ -71,6 +82,8 @@ export function heightToNormal(height: Float32Array, w: number, h: number, stren
 // ------------------------------------------------------------------ texture
 export interface TileSurfaceInput {
   tiles: TileSource[]; // variations déjà recolorées (SVG pixelisés ou images)
+  /** Photo de grain de ciment (niveaux de gris), ex. public/textures/grain-ciment.jpg. Facultatif. */
+  grain?: TileSource | null;
   spec: CalepinageSpec;
   preset: Preset | null;
   cols: number;
@@ -94,34 +107,42 @@ function canvas(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContex
   return [c, c.getContext('2d', { willReadFrequently: true })!];
 }
 
-/** Grain du ciment : bruit fin et quelques taches, réutilisé (décalé) sur chaque carreau. */
-function grainCanvas(size: number, seed: number): HTMLCanvasElement {
+/**
+ * Prépare la photo de grain : niveaux ramenés autour du gris moyen (128) pour un mélange « lumière douce »
+ * qui garde les couleurs du carreau et n'ajoute que la matière (grain, petites piqûres, fines fissures).
+ */
+function prepareGrain(src: TileSource, contrast = 3): HTMLCanvasElement {
+  const [c, ctx] = canvas(src.width, src.height);
+  ctx.drawImage(src, 0, 0);
+  const img = ctx.getImageData(0, 0, src.width, src.height);
+  const d = img.data;
+  let sum = 0;
+  for (let i = 0; i < d.length; i += 4) sum += d[i]!;
+  const mean = sum / (d.length / 4);
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.max(0, Math.min(255, 128 + (d[i]! - mean) * contrast));
+    d[i] = d[i + 1] = d[i + 2] = v;
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
+/** Grain de secours si aucune photo n'est fournie : bruit très fin autour de 128. */
+function fallbackGrain(size: number, seed: number): HTMLCanvasElement {
   const [c, ctx] = canvas(size, size);
   const img = ctx.createImageData(size, size);
   for (let i = 0; i < size * size; i++) {
-    const n = hash01(i % size, Math.floor(i / size), seed, 7);
-    const v = 128 + (n - 0.5) * 60;
+    const v = 128 + (hash01(i % size, Math.floor(i / size), seed, 7) - 0.5) * 36;
     img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
     img.data[i * 4 + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
-  // taches douces
-  for (let k = 0; k < 14; k++) {
-    const x = hash01(k, 1, seed, 8) * size;
-    const y = hash01(k, 2, seed, 8) * size;
-    const r = (0.08 + hash01(k, 3, seed, 8) * 0.2) * size;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    const dark = hash01(k, 4, seed, 8) < 0.5;
-    g.addColorStop(0, dark ? 'rgba(90,90,90,0.18)' : 'rgba(170,170,170,0.18)');
-    g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, size, size);
-  }
   return c;
 }
 
 export function buildTileSurface(input: TileSurfaceInput): TileSurfaceMaps {
-  const S = input.pxPerTile ?? 192;
+  const S = input.pxPerTile ?? 256;
   const { cols, rows, options: o } = input;
   const seed = input.seed ?? 11;
   const W = cols * S;
@@ -129,16 +150,16 @@ export function buildTileSurface(input: TileSurfaceInput): TileSurfaceMaps {
   const groutPx = Math.max(1, (o.groutMm / (o.tileCm * 10)) * S);
   const [color, cctx] = canvas(W, H);
   const [rough, rctx] = canvas(W, H);
-  const height = new Float32Array(W * H);
+  const height = new Float32Array(W * H).fill(1);
 
-  // joint
+  // joint : blanc cassé, à peine en retrait, très mat
   cctx.fillStyle = o.groutColor;
   cctx.fillRect(0, 0, W, H);
-  rctx.fillStyle = 'rgb(245,245,245)'; // joint : très mat
+  rctx.fillStyle = 'rgb(248,248,248)';
   rctx.fillRect(0, 0, W, H);
 
   const plan = planPlacements(input.spec, { tileCount: input.tiles.length, preset: input.preset, tilesAround: null }, cols, rows);
-  const grain = grainCanvas(S, seed);
+  const grain = input.grain ? prepareGrain(input.grain) : fallbackGrain(S, seed);
   const inset = groutPx / 2;
   const size = S - groutPx;
 
@@ -152,48 +173,55 @@ export function buildTileSurface(input: TileSurfaceInput): TileSurfaceMaps {
       cctx.beginPath();
       cctx.rect(x0, y0, size, size);
       cctx.clip();
+      cctx.save();
       cctx.translate(x0 + size / 2, y0 + size / 2);
       cctx.rotate((p.rot * Math.PI) / 180);
       cctx.scale(p.flipX ? -1 : 1, p.flipY ? -1 : 1);
       cctx.drawImage(img, -size / 2, -size / 2, size, size);
       cctx.restore();
 
-      // variation de teinte d'un carreau à l'autre + grain
-      const v = (hash01(tx, ty, seed, 21) - 0.5) * 0.12 * o.patina;
-      cctx.fillStyle = v > 0 ? `rgba(255,250,240,${v})` : `rgba(40,30,20,${-v})`;
-      cctx.fillRect(x0, y0, size, size);
-      cctx.save();
-      cctx.globalCompositeOperation = 'overlay';
-      cctx.globalAlpha = 0.25 + 0.35 * o.patina;
-      const gx = Math.floor(hash01(tx, ty, seed, 22) * S);
-      cctx.translate(x0 - gx, y0);
-      cctx.drawImage(grain, 0, 0);
-      cctx.drawImage(grain, S, 0);
+      // matière : un morceau différent de la photo de grain pour chaque carreau (décalage + quart de tour)
+      const gs = Math.min(grain.width, grain.height);
+      const crop = Math.min(gs, Math.max(64, gs * (o.tileCm / 20) * 0.9)); // 20 cm ≈ la photo entière
+      const gx = hash01(tx, ty, seed, 22) * (grain.width - crop);
+      const gy = hash01(tx, ty, seed, 23) * (grain.height - crop);
+      const q = Math.floor(hash01(tx, ty, seed, 24) * 4);
+      cctx.globalCompositeOperation = 'soft-light';
+      cctx.globalAlpha = Math.max(0, Math.min(1, o.grainStrength));
+      cctx.translate(x0 + size / 2, y0 + size / 2);
+      cctx.rotate((q * Math.PI) / 2);
+      cctx.drawImage(grain, gx, gy, crop, crop, -size / 2, -size / 2, size, size);
       cctx.restore();
-      // bords légèrement ombrés (arête arrondie)
-      cctx.strokeStyle = `rgba(0,0,0,${0.08 + 0.1 * o.patina})`;
-      cctx.lineWidth = Math.max(1, groutPx * 0.6);
-      cctx.strokeRect(x0 + 0.5, y0 + 0.5, size - 1, size - 1);
 
-      // rugosité : cire satinée, un peu irrégulière
-      const r = Math.round(120 + hash01(tx, ty, seed, 23) * 40 * o.patina + 20);
+      // fabrication artisanale : très légère différence de teinte d'un carreau à l'autre
+      const v = (hash01(tx, ty, seed, 21) - 0.5) * 0.06 * o.patina;
+      if (v !== 0) {
+        cctx.fillStyle = v > 0 ? `rgba(255,252,246,${v})` : `rgba(60,48,36,${-v})`;
+        cctx.fillRect(x0, y0, size, size);
+      }
+
+      // rugosité : ciment mat (pas de reflet)
+      const r = Math.round(228 + hash01(tx, ty, seed, 25) * 14 * o.patina);
       rctx.fillStyle = `rgb(${r},${r},${r})`;
       rctx.fillRect(x0, y0, size, size);
+    }
+  }
 
-      // hauteur : carreau plein, bord arrondi sur ~1,5 % du carreau
-      const bevel = Math.max(1.5, S * 0.015);
-      for (let y = Math.floor(y0); y < Math.ceil(y0 + size); y++) {
-        for (let x = Math.floor(x0); x < Math.ceil(x0 + size); x++) {
-          const d = Math.min(x - x0, y - y0, x0 + size - x, y0 + size - y);
-          const e = Math.min(1, Math.max(0, d / bevel));
-          const micro = (hash01(x, y, seed, 24) - 0.5) * 0.04 * (0.5 + o.patina);
-          height[y * W + x] = Math.sin((e * Math.PI) / 2) + micro;
+  // relief : seul le joint est légèrement en retrait (pas de biseau, pas d'effet « embossé »)
+  for (let ty = 0; ty < rows; ty++) {
+    for (let tx = 0; tx < cols; tx++) {
+      const x0 = tx * S + inset;
+      const y0 = ty * S + inset;
+      for (let y = ty * S; y < (ty + 1) * S; y++) {
+        for (let x = tx * S; x < (tx + 1) * S; x++) {
+          const inside = x >= x0 && x < x0 + size && y >= y0 && y < y0 + size;
+          if (!inside) height[y * W + x] = 0.7;
         }
       }
     }
   }
 
-  // atténuation : on éclaircit tout le décor pour que la chaussette reste le sujet
+  // atténuation (facultative)
   if (o.attenuation > 0) {
     cctx.fillStyle = `rgba(245,243,238,${Math.min(0.85, o.attenuation)})`;
     cctx.fillRect(0, 0, W, H);
@@ -201,7 +229,7 @@ export function buildTileSurface(input: TileSurfaceInput): TileSurfaceMaps {
 
   const [normal, nctx] = canvas(W, H);
   const img = nctx.createImageData(W, H);
-  img.data.set(heightToNormal(height, W, H, 3.5));
+  img.data.set(heightToNormal(height, W, H, 1.2));
   nctx.putImageData(img, 0, 0);
   // le canal vert de la rugosité (convention glTF / Three) : on garde du gris, c'est équivalent
   return { color, normal, roughness: rough };
@@ -251,10 +279,11 @@ export function createDecor(maps: TileSurfaceMaps, o: DecorOptions, center: THRE
     const m = new THREE.MeshStandardMaterial({
       map: colorT,
       normalMap: normalT,
-      normalScale: new THREE.Vector2(0.6, 0.6),
+      normalScale: new THREE.Vector2(0.25, 0.25),
       roughnessMap: roughT,
       roughness: 1,
       metalness: 0,
+      envMapIntensity: 0.6, // ciment mat : peu de reflets d'environnement
       transparent: withFade,
       alphaMap: withFade ? fade : null,
       depthWrite: true,

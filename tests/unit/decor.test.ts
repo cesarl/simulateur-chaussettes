@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { heightToNormal } from '../../src/render/decor/tileSurface';
+import { heightToNormal } from '../../reference/decor/tileSurface';
 
 describe('décor : relief des carreaux', () => {
   it('surface plate → normale verticale', () => {
@@ -15,5 +15,21 @@ describe('décor : relief des carreaux', () => {
     const px = (x: number) => n[(1 * w + x) * 4]!;
     expect(px(1)).toBeGreaterThan(128); // à gauche du joint, la pente descend vers la droite → normale vers +x
     expect(px(3)).toBeLessThan(128);
+  });
+});
+
+import { tileCmFromFormat, DEFAULT_DECOR } from '../../reference/decor/tileSurface';
+describe('décor : format et réglages par défaut', () => {
+  it('lit le format de la collection', () => {
+    expect(tileCmFromFormat('20x20')).toBe(20);
+    expect(tileCmFromFormat('10x10')).toBe(10);
+    expect(tileCmFromFormat('15 × 15')).toBe(15);
+    expect(tileCmFromFormat('')).toBe(20);
+    expect(tileCmFromFormat(null, 12)).toBe(12);
+  });
+  it('par défaut : couleurs franches, joint fin et clair, grain présent', () => {
+    expect(DEFAULT_DECOR.attenuation).toBe(0);
+    expect(DEFAULT_DECOR.groutMm).toBeLessThanOrEqual(2);
+    expect(DEFAULT_DECOR.grainStrength).toBeGreaterThan(0);
   });
 });
