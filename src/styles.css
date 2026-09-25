@@ -86,7 +86,28 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
   border-radius: 6px;
 }
 .share-hint[hidden] { display: none !important; }
-.share-row { margin-bottom: 8px; }
+.gauge-readout {
+  margin: 10px 0;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  background: #faf8f5;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.machine-settings {
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.machine-help ul { margin: 6px 0 10px 1.1em; padding: 0; }
+.machine-diagram {
+  display: block;
+  margin: 8px 0 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
 .view-switch {
   position: absolute;
   z-index: 3;

@@ -346,3 +346,10 @@ Fait : `shareLink.ts` intégré (`resolveDevMode` / `leaveDevMode`) ; barre visi
 Vérification : `npm run verify` ✅ (94 unitaires, 39 e2e).
 Décisions : D31 (copie du module share dans `src/io/`).
 Reste / risques : le bouton « Copier le lien » copie encore l’URL sans payload compressé (T35).
+
+## T35 — Lien de partage — 2026-09-25 20:45
+Statut : terminée
+Fait : `shareState.ts` (diff vs défaut, collection, décor, raccord) ; hash `#p=1.…` tenu à jour (500 ms) ; copie panneau + visionneuse ; hash prime sur IndexedDB ; SVG manuels si lien court. Champs `seam` / `tilesAround` / `decor` ajoutés au modèle pour le lien (UI en T36–T38).
+Vérification : `npm run verify` ✅ (unitaires + 40 e2e). Captures source (dev) / cible (visionneuse) : même Medina (marine / terracotta / pêche), bord-côte marine, talon terracotta, pointe sombre.
+Décisions : D32.
+Reste / risques : push GitHub intermittent (token) ; enchaîner T36.

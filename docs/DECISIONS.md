@@ -185,4 +185,10 @@ Options : étendre uniquement le payload share / étendre aussi `SockDesign`.
 Choix : étendre `SockDesign` (`decor`, `layout.seam`, `tilesAround`, `tileSizeMode`) et sérialiser via `designToShareJson` (sans `tileIds`) ; SVG manuels via `TileAsset.svgText`.
 Conséquence : projets JSON anciens restent lisibles (défauts) ; T36–T38 branchent l’UI sur ces champs.
 
+## D33 — Taille de carreau par défaut via « N sur le tour » (T36)
+Contexte : le défaut V4 était 24 mailles ; le réglage principal devient N carreaux sur le tour.
+Options : garder 24 en mode libre / dériver de N=6.
+Choix : `defaultDesign()` calcule largeur/hauteur via `tileWidthForCount(168, 6)` et `tileRowsFor` (mode `around`).
+Conséquence : le motif tombe juste dès l’ouverture ; la case « Taille libre » retrouve l’ancien comportement.
+
 

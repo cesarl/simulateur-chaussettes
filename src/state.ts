@@ -1,7 +1,8 @@
 import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
 import type { CalepinageSpec } from './core/calepinage';
+import { tileRowsFor, tileWidthForCount } from './core/calepinage';
 import type { Catalogue, ZoneColors } from './core/collections';
-import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
+import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
 import type {
   KnitFidelity,
   LayoutSettings,
@@ -18,6 +19,24 @@ export type FootSide = 'droite' | 'gauche';
 
 /** Sections réinitialisables (hors carreaux importés). */
 export type DesignSection = 'layout' | 'dimensions' | 'quantize' | 'zones';
+
+/** Calcule largeur/hauteur de carreau depuis « N sur le tour » (proportions gardées). */
+export function layoutFromTilesAround(
+  needles: number,
+  tilesAround: number,
+  gapStitches: number,
+  stitchesPerCm: number,
+  rowsPerCm: number,
+  keepRatio: boolean,
+  currentRows: number,
+): Pick<LayoutSettings, 'tileStitches' | 'tileRows' | 'tilesAround' | 'tileSizeMode'> {
+  const n = Math.min(12, Math.max(2, Math.round(tilesAround)));
+  const tileStitches = tileWidthForCount(needles, n, gapStitches);
+  const tileRows = keepRatio
+    ? Math.max(1, Math.round(tileRowsFor(tileStitches, stitchesPerCm, rowsPerCm)))
+    : Math.max(1, currentRows);
+  return { tileStitches, tileRows, tilesAround: n, tileSizeMode: 'around' };
+}
 
 /** Réglage partiel : chaque sous-objet est fusionné, pas remplacé. */
 export interface DesignPatch {
@@ -117,23 +136,31 @@ export function defaultDecor(): DecorSettings {
 /** Modèle de départ : homme, un seul motif, 4 couleurs auto, bord-côte présent. */
 export function defaultDesign(): SockDesign {
   const dimensions = defaultDimensions('homme');
-  const tileStitches = 24;
-  const tileRows = Math.max(1, Math.round(tileStitches / stitchAspect(dimensions)));
+  const tilesAround = 6;
+  const sized = layoutFromTilesAround(
+    dimensions.needles,
+    tilesAround,
+    0,
+    dimensions.stitchesPerCm,
+    dimensions.rowsPerCm,
+    true,
+    1,
+  );
   return {
     version: 1,
     name: 'modele',
     layout: {
       calepinage: defaultCalepinage(),
       tileIds: [],
-      tileStitches,
-      tileRows,
+      tileStitches: sized.tileStitches,
+      tileRows: sized.tileRows,
       gapStitches: 0,
       gapRows: 0,
       gapColor: '#d9d3c7',
       offsetStitches: 0,
       offsetRows: 0,
       seam: 'dos',
-      tilesAround: 6,
+      tilesAround: sized.tilesAround,
       tileSizeMode: 'around',
     },
     dimensions,

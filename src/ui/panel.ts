@@ -1,5 +1,6 @@
 import type { FabricationReport } from '../core/checks';
 import type { Rot } from '../core/calepinage';
+import { tileRowsFor } from '../core/calepinage';
 import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
 import { CATALOGUE_MISSING_MESSAGE } from '../io/catalogue';
@@ -11,6 +12,7 @@ import {
   canUndo,
   getState,
   isSectionDirty,
+  layoutFromTilesAround,
   redo,
   resetAllDesign,
   resetSection,
@@ -516,19 +518,78 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     onReset: () => resetSection('layout'),
   });
   const gallery = mountCalepGallery(layout);
+
+  const tilesAround = makeSliderNumber({
+    label: 'Carreaux sur le tour de la jambe',
+    testId: 'ctl-tiles-around',
+    min: 2,
+    max: 12,
+    step: 1,
+    value: design.layout.tilesAround,
+    unit: 'carreaux',
+    help: 'Nombre de motifs qui font le tour de la jambe. Le motif tombe toujours juste au raccord.',
+    onChange: (value) => {
+      const current = getState().design;
+      const sized = layoutFromTilesAround(
+        current.dimensions.needles,
+        value,
+        current.layout.gapStitches,
+        current.dimensions.stitchesPerCm,
+        current.dimensions.rowsPerCm,
+        keepRatio,
+        current.layout.tileRows,
+      );
+      update({ design: { layout: sized } });
+    },
+  });
+
+  const freeSizeBox = makeCheckbox(
+    'Taille libre en mailles',
+    'ctl-free-tile-size',
+    design.layout.tileSizeMode === 'free',
+    (checked) => {
+      const current = getState().design;
+      if (checked) {
+        update({ design: { layout: { tileSizeMode: 'free' } } });
+        tileWidth.root.hidden = false;
+        tileRows.root.hidden = false;
+        return;
+      }
+      const sized = layoutFromTilesAround(
+        current.dimensions.needles,
+        current.layout.tilesAround,
+        current.layout.gapStitches,
+        current.dimensions.stitchesPerCm,
+        current.dimensions.rowsPerCm,
+        keepRatio,
+        current.layout.tileRows,
+      );
+      update({ design: { layout: sized } });
+      tileWidth.root.hidden = true;
+      tileRows.root.hidden = true;
+    },
+    'Affiche les curseurs largeur/hauteur en mailles (le motif peut être coupé au raccord).',
+  );
+
   const tileWidth = makeSliderNumber({
     label: 'Largeur du carreau',
     testId: 'ctl-tile-width',
     min: 4,
     max: 200,
-    step: 1,
+    step: 0.1,
     value: design.layout.tileStitches,
     unit: 'mailles',
     help: 'Nombre de mailles (aiguilles) que fait un motif sur le tour de jambe.',
     onChange: (value) => {
-      const tileStitches = Math.max(1, Math.round(value));
-      const next: { tileStitches: number; tileRows?: number } = { tileStitches };
-      if (keepRatio) next.tileRows = tileRowsForWidth(tileStitches, stitchAspect(getState().design.dimensions));
+      const tileStitches = Math.max(1, value);
+      const next: { tileStitches: number; tileRows?: number; tileSizeMode: 'free' } = {
+        tileStitches,
+        tileSizeMode: 'free',
+      };
+      if (keepRatio) {
+        const d = getState().design.dimensions;
+        next.tileRows = Math.max(1, Math.round(tileRowsFor(tileStitches, d.stitchesPerCm, d.rowsPerCm)));
+      }
       update({ design: { layout: next } });
     },
   });
@@ -537,16 +598,19 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     testId: 'ctl-tile-rows',
     min: 4,
     max: 300,
-    step: 1,
+    step: 0.1,
     value: design.layout.tileRows,
     unit: 'rangs',
     help: 'Nombre de rangs (lignes tricotées) d’un motif. Un rang = un tour de cylindre.',
     onChange: (value) => {
       keepRatio = false;
       keepBox.input.checked = false;
-      update({ design: { layout: { tileRows: Math.max(1, Math.round(value)) } } });
+      update({ design: { layout: { tileRows: Math.max(1, value), tileSizeMode: 'free' } } });
     },
   });
+  tileWidth.root.hidden = design.layout.tileSizeMode !== 'free';
+  tileRows.root.hidden = design.layout.tileSizeMode !== 'free';
+
   const keepBox = makeCheckbox(
     'Garder les proportions',
     'ctl-keep-ratio',
@@ -555,16 +619,67 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       keepRatio = checked;
       if (!checked) return;
       const current = getState().design;
+      if (current.layout.tileSizeMode === 'around') {
+        const sized = layoutFromTilesAround(
+          current.dimensions.needles,
+          current.layout.tilesAround,
+          current.layout.gapStitches,
+          current.dimensions.stitchesPerCm,
+          current.dimensions.rowsPerCm,
+          true,
+          current.layout.tileRows,
+        );
+        update({ design: { layout: sized } });
+        return;
+      }
       update({
         design: {
           layout: {
-            tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(current.dimensions)),
+            tileRows: Math.max(
+              1,
+              Math.round(
+                tileRowsFor(
+                  current.layout.tileStitches,
+                  current.dimensions.stitchesPerCm,
+                  current.dimensions.rowsPerCm,
+                ),
+              ),
+            ),
           },
         },
       });
     },
     'Recalcule la hauteur pour qu’un carreau carré reste carré à la jauge actuelle.',
   );
+
+  const gaugeReadout = document.createElement('p');
+  gaugeReadout.className = 'gauge-readout';
+  gaugeReadout.dataset.testid = 'gauge-readout';
+
+  function refreshGaugeReadout(current: SockDesign = getState().design): void {
+    const { layout: L, dimensions: D } = current;
+    const wMm = D.stitchesPerCm > 0 ? (L.tileStitches / D.stitchesPerCm) * 10 : 0;
+    const hMm = D.rowsPerCm > 0 ? (L.tileRows / D.rowsPerCm) * 10 : 0;
+    const wCm = wMm / 10;
+    const hCm = hMm / 10;
+    const around =
+      L.tileSizeMode === 'around'
+        ? L.tilesAround
+        : L.tileStitches + L.gapStitches > 0
+          ? D.needles / (L.tileStitches + L.gapStitches)
+          : 0;
+    const tourCm = D.stitchesPerCm > 0 ? D.needles / D.stitchesPerCm : 0;
+    const legCm = D.rowsPerCm > 0 ? D.legRows / D.rowsPerCm : 0;
+    const Ldisp = Number.isInteger(L.tileStitches) ? String(L.tileStitches) : L.tileStitches.toFixed(1);
+    const Hdisp = Number.isInteger(L.tileRows) ? String(L.tileRows) : L.tileRows.toFixed(1);
+    const aroundDisp = Number.isInteger(around) ? String(around) : around.toFixed(2);
+    gaugeReadout.textContent =
+      `1 carreau = ${Ldisp} mailles × ${Hdisp} rangs ≈ ${wCm.toFixed(1).replace('.', ',')} × ${hCm.toFixed(1).replace('.', ',')} cm` +
+      ` · ${aroundDisp} carreaux sur le tour · tour de jambe au repos ≈ ${tourCm.toFixed(1).replace('.', ',')} cm` +
+      ` · tige ${D.legRows} rangs ≈ ${legCm.toFixed(1).replace('.', ',')} cm`;
+  }
+  refreshGaugeReadout();
+
   const gapStitches = makeSliderNumber({
     label: 'Joint horizontal',
     testId: 'ctl-gap-stitches',
@@ -574,7 +689,24 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     value: design.layout.gapStitches,
     unit: 'mailles',
     help: 'Bande unie entre deux carreaux sur le tour (0 = carreaux collés).',
-    onChange: (value) => slide({ design: { layout: { gapStitches: Math.max(0, Math.round(value)) } } }),
+    onChange: (value) => {
+      const gapStitches = Math.max(0, Math.round(value));
+      const current = getState().design;
+      if (current.layout.tileSizeMode === 'around') {
+        const sized = layoutFromTilesAround(
+          current.dimensions.needles,
+          current.layout.tilesAround,
+          gapStitches,
+          current.dimensions.stitchesPerCm,
+          current.dimensions.rowsPerCm,
+          keepRatio,
+          current.layout.tileRows,
+        );
+        slide({ design: { layout: { ...sized, gapStitches } } });
+        return;
+      }
+      slide({ design: { layout: { gapStitches } } });
+    },
   });
   const gapRows = makeSliderNumber({
     label: 'Joint vertical',
@@ -657,9 +789,12 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     update({ design: { layout: next } });
   });
   layout.append(
+    tilesAround.root,
+    freeSizeBox.root,
     tileWidth.root,
     tileRows.root,
     keepBox.root,
+    gaugeReadout,
     gapStitches.root,
     gapRows.root,
     gapColor.root,
@@ -723,7 +858,25 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.dimensions.needles,
     unit: 'mailles',
-    onChange: (value) => slide({ design: { dimensions: { needles: Math.max(1, Math.round(value)) } } }),
+    help: 'Nombre de mailles sur le tour de la jambe (cylindres de la machine).',
+    onChange: (value) => {
+      const needlesN = Math.max(1, Math.round(value));
+      const current = getState().design;
+      if (current.layout.tileSizeMode === 'around') {
+        const sized = layoutFromTilesAround(
+          needlesN,
+          current.layout.tilesAround,
+          current.layout.gapStitches,
+          current.dimensions.stitchesPerCm,
+          current.dimensions.rowsPerCm,
+          keepRatio,
+          current.layout.tileRows,
+        );
+        slide({ design: { dimensions: { needles: needlesN }, layout: sized } });
+        return;
+      }
+      slide({ design: { dimensions: { needles: needlesN } } });
+    },
   });
   const heelRows = makeSliderNumber({
     label: 'Talon',
@@ -756,19 +909,38 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     onChange: (value) => slide({ design: { dimensions: { toeRows: Math.max(1, Math.round(value)) } } }),
   });
   const stitches = makeSliderNumber({
-    label: 'Jauge',
+    label: 'Jauge horizontale',
     testId: 'ctl-stitches-per-cm',
     min: 1,
     max: 30,
     step: 0.1,
     value: design.dimensions.stitchesPerCm,
     unit: 'mailles/cm',
+    help: 'Combien de mailles tiennent dans 1 cm de large, tricot au repos (fil + machine).',
     onChange: (value) => {
       const stitchesPerCm = Math.max(0.1, value);
       const current = getState().design;
-      const next = { ...current.dimensions, stitchesPerCm };
+      if (current.layout.tileSizeMode === 'around') {
+        const sized = layoutFromTilesAround(
+          current.dimensions.needles,
+          current.layout.tilesAround,
+          current.layout.gapStitches,
+          stitchesPerCm,
+          current.dimensions.rowsPerCm,
+          keepRatio,
+          current.layout.tileRows,
+        );
+        // Ne change pas le nombre de carreaux sur le tour.
+        update({ design: { dimensions: { stitchesPerCm }, layout: sized } });
+        return;
+      }
       const layoutPatch = keepRatio
-        ? { tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(next)) }
+        ? {
+            tileRows: Math.max(
+              1,
+              Math.round(tileRowsFor(current.layout.tileStitches, stitchesPerCm, current.dimensions.rowsPerCm)),
+            ),
+          }
         : {};
       update({ design: { dimensions: { stitchesPerCm }, layout: layoutPatch } });
     },
@@ -781,12 +953,30 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 0.1,
     value: design.dimensions.rowsPerCm,
     unit: 'rangs/cm',
+    help: 'Combien de rangs tiennent dans 1 cm de haut. Change la hauteur réelle de la tige et d’un carreau carré.',
     onChange: (value) => {
       const nextRows = Math.max(0.1, value);
       const current = getState().design;
-      const next = { ...current.dimensions, rowsPerCm: nextRows };
+      if (current.layout.tileSizeMode === 'around') {
+        const sized = layoutFromTilesAround(
+          current.dimensions.needles,
+          current.layout.tilesAround,
+          current.layout.gapStitches,
+          current.dimensions.stitchesPerCm,
+          nextRows,
+          keepRatio,
+          current.layout.tileRows,
+        );
+        update({ design: { dimensions: { rowsPerCm: nextRows }, layout: sized } });
+        return;
+      }
       const layoutPatch = keepRatio
-        ? { tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(next)) }
+        ? {
+            tileRows: Math.max(
+              1,
+              Math.round(tileRowsFor(current.layout.tileStitches, current.dimensions.stitchesPerCm, nextRows)),
+            ),
+          }
         : {};
       update({ design: { dimensions: { rowsPerCm: nextRows }, layout: layoutPatch } });
     },
@@ -794,6 +984,35 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const sizeCm = document.createElement('p');
   sizeCm.className = 'hint';
   sizeCm.dataset.testid = 'size-cm';
+
+  const machine = document.createElement('details');
+  machine.className = 'section machine-settings';
+  machine.dataset.testid = 'section-machine';
+  const machineSummary = document.createElement('summary');
+  machineSummary.textContent = 'Réglages machine (fabricant)';
+  machine.appendChild(machineSummary);
+  const machineHelp = document.createElement('div');
+  machineHelp.className = 'machine-help';
+  machineHelp.dataset.testid = 'machine-help';
+  machineHelp.innerHTML = `
+    <p class="hint">Ce sont des données du fabricant, pas des réglages de dessin : une fois connues, on ne les touche plus.</p>
+    <ul class="hint">
+      <li><strong>Aiguilles</strong> — largeur de la grille (tour de jambe).</li>
+      <li><strong>Jauge horizontale</strong> — mailles par cm au repos.</li>
+      <li><strong>Jauge verticale</strong> — rangs par cm (change aussi la hauteur réelle de la tige).</li>
+    </ul>
+    <svg class="machine-diagram" viewBox="0 0 220 120" width="220" height="120" aria-hidden="true">
+      <rect x="10" y="10" width="100" height="80" fill="#f4f1ec" stroke="#1d1d1b"/>
+      <path d="M10 30 H110 M10 50 H110 M10 70 H110 M30 10 V90 M50 10 V90 M70 10 V90 M90 10 V90" stroke="#cbbfad"/>
+      <rect x="130" y="20" width="48" height="36" fill="#fff" stroke="#b5462f" stroke-width="2"/>
+      <text x="154" y="42" text-anchor="middle" font-size="10" fill="#1d1d1b">maille</text>
+      <text x="154" y="68" text-anchor="middle" font-size="9" fill="#6b6760">≈ 1,3 mm</text>
+      <text x="178" y="18" text-anchor="start" font-size="9" fill="#6b6760">larg.</text>
+      <text x="120" y="42" text-anchor="end" font-size="9" fill="#6b6760">haut.</text>
+    </svg>
+  `;
+  machine.append(machineHelp, needles.root, stitches.root, rowsPerCm.root);
+
   dimensions.append(
     size.root,
     leg.root,
@@ -801,10 +1020,8 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     heelRows.root,
     footRows.root,
     toeRows.root,
-    needles.root,
-    stitches.root,
-    rowsPerCm.root,
     sizeCm,
+    machine,
   );
 
   const pixels = details('Gros pixels', 'section-pixels', {
@@ -1058,9 +1275,14 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
 
   const sync = (current: SockDesign): void => {
     gallery.sync(getState().tiles, current.layout.calepinage, getState().calepPresets);
+    tilesAround.setValue(current.layout.tilesAround);
+    freeSizeBox.input.checked = current.layout.tileSizeMode === 'free';
+    tileWidth.root.hidden = current.layout.tileSizeMode !== 'free';
+    tileRows.root.hidden = current.layout.tileSizeMode !== 'free';
     tileWidth.setValue(current.layout.tileStitches);
     tileRows.setValue(current.layout.tileRows);
     keepBox.input.checked = keepRatio;
+    refreshGaugeReadout(current);
     gapStitches.setValue(current.layout.gapStitches);
     gapRows.setValue(current.layout.gapRows);
     if (document.activeElement !== gapColor.input) gapColor.input.value = current.layout.gapColor;

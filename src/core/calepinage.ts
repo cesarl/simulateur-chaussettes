@@ -398,12 +398,52 @@ export function raccord(geo: TileGeometry, spec: CalepinageSpec, tileCount: numb
   }
   if (spec.appareil === 'quinconce-v') period = lcm(period, 2);
   const repeatStitches = period * pitch;
-  const around = pitch > 0 && geo.needles % pitch === 0 ? geo.needles / pitch : null;
+  // tolérance : les largeurs fractionnaires (ex. 168 / 5 = 33,6 mailles) sont admises
+  const ratio = pitch > 0 ? geo.needles / pitch : 0;
+  const around = pitch > 0 && Math.abs(ratio - Math.round(ratio)) < 1e-6 ? Math.round(ratio) : null;
   const seamless = around !== null && around % period === 0;
   let message = 'Le motif se raccorde parfaitement au dos.';
   if (around === null) message = `Un carreau (+ joint) fait ${pitch} mailles : ${geo.needles} aiguilles n'en contiennent pas un nombre entier.`;
   else if (!seamless) message = `${around} carreaux sur le tour, mais le calepinage se répète tous les ${period} carreaux : raccord décalé au dos.`;
   return { tilesAround: around, seamless, repeatStitches, message };
+}
+
+// ======================================================================================
+// Raccord : où tombe la couture, et « N carreaux sur le tour »
+// ======================================================================================
+
+/** Endroit du tour où l'on accepte le raccord (carreau coupé) quand le motif ne tombe pas juste. */
+export type SeamPosition = 'dos' | 'interieur' | 'exterieur' | 'devant';
+
+/**
+ * Colonne (maille) où commence le motif, donc où tombe le raccord. Convention du projet : colonne 0 =
+ * côté intérieur, [0, W/2) = arrière → milieu du dos = W/4, côté extérieur = W/2, milieu devant = 3W/4.
+ * À ajouter au décalage horizontal choisi par l'utilisateur.
+ */
+export function seamColumn(pos: SeamPosition, needles: number): number {
+  switch (pos) {
+    case 'interieur':
+      return 0;
+    case 'dos':
+      return needles / 4;
+    case 'exterieur':
+      return needles / 2;
+    case 'devant':
+      return (3 * needles) / 4;
+  }
+}
+
+/**
+ * Largeur d'un carreau (en mailles, fractionnaire) pour avoir exactement `count` carreaux sur le tour :
+ * le motif tombe toujours juste, il n'y a plus de carreau coupé. Hauteur conseillée : `tileRowsFor`.
+ */
+export function tileWidthForCount(needles: number, count: number, gapStitches = 0): number {
+  return Math.max(1, needles / Math.max(1, Math.round(count)) - gapStitches);
+}
+
+/** Hauteur en rangs d'un carreau carré (dans la réalité) de `tileStitches` mailles de large. */
+export function tileRowsFor(tileStitches: number, stitchesPerCm: number, rowsPerCm: number): number {
+  return Math.max(1, (tileStitches * rowsPerCm) / stitchesPerCm);
 }
 
 /** Largeurs de carreau (en mailles) proches de `target` pour lesquelles le raccord est parfait. */

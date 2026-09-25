@@ -40,7 +40,7 @@ Cause : `#panel` est un élément de grille sans `min-height: 0` ; la rangée gr
 - [x] `share.test.ts` fourni vert + test d'intégration : état modifié → lien → nouvel onglet → même empreinte de grille et même vue.
 - [x] e2e : en dev, modifier collection, palette, calepinage, talon → copier le lien → l'ouvrir dans un nouveau contexte **sans** localStorage → visionneuse (pas de panneau) avec exactement la même chaussette (comparaison de capture 3/4 : silhouette et couleurs dominantes identiques).
 
-### [~] T36 — Jauge expliquée, « carreaux sur le tour »
+### [x] T36 — Jauge expliquée, « carreaux sur le tour »
 Lire `docs/JAUGE_EXPLIQUEE.md` (texte à reprendre dans l'interface).
 - Réglage principal de la taille des carreaux : **« Carreaux sur le tour de la jambe »** (curseur 2 à 12, défaut selon la collection : 6). Largeur = `tileWidthForCount(aiguilles, n, joint)`, hauteur = `tileRowsFor(largeur, jauges)` si « garder les proportions ». Les largeurs fractionnaires sont admises partout (moteur de calepinage, vue à plat).
 - Mode avancé (case « Taille libre en mailles ») : les curseurs actuels largeur/hauteur en mailles.
@@ -48,10 +48,10 @@ Lire `docs/JAUGE_EXPLIQUEE.md` (texte à reprendre dans l'interface).
 - Aiguilles, jauge horizontale, jauge verticale : section repliée **« Réglages machine (fabricant) »** avec le texte d'aide et un petit schéma SVG (grille + une maille agrandie cotée en mm). Bulles « ? » sur chaque réglage.
 
 **Critères**
-- [ ] Tests unitaires : 5 carreaux sur 168 aiguilles → aucune colonne coupée (le motif de la colonne 0 prolonge celui de la colonne 167).
-- [ ] e2e : changer la jauge verticale ne change pas le nombre de carreaux sur le tour ; l'encadré affiche les nouvelles valeurs.
+- [x] Tests unitaires : 5 carreaux sur 168 aiguilles → aucune colonne coupée (le motif de la colonne 0 prolonge celui de la colonne 167).
+- [x] e2e : changer la jauge verticale ne change pas le nombre de carreaux sur le tour ; l'encadré affiche les nouvelles valeurs.
 
-### [ ] T37 — Où tombe le raccord
+### [~] T37 — Où tombe le raccord
 - Réglage « Raccord du motif » : **Dos** (défaut), Intérieur, Extérieur, Devant. Décalage horizontal effectif = `seamColumn(position, aiguilles)` + décalage choisi par l'utilisateur.
 - En mode « taille libre » quand le motif ne tombe pas juste : message « Carreau coupé au raccord (dos) » + bouton « Faire tomber juste » (passe en « carreaux sur le tour » avec le nombre le plus proche).
 - Vue à plat : trait vertical pointillé à la colonne du raccord, libellé « raccord ».

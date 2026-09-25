@@ -5,7 +5,7 @@
  * (en notant la décision dans docs/DECISIONS.md), mais pas le contourner.
  */
 
-import type { CalepinageSpec } from './calepinage';
+import type { CalepinageSpec, SeamPosition as CalepSeamPosition } from './calepinage';
 
 /** Couleur au format '#rrggbb' (minuscules). */
 export type Hex = string;
@@ -27,7 +27,7 @@ export interface TileAsset {
  * Réglages de calepinage : géométrie des carreaux + spec multi-motifs (`CalepinageSpec`).
  * Ancien champ `kind` (LayoutKind) migré via `migrateLegacyKind`.
  */
-export type SeamPosition = 'dos' | 'interieur' | 'exterieur' | 'devant';
+export type SeamPosition = CalepSeamPosition;
 
 /** Mode de taille des carreaux : N sur le tour (défaut) ou largeur/hauteur libres en mailles. */
 export type TileSizeMode = 'around' | 'free';
