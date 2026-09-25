@@ -54,6 +54,8 @@ export interface ExportSource {
   mirrorView: boolean;
   /** Légende fabricant : hex → « CODE · Nom ». */
   paletteLabels?: Map<string, string> | Record<string, string>;
+  /** Avant chaque capture 3D (ex. mur décor face caméra). */
+  beforeRender?: (camera: THREE.PerspectiveCamera, target: THREE.Vector3) => void;
 }
 
 function slug(value: string): string {
@@ -153,6 +155,8 @@ export async function renderPair(
       'trois-quarts',
       size,
       transparent ? null : background,
+      false,
+      source.beforeRender,
     );
   } finally {
     source.scene.remove(group);
@@ -183,6 +187,7 @@ async function renderView(
       size,
       transparent ? null : background,
       source.mirrorView,
+      source.beforeRender,
     );
   } finally {
     source.redraw();

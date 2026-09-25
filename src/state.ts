@@ -18,7 +18,7 @@ import type { Preset } from './core/calepinage';
 export type FootSide = 'droite' | 'gauche';
 
 /** Sections réinitialisables (hors carreaux importés). */
-export type DesignSection = 'layout' | 'dimensions' | 'quantize' | 'zones';
+export type DesignSection = 'layout' | 'dimensions' | 'quantize' | 'zones' | 'decor';
 
 /** Calcule largeur/hauteur de carreau depuis « N sur le tour » (proportions gardées). */
 export function layoutFromTilesAround(

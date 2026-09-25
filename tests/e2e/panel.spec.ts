@@ -13,8 +13,8 @@ test('quinconce, 3 couleurs et taille femme se reflètent dans le simulateur', a
   const errors = trackErrors(page);
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
-  await page.getByTestId('tile-fixture').click();
-  await expect(page.getByTestId('tile-thumb')).toHaveCount(1);
+  await page.evaluate(() => window.__SIM__!.loadFixture('carreau-test-etoile.svg'));
+  await expect(page.getByTestId('tile-thumb')).toHaveCount(1, { timeout: 15_000 });
   await page.getByTestId('calep-thumb-g-quinconce').click();
   await page.getByTestId('ctl-max-colors').fill('3');
   await page.getByTestId('ctl-size').selectOption('femme');

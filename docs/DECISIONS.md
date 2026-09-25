@@ -197,4 +197,10 @@ Options : décaler la texture UV / ajouter un offset dans `geometryFromLayout` /
 Choix : `offsetStitches` effectif = offset utilisateur + `seamColumn(seam, needles)` dans `geometryFromLayout` ; UI « Faire tomber juste » repasse en mode `around` (plus proche N) plutôt qu’ajuster la largeur libre.
 Conséquence : les tests de calepinage qui attendent un motif démarrant en colonne 0 utilisent `seam: 'interieur'` (seamColumn = 0).
 
+## D35 — Décor : module référence + beforeRender scène (T38)
+Contexte : sol/mur en carreaux de ciment, mur toujours face caméra, exports inclus.
+Options : photo d’ambiance / générer depuis SVG collection / CDN.
+Choix : copie de `reference/decor/tileSurface.ts` ; `decorController` (idle + cache sources) ; `scene.setBeforeRender` pour `faceCamera` à chaque frame ; `capturePng(..., beforeRender)` pour les exports ; mode `coin` = sol + mur.
+Conséquence : pas de dépendance réseau ; le décor suit les couleurs choisies ; régénération seulement si options/carreaux changent.
+
 

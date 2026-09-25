@@ -372,3 +372,15 @@ Vérification : `npm run verify` ✅ (98 unitaires, 42 e2e). Contrôle visuel :
 - `visuel-T37-raccord-plat.png` : vue à plat, trait pointillé terracotta vertical avec libellé « raccord », bande bleu marine en haut, motif étoile, boutons 3D / À plat.
 Décisions : D34.
 Reste / risques : T38 décor.
+
+## T38 — Décor sol et mur — 2026-09-25 21:30
+Statut : terminée
+Fait : `tileSurface.ts` + `decorController` (idle, faceCamera, sources sock/origine/autre) ; section Décor ; `capturePng`/`scene` beforeRender ; ombre studio masquée en sol/coin.
+Vérification : `npm run verify` ✅ (98 unitaires, 43 e2e). Contrôle visuel :
+- `visuel-T38-medina-coin.png` : Medina trois-quarts, sol + mur en carreaux marine/terracotta/beige assortis ; ombre sur le sol carrelé ; talon terracotta, pointe noire, bord-côte marine.
+- `visuel-T38-medina-sol.png` : sol seul (horizon studio clair), même palette, pas de mur.
+- `visuel-T38-medina-mur.png` : mur seul face caméra derrière la chaussette ; sol = ombre studio.
+- `visuel-T38-medina-dos.png` : vue dos, chaussette au centre devant le mur carrelé (centre = motif chaussette).
+- `visuel-T38-lianes-coin.png` : Lianes (vert/crème, talon rouge), sol + mur au même motif à plus grande échelle.
+Décisions : D35.
+Reste / risques : T39 bilan.

@@ -10,6 +10,8 @@ export interface SceneHandle {
   root: THREE.Group;
   studio: Studio;
   requestRender: () => void;
+  /** Appelé juste avant chaque rendu (ex. mur décor face caméra). */
+  setBeforeRender: (fn: (() => void) | null) => void;
   dispose: () => void;
 }
 
@@ -38,11 +40,13 @@ export function createScene(container: HTMLElement): SceneHandle {
   controls.enableDamping = false;
 
   let pending = false;
+  let beforeRender: (() => void) | null = null;
   const requestRender = () => {
     if (pending) return;
     pending = true;
     requestAnimationFrame(() => {
       pending = false;
+      beforeRender?.();
       renderer.render(scene, camera);
     });
   };
@@ -68,6 +72,9 @@ export function createScene(container: HTMLElement): SceneHandle {
     root,
     studio,
     requestRender,
+    setBeforeRender: (fn) => {
+      beforeRender = fn;
+    },
     dispose: () => {
       ro.disconnect();
       controls.dispose();

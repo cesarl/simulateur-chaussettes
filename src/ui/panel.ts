@@ -22,6 +22,8 @@ import {
   type UpdateOptions,
 } from '../state';
 import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
+import { visibleCollections } from '../core/collections';
+import { tileCmFromFormat } from '../render/decorController';
 import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
 import { mountPalettePanel } from './palettePanel';
@@ -1247,6 +1249,139 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   zones.appendChild(fidelity.root);
   zones.appendChild(footSide.root);
 
+  const decorSection = details('Décor', 'section-decor', {
+    resetId: 'reset-decor',
+    dirtyId: 'dirty-decor',
+    onReset: () => resetSection('decor'),
+  });
+  const decorMode = makeSelect(
+    'Décor',
+    'ctl-decor-mode',
+    [
+      { value: 'aucun', label: 'Aucun' },
+      { value: 'sol', label: 'Sol' },
+      { value: 'mur', label: 'Mur' },
+      { value: 'coin', label: 'Sol + mur' },
+    ],
+    design.decor.mode,
+    (value) => {
+      if (value !== 'aucun' && value !== 'sol' && value !== 'mur' && value !== 'coin') return;
+      const patch: { mode: typeof value; tileCm?: number } = { mode: value };
+      if (value !== 'aucun') {
+        const { catalogue, activeCollectionId } = getState();
+        const coll = catalogue?.collections.find((c) => c.id === activeCollectionId);
+        if (coll) patch.tileCm = tileCmFromFormat(coll.format);
+      }
+      update({ design: { decor: patch } });
+      syncDecorVisibility();
+    },
+    'Sol et/ou mur en carreaux de ciment derrière la chaussette.',
+  );
+  const decorTileCm = makeSliderNumber({
+    label: 'Format du carreau',
+    testId: 'ctl-decor-tile-cm',
+    min: 10,
+    max: 30,
+    step: 1,
+    value: design.decor.tileCm,
+    unit: 'cm',
+    onChange: (value) => slide({ design: { decor: { tileCm: Math.round(value) } } }),
+    help: 'Côté d’un carreau au sol / mur (format de la collection : 20 × 20 → 20 cm).',
+  });
+  const decorGrout = makeSliderNumber({
+    label: 'Joint',
+    testId: 'ctl-decor-grout',
+    min: 0,
+    max: 8,
+    step: 0.5,
+    value: design.decor.groutMm,
+    unit: 'mm',
+    onChange: (value) => slide({ design: { decor: { groutMm: value } } }),
+  });
+  const decorGroutColor = makeColor('Couleur du joint', 'ctl-decor-grout-color', design.decor.groutColor, (value) => {
+    slide({ design: { decor: { groutColor: value } } });
+  });
+  const decorPatina = makeSliderNumber({
+    label: 'Patine',
+    testId: 'ctl-decor-patina',
+    min: 0,
+    max: 1,
+    step: 0.05,
+    value: design.decor.patina,
+    onChange: (value) => slide({ design: { decor: { patina: value } } }),
+    help: 'Variations d’usure d’un carreau à l’autre.',
+  });
+  const decorAttenuation = makeSliderNumber({
+    label: 'Atténuation',
+    testId: 'ctl-decor-attenuation',
+    min: 0,
+    max: 1,
+    step: 0.05,
+    value: design.decor.attenuation,
+    onChange: (value) => slide({ design: { decor: { attenuation: value } } }),
+    help: 'Éclaircit le décor pour laisser la chaussette au premier plan.',
+  });
+  const decorSource = makeSelect(
+    'Carreaux du décor',
+    'ctl-decor-source',
+    [
+      { value: 'sock', label: 'Comme la chaussette' },
+      { value: 'collection-origin', label: 'Couleurs d’origine de la collection' },
+      { value: 'other-collection', label: 'Autre collection' },
+    ],
+    design.decor.tileSource,
+    (value) => {
+      if (value !== 'sock' && value !== 'collection-origin' && value !== 'other-collection') return;
+      update({ design: { decor: { tileSource: value } } });
+      syncDecorVisibility();
+    },
+  );
+  const otherOptions = (): { value: string; label: string }[] => {
+    const cat = getState().catalogue;
+    if (!cat) return [{ value: '', label: '— aucune —' }];
+    return [
+      { value: '', label: '— choisir —' },
+      ...visibleCollections(cat, true).map((c) => ({ value: c.id, label: c.nom })),
+    ];
+  };
+  const decorOther = makeSelect(
+    'Collection du décor',
+    'ctl-decor-other',
+    otherOptions(),
+    design.decor.otherCollectionId ?? '',
+    (value) => {
+      const id = value || null;
+      const patch: { otherCollectionId: string | null; tileCm?: number } = { otherCollectionId: id };
+      const coll = getState().catalogue?.collections.find((c) => c.id === id);
+      if (coll) patch.tileCm = tileCmFromFormat(coll.format);
+      update({ design: { decor: patch } });
+    },
+  );
+
+  function syncDecorVisibility(): void {
+    const d = getState().design.decor;
+    const on = d.mode !== 'aucun';
+    decorTileCm.root.hidden = !on;
+    decorGrout.root.hidden = !on;
+    decorGroutColor.root.hidden = !on;
+    decorPatina.root.hidden = !on;
+    decorAttenuation.root.hidden = !on;
+    decorSource.root.hidden = !on;
+    decorOther.root.hidden = !on || d.tileSource !== 'other-collection';
+  }
+  syncDecorVisibility();
+
+  decorSection.append(
+    decorMode.root,
+    decorTileCm.root,
+    decorGrout.root,
+    decorGroutColor.root,
+    decorPatina.root,
+    decorAttenuation.root,
+    decorSource.root,
+    decorOther.root,
+  );
+
   const checks = details('Contrôles', 'section-checks');
   checks.append(
     pill('check-colors'),
@@ -1302,7 +1437,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     }, 4000);
   });
 
-  host.append(layout, dimensions, pixels, zones, checks, exportsSection, resetAll, computeMs);
+  host.append(layout, dimensions, pixels, zones, decorSection, checks, exportsSection, resetAll, computeMs);
 
   const syncManual = (current: SockDesign): void => {
     const isManual = current.quantize.paletteMode === 'manuelle';
@@ -1369,16 +1504,37 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     if (document.activeElement !== toeColor.input) toeColor.input.value = current.zones.toeColor;
     patternFoot.input.checked = current.zones.patternOnFoot;
     if (document.activeElement !== footColor.input) footColor.input.value = current.zones.footColor;
+    if (document.activeElement !== decorMode.input) decorMode.input.value = current.decor.mode;
+    decorTileCm.setValue(current.decor.tileCm);
+    decorGrout.setValue(current.decor.groutMm);
+    if (document.activeElement !== decorGroutColor.input) decorGroutColor.input.value = current.decor.groutColor;
+    decorPatina.setValue(current.decor.patina);
+    decorAttenuation.setValue(current.decor.attenuation);
+    if (document.activeElement !== decorSource.input) decorSource.input.value = current.decor.tileSource;
+    // Rafraîchir la liste des collections (catalogue chargé après le montage)
+    const opts = otherOptions();
+    const prev = decorOther.input.value;
+    decorOther.input.replaceChildren(
+      ...opts.map((o) => {
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.label;
+        return opt;
+      }),
+    );
+    decorOther.input.value = current.decor.otherCollectionId ?? prev ?? '';
+    syncDecorVisibility();
   };
   subscribe((state) => {
     sync(state.design);
     if (document.activeElement !== fidelity.input) fidelity.input.value = state.knitFidelity;
     if (document.activeElement !== footSide.input) footSide.input.value = state.footSide;
-    const dirtyMap: Array<[string, 'layout' | 'dimensions' | 'quantize' | 'zones']> = [
+    const dirtyMap: Array<[string, 'layout' | 'dimensions' | 'quantize' | 'zones' | 'decor']> = [
       ['dirty-calepinage', 'layout'],
       ['dirty-dimensions', 'dimensions'],
       ['dirty-pixels', 'quantize'],
       ['dirty-zones', 'zones'],
+      ['dirty-decor', 'decor'],
     ];
     for (const [id, section] of dirtyMap) {
       const el = host.querySelector(`[data-testid="${id}"]`);

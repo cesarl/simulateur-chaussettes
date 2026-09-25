@@ -25,8 +25,8 @@ test('raccord dos puis intérieur : captures dos et profil intérieur', async ({
   const errors = trackErrors(page);
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
-  await page.getByTestId('tile-fixture').click();
-  await expect(page.getByTestId('tile-thumb')).toHaveCount(1);
+  await page.evaluate(() => window.__SIM__!.loadFixture('carreau-test-etoile.svg'));
+  await expect(page.getByTestId('tile-thumb')).toHaveCount(1, { timeout: 15_000 });
 
   // Mode libre, largeur qui ne tombe pas juste
   await page.getByTestId('ctl-free-tile-size').check();

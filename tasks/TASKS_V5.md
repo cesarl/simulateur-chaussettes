@@ -60,7 +60,7 @@ Lire `docs/JAUGE_EXPLIQUEE.md` (texte à reprendre dans l'interface).
 - [x] Test unitaire : largeur 25 mailles, raccord « dos » → la colonne coupée est juste avant la colonne 42 (milieu du dos), pas en colonne 0.
 - [x] Captures dos / profil intérieur avec raccord « dos » puis « intérieur », décrites dans `PROGRESS.md`.
 
-### [ ] T38 — Décor : sol et mur en carreaux de ciment
+### [x] T38 — Décor : sol et mur en carreaux de ciment
 - Intégrer `reference/decor/tileSurface.ts` (`src/render/decor/`). Section « Décor » : Aucun (défaut) / Sol / Mur / Sol + mur ; format du carreau (défaut : `format` de la collection, 20 × 20 → 20 cm ; 10 × 10 → 10 cm ; curseur 10–30 cm) ; joint (mm) et couleur du joint ; patine ; atténuation ; carreaux du décor : **« comme la chaussette »** (mêmes carreaux et couleurs) / **« couleurs d'origine de la collection »** / **autre collection** (liste) ; calepinage du décor : celui par défaut de la collection choisie.
 - Hors collection (carreaux importés) : le décor utilise les carreaux importés.
 - Le mur est replacé face à la caméra à chaque rendu (`faceCamera`) et dans chaque capture (`capturePng(..., beforeRender)`). En mode sol ou sol + mur, masquer l'ombre du studio (le sol reçoit l'ombre).
@@ -68,9 +68,9 @@ Lire `docs/JAUGE_EXPLIQUEE.md` (texte à reprendre dans l'interface).
 - Génération de texture dans un `requestIdleCallback` ou un worker si elle dépasse 150 ms ; ne régénérer que si les carreaux, les couleurs ou les options du décor changent (pas quand on tourne la caméra).
 
 **Critères**
-- [ ] `decor.test.ts` fourni vert.
-- [ ] e2e : décor « Sol + mur » → export trois-quarts 2048 contient les couleurs de la collection hors de la silhouette de la chaussette ; export « dos » : le mur est toujours derrière la chaussette (pixels du centre = chaussette).
-- [ ] Captures sol / mur / sol + mur avec deux collections, ouvertes et décrites dans `PROGRESS.md`.
+- [x] `decor.test.ts` fourni vert.
+- [x] e2e : décor « Sol + mur » → export trois-quarts 2048 contient les couleurs de la collection hors de la silhouette de la chaussette ; export « dos » : le mur est toujours derrière la chaussette (pixels du centre = chaussette).
+- [x] Captures sol / mur / sol + mur avec deux collections, ouvertes et décrites dans `PROGRESS.md`.
 
 ### [ ] T39 — Bilan V5
 - README (visionneuse, `?dev`, lien de partage, raccord, décor) et « Point pour César » avec captures.

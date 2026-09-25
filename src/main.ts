@@ -31,6 +31,7 @@ import { mountFlatView } from './ui/flatView';
 import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
+import { createDecorController } from './render/decorController';
 
 const viewportEl = document.getElementById('viewport');
 const panelEl = document.getElementById('panel');
@@ -126,6 +127,23 @@ let textureUpdates = 0;
 let surfaceKey = '';
 let sock: SockObject | null = null;
 const warnings: string[] = [];
+
+const decor = createDecorController(
+  handle.scene,
+  handle.renderer,
+  handle.studio.ground,
+  () => {
+    if (sock) {
+      const box = new THREE.Box3().setFromObject(sock.mesh);
+      return box.getCenter(new THREE.Vector3());
+    }
+    return handle.controls.target.clone();
+  },
+  () => handle.requestRender(),
+);
+handle.setBeforeRender(() => {
+  decor.faceCamera(handle.camera, handle.controls.target);
+});
 
 function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings, side: string): string {
   return [
@@ -246,7 +264,16 @@ function setDesign(partial: DesignPatch): void {
 async function captureView(view: ViewName, size: number, background: string | null = '#ecebe8'): Promise<string> {
   if (!sock) throw new Error('La chaussette n’est pas prête.');
   const mirror = getState().footSide === 'gauche';
-  const blob = await capturePng(handle.renderer, handle.scene, sock.mesh, view, size, background, mirror);
+  const blob = await capturePng(
+    handle.renderer,
+    handle.scene,
+    sock.mesh,
+    view,
+    size,
+    background,
+    mirror,
+    (cam, target) => decor.faceCamera(cam, target),
+  );
   handle.requestRender();
   return blobToDataUrl(blob);
 }
@@ -271,6 +298,7 @@ async function capturePair(size: number, background: string | null = '#ecebe8'):
         rim: design.zones.cuffEnabled ? design.zones.cuffColor : undefined,
       },
       mirrorView: false,
+      beforeRender: (cam, target) => decor.faceCamera(cam, target),
     },
     size,
     background ?? '#ecebe8',
@@ -606,6 +634,7 @@ async function boot(): Promise<void> {
           },
           mirrorView: footSide === 'gauche',
           paletteLabels: yarnLegendLabels(),
+          beforeRender: (cam, target) => decor.faceCamera(cam, target),
         },
         request,
       );
@@ -636,8 +665,12 @@ async function boot(): Promise<void> {
   subscribe(recompute);
   subscribe(scheduleSave);
   subscribe(scheduleShareHash);
+  subscribe(() => {
+    decor.sync();
+  });
   recompute();
   scheduleShareHash();
+  decor.sync();
 
   handle.controls.addEventListener('change', () => {
     const sim = window.__SIM__;

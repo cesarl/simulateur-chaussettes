@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { heightToNormal } from '../../reference/decor/tileSurface';
+import { heightToNormal } from '../../src/render/decor/tileSurface';
 
 describe('décor : relief des carreaux', () => {
   it('surface plate → normale verticale', () => {
