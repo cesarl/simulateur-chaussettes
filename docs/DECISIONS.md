@@ -88,3 +88,9 @@ Contexte : le cahier ne dit pas si les mailles hors tricot entrent dans le nombr
 Options : compter toute la grille / seulement les mailles tricotées ; surlignage plein / coin.
 Choix : les mailles `Zone.Empty` sont ignorées pour les couleurs. Un flotté est une suite circulaire, zones de motif seulement (tige, et pied si le motif y est). Le seuil est accepté tel quel (7 passe, 8 est signalé). Le surlignage est un pixel orange au coin de la maille, pour laisser le centre intact.
 Conséquence : une tige unie produit beaucoup de flottés (un rang entier dépasse 7). Le détail est dans `src/core/checks.ts`.
+
+## D14 — Pas de Web Worker (T13)
+Contexte : le recalcul doit passer sous 300 ms pour 200 aiguilles × 600 rangs, 2 carreaux et 6 couleurs, sinon layout et quantize vont dans un worker.
+Options : worker tout de suite / mesurer d’abord.
+Choix : mesurer d’abord. Trois passages donnent 97 ms, 102 ms et 99 ms. Le calcul reste sur le fil principal.
+Conséquence : un recalcul peut figer l’image environ un dixième de seconde. Si une taille plus grande dépasse 300 ms, le test `tests/unit/perf.test.ts` échoue et il faudra alors le worker.

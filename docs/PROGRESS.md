@@ -108,3 +108,23 @@ Fait : Pastilles vert/orange pour les couleurs totales, les couleurs par rang, l
 Vérification : `npm run verify` ✅ (40 tests unitaires, 14 e2e). Un flotté de 8 est signalé avec le seuil 7, un flotté de 7 ne l’est pas. e2e : largeur 20 (décalage), puis ajustement, reste 0.
 Décisions : D13 (hors tricot ignoré, surlignage en coin).
 Reste / risques : une couleur unie sur toute la tige est comptée comme un flotté par rang. Performances du recalcul ensuite (T13).
+
+## T13 — Performances — 2026-09-25 07:25
+Statut : terminée
+Fait : Mesure de `samplePattern` + `quantize` sur 200 × 600, deux carreaux bruités, 6 couleurs, despeckle. Trois passages : 97 ms, 102 ms, 99 ms. Sous les 300 ms, donc pas de Web Worker. L’anti-rebond garde le dernier réglage.
+Vérification : `npm run verify` ✅ (41 tests unitaires, 15 e2e). e2e : rotation de la vue puis 10 saisies rapides du nombre de couleurs ; la valeur finale est 4, la largeur de grille reste égale aux aiguilles, pas d’erreur console.
+Décisions : D14 (pas de worker).
+Reste / risques : le budget est tenu sur cette machine. Une machine plus lente fera échouer le test à 300 ms, ce qui sera le signal pour extraire le worker.
+
+## Point pour César
+
+Ce qui marche : import PNG/SVG et exemple, calepinage (grille, quinconces, rotations, miroirs, damier, aléatoire), réduction de couleurs, chaussette 3D texturée (jersey et côtes), vue à plat, exports PNG (5 angles, plat exact, plat lisible), projet JSON + reprise IndexedDB, pastilles de fabrication.
+
+Tester en 3 étapes :
+1. `npm install` puis `npm run dev`, ouvrir l’adresse affichée.
+2. Cliquer « Charger un exemple », choisir Femme ou Homme, passer le calepinage en quinconce : la chaussette et la vue « À plat » suivent.
+3. Dans Exports, cocher Face et Plat exact, puis Exporter. Les fichiers se nomment `modele_<taille>_<vue>.png`.
+
+Décisions à relire : D03 à D14 dans `docs/DECISIONS.md`. Les tailles de `config/sizes.json` sont toujours provisoires.
+
+Blocages : aucun. Il reste T14 (frontière des mailles en V), T15 (BMP indexé et planche), puis le jalon 3 (T16 à T18).

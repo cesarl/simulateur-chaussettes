@@ -159,7 +159,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 **Critères** : tests unitaires sur grilles synthétiques (flotté de 8 détecté avec seuil 7, flotté de 7 accepté, raccord) ; e2e : le bouton d'ajustement ramène le décalage à 0.
 
-### [ ] T13 — Performances
+### [x] T13 — Performances
 - Mesurer le recalcul (200 aiguilles × 600 rangs, 2 carreaux, 6 couleurs). S'il dépasse 300 ms : déplacer layout + quantize dans un Web Worker (module Vite `?worker`), annuler les calculs périmés.
 - Vérifier que la rotation 3D reste fluide pendant un recalcul.
 
