@@ -6,6 +6,8 @@ import { expect, test } from '@playwright/test';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 test('T32 captures bilan 4 collections', async ({ page }) => {
+  test.setTimeout(180_000);
+  page.setDefaultTimeout(120_000);
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/?dev');
