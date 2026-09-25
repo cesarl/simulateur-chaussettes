@@ -1,5 +1,5 @@
 import type { DesignPatch } from './state';
-import type { SockDesign } from './core/types';
+import type { KnitFidelity, SockDesign } from './core/types';
 
 export interface StitchRead {
   col: number;
@@ -22,6 +22,8 @@ export interface SimHook {
   geometryBuilds: number;
   /** Nombre de mises à jour de la texture de couleur, sans reconstruire le maillage. */
   textureUpdates: number;
+  /** Mode de frontière des mailles en 3D. */
+  knitFidelity: KnitFidelity;
   warnings: string[];
   loadFixture: (name: string) => Promise<void>;
   setDesign: (partial: DesignPatch) => void;

@@ -1,19 +1,24 @@
 import * as THREE from 'three';
 import { hexToRgb } from '../core/color';
-import type { StitchGrid } from '../core/types';
+import type { KnitFidelity, StitchGrid } from '../core/types';
 
 /**
  * Texture de couleur de la grille (1 texel = 1 maille) et relief de jersey.
  * Le V est une carte de normales + une occlusion, répétées une fois par maille.
  * Le bord-côte remplace ce relief par des côtes verticales.
+ * En mode fidèle, la lecture de couleur est décalée pour que la frontière
+ * verticale entre deux mailles suive la forme en V (chevrons).
  */
 
 const TILE = 128;
+/** Amplitude du décalage horizontal (fraction de maille) pour le chevron. */
+const CHEVRON_AMOUNT = 0.32;
 
 export interface KnitMaterial {
   material: THREE.MeshStandardMaterial;
   updateGrid: (grid: StitchGrid) => void;
   setLayout: (needles: number, rows: number, cuffRows: number) => void;
+  setFidelity: (mode: KnitFidelity) => void;
   dispose: () => void;
 }
 
@@ -144,12 +149,32 @@ function createGridTexture(grid: StitchGrid): THREE.DataTexture {
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   texture.generateMipmaps = false;
-  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.ClampToEdgeWrapping;
   texture.flipY = false;
   texture.needsUpdate = true;
   return texture;
 }
+
+const MAP_FRAGMENT = /* glsl */`
+#ifdef USE_MAP
+	vec2 knitMapUv = vMapUv;
+	if (knitFidelity > 0.5 && cuffEndV >= 0.0) {
+		bool inCuff = cuffEndV > 0.0 && vMapUv.y < cuffEndV;
+		if (!inCuff) {
+			vec2 stitch = vMapUv * knitGridSize;
+			float lx = fract(stitch.x);
+			float ly = fract(stitch.y);
+			// Tip du V en bas : décalage horizontal opposé de chaque côté du centre.
+			float wave = (0.5 - ly) * chevronAmount;
+			stitch.x += wave * sign(lx - 0.5);
+			knitMapUv = vec2(stitch.x / knitGridSize.x, vMapUv.y);
+		}
+	}
+	vec4 sampledDiffuseColor = texture2D( map, knitMapUv );
+	diffuseColor *= sampledDiffuseColor;
+#endif
+`;
 
 const NORMAL_FRAGMENT = /* glsl */`
 #ifdef USE_NORMALMAP_OBJECTSPACE
@@ -201,6 +226,9 @@ export function createKnitMaterial(grid: StitchGrid, renderer: THREE.WebGLRender
   const gridTexture = createGridTexture(grid);
   const cuffEndV = { value: 0 };
   const ribRepeat = { value: new THREE.Vector2(1, 1) };
+  const knitGridSize = { value: new THREE.Vector2(Math.max(1, grid.width), Math.max(1, grid.height)) };
+  const knitFidelity = { value: 1 };
+  const chevronAmount = { value: CHEVRON_AMOUNT };
   const material = new THREE.MeshStandardMaterial({
     map: gridTexture,
     normalMap: details.jerseyNormal,
@@ -212,13 +240,24 @@ export function createKnitMaterial(grid: StitchGrid, renderer: THREE.WebGLRender
     side: THREE.DoubleSide,
   });
   details.jerseyAo.channel = 0;
-  material.customProgramCacheKey = () => 'knit-jersey-v2';
+  material.customProgramCacheKey = () => 'knit-jersey-v3-chevron';
   material.onBeforeCompile = (shader) => {
     shader.uniforms.ribNormalMap = { value: details.ribNormal };
     shader.uniforms.ribAoMap = { value: details.ribAo };
     shader.uniforms.cuffEndV = cuffEndV;
     shader.uniforms.ribRepeat = ribRepeat;
-    shader.fragmentShader = `uniform sampler2D ribNormalMap;\nuniform sampler2D ribAoMap;\nuniform float cuffEndV;\nuniform vec2 ribRepeat;\n${shader.fragmentShader}`;
+    shader.uniforms.knitGridSize = knitGridSize;
+    shader.uniforms.knitFidelity = knitFidelity;
+    shader.uniforms.chevronAmount = chevronAmount;
+    shader.fragmentShader = `uniform sampler2D ribNormalMap;
+uniform sampler2D ribAoMap;
+uniform float cuffEndV;
+uniform vec2 ribRepeat;
+uniform vec2 knitGridSize;
+uniform float knitFidelity;
+uniform float chevronAmount;
+${shader.fragmentShader}`;
+    shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', MAP_FRAGMENT);
     shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_maps>', NORMAL_FRAGMENT);
     shader.fragmentShader = shader.fragmentShader.replace('#include <aomap_fragment>', AO_FRAGMENT);
     shader.fragmentShader = shader.fragmentShader.replace(
@@ -235,6 +274,7 @@ export function createKnitMaterial(grid: StitchGrid, renderer: THREE.WebGLRender
     details.jerseyAo.repeat.set(Math.max(1, needles), Math.max(1, rows));
     ribRepeat.value.set(Math.max(1, needles / 2), 1);
     cuffEndV.value = rows > 0 ? Math.max(0, cuffRows) / rows : 0;
+    knitGridSize.value.set(Math.max(1, needles), Math.max(1, rows));
   };
 
   return {
@@ -246,9 +286,12 @@ export function createKnitMaterial(grid: StitchGrid, renderer: THREE.WebGLRender
       gridTexture.needsUpdate = true;
     },
     setLayout,
+    setFidelity(mode: KnitFidelity): void {
+      knitFidelity.value = mode === 'fidele' ? 1 : 0;
+    },
     dispose(): void {
       gridTexture.dispose();
       material.dispose();
     },
   };
-}
+};

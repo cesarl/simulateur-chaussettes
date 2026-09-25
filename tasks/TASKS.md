@@ -165,12 +165,12 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 **Critères** : durée mesurée notée dans `PROGRESS.md` avant/après ; e2e : 10 changements rapides de curseur → état final cohérent, pas d'erreur.
 
-### [ ] T14 — Fidélité des mailles (shader chevron)
+### [x] T14 — Fidélité des mailles (shader chevron)
 - Via `onBeforeCompile` du `MeshStandardMaterial` : à l'intérieur de chaque maille, décaler la lecture de couleur pour que la frontière verticale entre deux mailles suive la forme en V. Option « rendu simple / rendu fidèle » dans le panneau.
 
 **Critères** : captures avant/après examinées et décrites ; aucune régression des tests d'export (le plat exact ne dépend pas du shader).
 
-### [ ] T15 — Export BMP indexé et planche
+### [~] T15 — Export BMP indexé et planche
 - BMP 8 bits indexé, 1 px = 1 maille (format courant des logiciels jacquard — à confirmer avec le fabricant).
 - Planche PNG : 4 vues + grille à plat + palette sur une seule image, titre du modèle.
 

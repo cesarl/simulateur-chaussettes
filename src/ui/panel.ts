@@ -776,6 +776,20 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   });
   zones.append(cuff.root, cuffRows.root, cuffColor.root, heelColor.root, toeColor.root, patternFoot.root, footColor.root);
 
+  const fidelity = makeSelect(
+    'Rendu des mailles',
+    'ctl-knit-fidelity',
+    [
+      { value: 'simple', label: 'Rendu simple' },
+      { value: 'fidele', label: 'Rendu fidèle' },
+    ],
+    getState().knitFidelity,
+    (value) => {
+      if (value === 'simple' || value === 'fidele') update({ knitFidelity: value });
+    },
+  );
+  zones.appendChild(fidelity.root);
+
   const checks = details('Contrôles', 'section-checks');
   checks.append(
     pill('check-colors'),
@@ -863,6 +877,10 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     patternFoot.input.checked = current.zones.patternOnFoot;
     if (document.activeElement !== footColor.input) footColor.input.value = current.zones.footColor;
   };
-  subscribe((state) => sync(state.design));
+  subscribe((state) => {
+    sync(state.design);
+    if (document.activeElement !== fidelity.input) fidelity.input.value = state.knitFidelity;
+  });
   sync(design);
+  fidelity.input.value = getState().knitFidelity;
 }

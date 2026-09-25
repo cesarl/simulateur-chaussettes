@@ -69,7 +69,7 @@ function cuffRowsOf(dims: SockDimensions, zones: ZoneSettings): number {
 }
 
 function syncMesh(next: StitchGrid): void {
-  const { design } = getState();
+  const { design, knitFidelity } = getState();
   const key = surfaceKeyOf(design.dimensions, design.zones);
   const cuffRows = cuffRowsOf(design.dimensions, design.zones);
   if (!mesh || !knit || key !== surfaceKey) {
@@ -80,6 +80,7 @@ function syncMesh(next: StitchGrid): void {
     knit?.dispose();
     knit = createKnitMaterial(next, handle.renderer);
     knit.setLayout(design.dimensions.needles, next.height, cuffRows);
+    knit.setFidelity(knitFidelity);
     mesh = createSockMesh(design.dimensions, design.zones, knit.material);
     handle.root.add(mesh);
     surfaceKey = key;
@@ -88,6 +89,7 @@ function syncMesh(next: StitchGrid): void {
   } else {
     knit.updateGrid(next);
     knit.setLayout(design.dimensions.needles, next.height, cuffRows);
+    knit.setFidelity(knitFidelity);
   }
   textureUpdates += 1;
   handle.requestRender();
@@ -136,6 +138,7 @@ function publish(): void {
     patternPalette: [...patternPalette],
     geometryBuilds,
     textureUpdates,
+    knitFidelity: getState().knitFidelity,
     warnings: [...warnings],
     loadFixture,
     setDesign,

@@ -1,5 +1,6 @@
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import type {
+  KnitFidelity,
   LayoutSettings,
   QuantizeSettings,
   SockDesign,
@@ -23,12 +24,15 @@ export interface AppState {
   tiles: TileAsset[];
   /** Message lisible, ou null s'il n'y a pas d'erreur. */
   error: string | null;
+  /** Rendu 3D des frontières de mailles (hors sérialisation projet). */
+  knitFidelity: KnitFidelity;
 }
 
 export interface StatePatch {
   design?: DesignPatch;
   tiles?: TileAsset[];
   error?: string | null;
+  knitFidelity?: KnitFidelity;
 }
 
 type Listener = (state: AppState) => void;
@@ -75,7 +79,7 @@ export function defaultDesign(): SockDesign {
 }
 
 function createInitial(): AppState {
-  return { design: defaultDesign(), tiles: [], error: null };
+  return { design: defaultDesign(), tiles: [], error: null, knitFidelity: 'fidele' };
 }
 
 let state: AppState = createInitial();
@@ -115,6 +119,7 @@ export function update(patch: StatePatch): void {
     design,
     tiles,
     error: patch.error === undefined ? state.error : patch.error,
+    knitFidelity: patch.knitFidelity ?? state.knitFidelity,
   };
   for (const listener of listeners) listener(state);
 }

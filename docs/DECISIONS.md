@@ -94,3 +94,9 @@ Contexte : le recalcul doit passer sous 300 ms pour 200 aiguilles × 600 rangs, 
 Options : worker tout de suite / mesurer d’abord.
 Choix : mesurer d’abord. Trois passages donnent 97 ms, 102 ms et 99 ms. Le calcul reste sur le fil principal.
 Conséquence : un recalcul peut figer l’image environ un dixième de seconde. Si une taille plus grande dépasse 300 ms, le test `tests/unit/perf.test.ts` échoue et il faudra alors le worker.
+
+## D15 — Chevron des frontières de couleur (T14)
+Contexte : le cahier demande une option simple/fidèle sans fixer l’amplitude ni si le réglage entre dans le fichier projet.
+Options : champ dans `SockDesign` / état d’affichage seul ; warp sur toutes les zones / hors bord-côte.
+Choix : `knitFidelity` dans l’état d’application seulement (défaut `fidele`), pas dans le JSON projet. Décalage horizontal `(0,5 − ly) × 0,32 × signe(lx − 0,5)` hors bord-côte. `wrapS` de la grille en `RepeatWrapping` pour le raccord circulaire.
+Conséquence : le plat exact et le BMP restent des pixels droits. Le détail est dans `src/render/knitTexture.ts`.

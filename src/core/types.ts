@@ -101,6 +101,9 @@ export interface SockDesign {
   quantize: QuantizeSettings;
 }
 
+/** Frontière des mailles en 3D : droite (simple) ou en V (fidèle). Hors sérialisation projet. */
+export type KnitFidelity = 'simple' | 'fidele';
+
 /** Zones de la grille de mailles (objet constant plutôt qu'enum : compatible isolatedModules). */
 export const Zone = {
   Cuff: 0,

@@ -116,15 +116,9 @@ Vérification : `npm run verify` ✅ (41 tests unitaires, 15 e2e). e2e : rotatio
 Décisions : D14 (pas de worker).
 Reste / risques : le budget est tenu sur cette machine. Une machine plus lente fera échouer le test à 300 ms, ce qui sera le signal pour extraire le worker.
 
-## Point pour César
-
-Ce qui marche : import PNG/SVG et exemple, calepinage (grille, quinconces, rotations, miroirs, damier, aléatoire), réduction de couleurs, chaussette 3D texturée (jersey et côtes), vue à plat, exports PNG (5 angles, plat exact, plat lisible), projet JSON + reprise IndexedDB, pastilles de fabrication.
-
-Tester en 3 étapes :
-1. `npm install` puis `npm run dev`, ouvrir l’adresse affichée.
-2. Cliquer « Charger un exemple », choisir Femme ou Homme, passer le calepinage en quinconce : la chaussette et la vue « À plat » suivent.
-3. Dans Exports, cocher Face et Plat exact, puis Exporter. Les fichiers se nomment `modele_<taille>_<vue>.png`.
-
-Décisions à relire : D03 à D14 dans `docs/DECISIONS.md`. Les tailles de `config/sizes.json` sont toujours provisoires.
-
-Blocages : aucun. Il reste T14 (frontière des mailles en V), T15 (BMP indexé et planche), puis le jalon 3 (T16 à T18).
+## T14 — Fidélité des mailles (shader chevron) — 2026-09-25 07:32
+Statut : terminée
+Fait : Dans `onBeforeCompile`, la lecture de `map` est décalée horizontalement selon la position dans la maille pour que la frontière verticale suive un V. Option « Rendu simple / Rendu fidèle » (`ctl-knit-fidelity`), hors fichier projet. Bord-côte inchangé (côtes droites).
+Vérification : `npm run verify` ✅ (41 tests unitaires, 16 e2e). Contrôle visuel : `visuel-t14-simple.png` — motif étoile crème/marine/rouge, cellules de couleur à bords plutôt droits, relief jersey présent ; talon rouge. `visuel-t14-fidele.png` — même cadrage et motif, mais les frontières de couleur dentelées en chevron le long des V ; fichiers nettement différents (≈445 ko vs 438 ko). Export plat exact toujours téléchargé, indépendant du shader. Les tests d’export T10 passent.
+Décisions : D15.
+Reste / risques : l’effet est surtout visible au zoom sur un motif contrasté.
