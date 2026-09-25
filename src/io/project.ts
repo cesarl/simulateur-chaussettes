@@ -9,7 +9,7 @@ import {
 } from '../core/calepinage';
 import type { ZoneColors } from '../core/collections';
 import { isLegacyLayoutKind, migrateLegacyKind } from '../core/presets';
-import type { SockDesign, TileAsset } from '../core/types';
+import type { SockDesign, TileAsset, SeamPosition, TileSizeMode, DecorMode, DecorSettings } from '../core/types';
 import { base64ToBytes, bytesToBase64, decodePng, encodePng } from './pngCodec';
 
 /**
@@ -182,6 +182,38 @@ function readDesign(value: unknown): SockDesign {
   if (sampling !== 'majoritaire' && sampling !== 'moyenne') throw new ProjectError('échantillonnage inconnu.');
   const palette = quantize.palette;
   if (!Array.isArray(palette)) throw new ProjectError('palette illisible.');
+
+  const seamRaw = typeof layout.seam === 'string' ? layout.seam : 'dos';
+  const seamOk: SeamPosition[] = ['dos', 'interieur', 'exterieur', 'devant'];
+  const seam: SeamPosition = seamOk.includes(seamRaw as SeamPosition) ? (seamRaw as SeamPosition) : 'dos';
+  const tileSizeModeRaw = typeof layout.tileSizeMode === 'string' ? layout.tileSizeMode : 'around';
+  const tileSizeMode: TileSizeMode = tileSizeModeRaw === 'free' ? 'free' : 'around';
+  const tilesAround = optionalNumber(layout, 'tilesAround', 6);
+
+  const decorRaw = isRecord(value.decor) ? value.decor : {};
+  const decorModeRaw = typeof decorRaw.mode === 'string' ? decorRaw.mode : 'aucun';
+  const decorModes: DecorMode[] = ['aucun', 'sol', 'mur', 'coin'];
+  const decorMode: DecorMode = decorModes.includes(decorModeRaw as DecorMode)
+    ? (decorModeRaw as DecorMode)
+    : 'aucun';
+  const tileSourceRaw = typeof decorRaw.tileSource === 'string' ? decorRaw.tileSource : 'sock';
+  const decor: DecorSettings = {
+    mode: decorMode,
+    tileCm: optionalNumber(decorRaw, 'tileCm', 20),
+    groutMm: optionalNumber(decorRaw, 'groutMm', 2),
+    groutColor: typeof decorRaw.groutColor === 'string' ? needHex(decorRaw, 'groutColor') : '#d9d3c7',
+    patina: optionalNumber(decorRaw, 'patina', 0.35),
+    attenuation: optionalNumber(decorRaw, 'attenuation', 0.25),
+    tileSource:
+      tileSourceRaw === 'collection-origin' || tileSourceRaw === 'other-collection'
+        ? tileSourceRaw
+        : 'sock',
+    otherCollectionId:
+      decorRaw.otherCollectionId === null || decorRaw.otherCollectionId === undefined
+        ? null
+        : String(decorRaw.otherCollectionId),
+  };
+
   return {
     version: 1,
     name: needString(value, 'name'),
@@ -195,6 +227,9 @@ function readDesign(value: unknown): SockDesign {
       gapColor: needHex(layout, 'gapColor'),
       offsetStitches: needNumber(layout, 'offsetStitches'),
       offsetRows: needNumber(layout, 'offsetRows'),
+      seam,
+      tilesAround,
+      tileSizeMode,
     },
     dimensions: {
       size,
@@ -234,6 +269,7 @@ function readDesign(value: unknown): SockDesign {
       despeckle: needBoolean(quantize, 'despeckle'),
       maxFloat: needNumber(quantize, 'maxFloat'),
     },
+    decor,
   };
 }
 

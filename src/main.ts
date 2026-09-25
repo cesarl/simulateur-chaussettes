@@ -18,7 +18,8 @@ import {
   type ProjectCollectionMeta,
 } from './io/project';
 import { leaveDevMode, resolveDevMode } from './io/shareLink';
-import { fixtureUrl, loadTileFromUrl } from './io/tiles';
+import { buildShareUrl, decodeShareHash, type ParsedShare } from './io/shareState';
+import { fixtureUrl, loadTileFromUrl, loadTileFromSvgText } from './io/tiles';
 import { createScene } from './render/scene';
 import { createSockObject, type SockObject } from './render/sock3d/sockObject';
 import type { SockShapeInput } from './render/sock3d/sockShape';
@@ -66,11 +67,44 @@ const viewer = mountViewerBar(viewport, {
     frameCamera(view);
     publish();
   },
-  onCopyLink: () => {
-    const url = `${window.location.origin}${window.location.pathname}${window.location.hash}`;
-    return navigator.clipboard.writeText(url).catch(() => undefined);
-  },
+  onCopyLink: () => copyShareLink(),
 });
+
+const shareHint = document.createElement('p');
+shareHint.className = 'share-hint';
+shareHint.dataset.testid = 'share-hint';
+shareHint.hidden = true;
+viewport.appendChild(shareHint);
+
+function showShareHint(message: string | null): void {
+  if (!message) {
+    shareHint.hidden = true;
+    shareHint.textContent = '';
+    return;
+  }
+  shareHint.hidden = false;
+  shareHint.textContent = message;
+}
+
+async function copyShareLink(): Promise<void> {
+  const built = await buildShareUrl();
+  try {
+    await navigator.clipboard.writeText(built.url);
+  } catch {
+    /* presse-papiers indisponible */
+  }
+  window.history.replaceState(null, '', `${window.location.pathname}${built.hash}`);
+  if (built.tilesOmitted) {
+    showShareHint(
+      'Les carreaux importés ne sont pas dans le lien : utilisez une collection ou envoyez le projet .json',
+    );
+  } else if (built.tooLong) {
+    showShareHint('Lien long : certaines messageries peuvent le tronquer.');
+  } else {
+    showShareHint('Lien copié.');
+    window.setTimeout(() => showShareHint(null), 2500);
+  }
+}
 
 function applyShellMode(dev: boolean): void {
   devMode = dev;
@@ -437,6 +471,76 @@ function scheduleSave(): void {
   }, 200);
 }
 
+let shareTimer: number | undefined;
+function scheduleShareHash(): void {
+  window.clearTimeout(shareTimer);
+  shareTimer = window.setTimeout(() => {
+    void buildShareUrl()
+      .then((built) => {
+        window.history.replaceState(null, '', `${window.location.pathname}${built.hash}`);
+      })
+      .catch(() => undefined);
+  }, 500);
+}
+
+async function applyShare(parsed: ParsedShare): Promise<void> {
+  const { catalogue } = getState();
+  if (parsed.activeCollectionId && catalogue) {
+    const collection = catalogue.collections.find((c) => c.id === parsed.activeCollectionId);
+    if (collection) {
+      const colors = parsed.zoneColors ?? collection.couleursParDefaut;
+      try {
+        const tiles = await tilesFromCollection(collection, colors, nuancierMap(catalogue));
+        update({
+          design: {
+            ...parsed.design,
+            layout: { ...parsed.design.layout, tileIds: tiles.map((t) => t.id) },
+          },
+          tiles,
+          activeCollectionId: collection.id,
+          zoneColors: colors,
+          paletteOptionId: parsed.paletteOptionId,
+          error: null,
+        }, { skipHistory: true });
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Collection illisible.';
+        update({ error: message }, { skipHistory: true });
+      }
+    } else {
+      update({
+        error: `Collection « ${parsed.activeCollectionId} » absente : modèle par défaut.`,
+      }, { skipHistory: true });
+    }
+  }
+  if (parsed.tiles.length > 0) {
+    const tiles = [];
+    for (const t of parsed.tiles) {
+      tiles.push(await loadTileFromSvgText(t.svg, t.name));
+    }
+    update({
+      design: {
+        ...parsed.design,
+        layout: { ...parsed.design.layout, tileIds: tiles.map((x) => x.id) },
+      },
+      tiles,
+      activeCollectionId: null,
+      zoneColors: null,
+      paletteOptionId: null,
+      error: null,
+    }, { skipHistory: true });
+    return;
+  }
+  update({
+    design: parsed.design,
+    tiles: [],
+    activeCollectionId: parsed.activeCollectionId,
+    zoneColors: parsed.zoneColors,
+    paletteOptionId: parsed.paletteOptionId,
+    error: null,
+  }, { skipHistory: true });
+}
+
 async function boot(): Promise<void> {
   const bundle = await loadCatalogue();
   if (bundle.missing) {
@@ -453,11 +557,23 @@ async function boot(): Promise<void> {
     update(patch, { skipHistory: true });
   }
 
-  try {
-    const saved = await loadLastProject();
-    if (saved) await applyParsedProject(saved);
-  } catch {
-    // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
+  const hashResult = await decodeShareHash(window.location.hash);
+  if (hashResult.ok) {
+    await applyShare(hashResult.parsed);
+  } else {
+    if (hashResult.reason === 'illisible' || hashResult.reason === 'version') {
+      showShareHint(
+        hashResult.reason === 'version'
+          ? 'Lien d’une version plus récente : modèle par défaut.'
+          : 'Lien illisible : modèle par défaut.',
+      );
+    }
+    try {
+      const saved = await loadLastProject();
+      if (saved) await applyParsedProject(saved);
+    } catch {
+      // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
+    }
   }
 
   mountPanel(panel, {
@@ -507,14 +623,13 @@ async function boot(): Promise<void> {
       leaveDevMode(storage);
       applyShellMode(false);
     },
-    copyShareLink: () => {
-      const url = `${window.location.origin}${window.location.pathname}${window.location.hash}`;
-      return navigator.clipboard.writeText(url).catch(() => undefined);
-    },
+    copyShareLink: () => copyShareLink(),
   });
   subscribe(recompute);
   subscribe(scheduleSave);
+  subscribe(scheduleShareHash);
   recompute();
+  scheduleShareHash();
 
   handle.controls.addEventListener('change', () => {
     const sim = window.__SIM__;

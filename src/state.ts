@@ -10,6 +10,7 @@ import type {
   SockDimensions,
   TileAsset,
   ZoneSettings,
+  DecorSettings,
 } from './core/types';
 import type { Preset } from './core/calepinage';
 
@@ -32,6 +33,7 @@ export interface DesignPatch {
   dimensions?: Partial<SockDimensions>;
   zones?: Partial<ZoneSettings>;
   quantize?: Partial<QuantizeSettings>;
+  decor?: Partial<DecorSettings>;
 }
 
 export interface AppState {
@@ -99,6 +101,19 @@ function defaultCalepinage(): CalepinageSpec {
   return migrateLegacyKind('grille', 1, 0);
 }
 
+export function defaultDecor(): DecorSettings {
+  return {
+    mode: 'aucun',
+    tileCm: 20,
+    groutMm: 2,
+    groutColor: '#d9d3c7',
+    patina: 0.35,
+    attenuation: 0.25,
+    tileSource: 'sock',
+    otherCollectionId: null,
+  };
+}
+
 /** Modèle de départ : homme, un seul motif, 4 couleurs auto, bord-côte présent. */
 export function defaultDesign(): SockDesign {
   const dimensions = defaultDimensions('homme');
@@ -117,6 +132,9 @@ export function defaultDesign(): SockDesign {
       gapColor: '#d9d3c7',
       offsetStitches: 0,
       offsetRows: 0,
+      seam: 'dos',
+      tilesAround: 6,
+      tileSizeMode: 'around',
     },
     dimensions,
     zones: {
@@ -138,6 +156,7 @@ export function defaultDesign(): SockDesign {
       despeckle: false,
       maxFloat: MACHINE_LIMITS.maxFloat,
     },
+    decor: defaultDecor(),
   };
 }
 
@@ -279,6 +298,9 @@ function applyLayout(layout: LayoutSettings, patch: NonNullable<DesignPatch['lay
     gapColor: patch.gapColor ?? layout.gapColor,
     offsetStitches: patch.offsetStitches ?? layout.offsetStitches,
     offsetRows: patch.offsetRows ?? layout.offsetRows,
+    seam: patch.seam ?? layout.seam,
+    tilesAround: patch.tilesAround ?? layout.tilesAround,
+    tileSizeMode: patch.tileSizeMode ?? layout.tileSizeMode,
   };
 }
 
@@ -291,6 +313,7 @@ function applyDesign(design: SockDesign, patch: DesignPatch): SockDesign {
     dimensions: patch.dimensions ? { ...design.dimensions, ...patch.dimensions } : design.dimensions,
     zones: patch.zones ? { ...design.zones, ...patch.zones } : design.zones,
     quantize: patch.quantize ? { ...design.quantize, ...patch.quantize } : design.quantize,
+    decor: patch.decor ? { ...design.decor, ...patch.decor } : design.decor,
   };
 }
 

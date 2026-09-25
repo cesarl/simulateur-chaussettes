@@ -71,6 +71,22 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
   margin-top: 16px;
   width: 100%;
 }
+.share-hint {
+  position: absolute;
+  z-index: 5;
+  left: 12px;
+  bottom: 12px;
+  margin: 0;
+  max-width: min(420px, 80vw);
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.share-hint[hidden] { display: none !important; }
+.share-row { margin-bottom: 8px; }
 .view-switch {
   position: absolute;
   z-index: 3;

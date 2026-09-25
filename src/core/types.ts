@@ -19,12 +19,19 @@ export interface TileAsset {
   width: number;
   height: number;
   rgba: Uint8ClampedArray;
+  /** Texte SVG d’origine (imports manuels) — pour le lien de partage. Absent pour les PNG. */
+  svgText?: string;
 }
 
 /**
  * Réglages de calepinage : géométrie des carreaux + spec multi-motifs (`CalepinageSpec`).
  * Ancien champ `kind` (LayoutKind) migré via `migrateLegacyKind`.
  */
+export type SeamPosition = 'dos' | 'interieur' | 'exterieur' | 'devant';
+
+/** Mode de taille des carreaux : N sur le tour (défaut) ou largeur/hauteur libres en mailles. */
+export type TileSizeMode = 'around' | 'free';
+
 export interface LayoutSettings {
   calepinage: CalepinageSpec;
   /** Carreaux utilisés, dans l'ordre (motif 1, 2…). Au moins 1. */
@@ -39,6 +46,26 @@ export interface LayoutSettings {
   /** Décalage global du motif (pour choisir où tombe le raccord). */
   offsetStitches: number;
   offsetRows: number;
+  /** Où tombe le raccord circulaire (T37). */
+  seam: SeamPosition;
+  /** Nombre de carreaux sur le tour (T36) ; utilisé si `tileSizeMode === 'around'`. */
+  tilesAround: number;
+  tileSizeMode: TileSizeMode;
+}
+
+/** Décor sol/mur (T38) — champs minimaux pour le lien de partage dès T35. */
+export type DecorMode = 'aucun' | 'sol' | 'mur' | 'coin';
+
+export interface DecorSettings {
+  mode: DecorMode;
+  tileCm: number;
+  groutMm: number;
+  groutColor: Hex;
+  patina: number;
+  attenuation: number;
+  /** Source des carreaux du décor. */
+  tileSource: 'sock' | 'collection-origin' | 'other-collection';
+  otherCollectionId: string | null;
 }
 
 export type SizeId = 'homme' | 'femme';
@@ -100,6 +127,7 @@ export interface SockDesign {
   dimensions: SockDimensions;
   zones: ZoneSettings;
   quantize: QuantizeSettings;
+  decor: DecorSettings;
 }
 
 /** Frontière des mailles en 3D : droite (simple) ou en V (fidèle). Hors sérialisation projet. */

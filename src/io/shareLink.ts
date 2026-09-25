@@ -18,7 +18,7 @@ export const SHARE_VERSION = 1;
 /** Au-delà, certaines messageries tronquent les liens : on prévient l'utilisateur. */
 export const SHARE_SOFT_LIMIT = 6000;
 
-type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
+export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
 
 // ------------------------------------------------------------------ diff / fusion
 const isObj = (v: unknown): v is Record<string, Json> => typeof v === 'object' && v !== null && !Array.isArray(v);

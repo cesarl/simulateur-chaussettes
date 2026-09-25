@@ -29,7 +29,7 @@ Cause : `#panel` est un élément de grille sans `min-height: 0` ; la rangée gr
 **Critères**
 - [x] e2e : `/` → pas de `panel` visible, canvas plein écran ; `/?dev` → panneau visible et URL sans `dev` ; recharger `/` → toujours dev ; `leave-dev` puis recharger → visionneuse.
 
-### [~] T35 — Lien de partage
+### [x] T35 — Lien de partage
 - Intégrer `shareLink.ts`. Le **lien contient tout le projet** dans le hash `#p=1.…` : réglages, collection + couleurs par zone (codes), calepinage + graine, talon, raccord, décor… (diff par rapport à `defaultDesign()`).
 - Carreaux importés à la main : SVG inclus s'ils sont petits (lien < 6 000 caractères au total) ; sinon message « Les carreaux importés ne sont pas dans le lien : utilisez une collection ou envoyez le projet .json ». Les PNG importés ne sont jamais inclus.
 - Bouton **« Copier le lien »** (mode dev : en haut du panneau ; visionneuse : dans la barre). Le hash est aussi tenu à jour pendant qu'on travaille (`history.replaceState`, anti-rebond 500 ms) pour qu'un simple rechargement conserve tout.
@@ -37,10 +37,10 @@ Cause : `#panel` est un élément de grille sans `min-height: 0` ; la rangée gr
 - Le numéro de version du lien suit celui du format de projet ; si `defaultDesign()` change, garder la compatibilité (les champs absents prennent la valeur par défaut, c'est le principe du diff).
 
 **Critères**
-- [ ] `share.test.ts` fourni vert + test d'intégration : état modifié → lien → nouvel onglet → même empreinte de grille et même vue.
-- [ ] e2e : en dev, modifier collection, palette, calepinage, talon → copier le lien → l'ouvrir dans un nouveau contexte **sans** localStorage → visionneuse (pas de panneau) avec exactement la même chaussette (comparaison de capture 3/4 : silhouette et couleurs dominantes identiques).
+- [x] `share.test.ts` fourni vert + test d'intégration : état modifié → lien → nouvel onglet → même empreinte de grille et même vue.
+- [x] e2e : en dev, modifier collection, palette, calepinage, talon → copier le lien → l'ouvrir dans un nouveau contexte **sans** localStorage → visionneuse (pas de panneau) avec exactement la même chaussette (comparaison de capture 3/4 : silhouette et couleurs dominantes identiques).
 
-### [ ] T36 — Jauge expliquée, « carreaux sur le tour »
+### [~] T36 — Jauge expliquée, « carreaux sur le tour »
 Lire `docs/JAUGE_EXPLIQUEE.md` (texte à reprendre dans l'interface).
 - Réglage principal de la taille des carreaux : **« Carreaux sur le tour de la jambe »** (curseur 2 à 12, défaut selon la collection : 6). Largeur = `tileWidthForCount(aiguilles, n, joint)`, hauteur = `tileRowsFor(largeur, jauges)` si « garder les proportions ». Les largeurs fractionnaires sont admises partout (moteur de calepinage, vue à plat).
 - Mode avancé (case « Taille libre en mailles ») : les curseurs actuels largeur/hauteur en mailles.

@@ -179,4 +179,10 @@ Options : importer depuis `reference/` / copier dans `src/io/`.
 Choix : copie dans `src/io/shareLink.ts` (même contenu) ; les tests unitaires importent depuis `src/`.
 Conséquence : une seule source d’exécution ; la référence reste le fichier d’origine fourni.
 
+## D32 — Format JSON du lien de partage (T35)
+Contexte : le lien encode un diff compact, pas le `SockDesign` brut (collection, décor, raccord absents du type V4).
+Options : étendre uniquement le payload share / étendre aussi `SockDesign`.
+Choix : étendre `SockDesign` (`decor`, `layout.seam`, `tilesAround`, `tileSizeMode`) et sérialiser via `designToShareJson` (sans `tileIds`) ; SVG manuels via `TileAsset.svgText`.
+Conséquence : projets JSON anciens restent lisibles (défauts) ; T36–T38 branchent l’UI sur ces champs.
+
 

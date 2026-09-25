@@ -164,6 +164,18 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   catalogueHint.textContent = CATALOGUE_MISSING_MESSAGE;
   host.appendChild(catalogueHint);
 
+  const shareRow = document.createElement('div');
+  shareRow.className = 'row share-row';
+  const copyLink = document.createElement('button');
+  copyLink.type = 'button';
+  copyLink.dataset.testid = 'panel-copy-link';
+  copyLink.textContent = 'Copier le lien';
+  copyLink.addEventListener('click', () => {
+    void actions.copyShareLink();
+  });
+  shareRow.appendChild(copyLink);
+  host.appendChild(shareRow);
+
   const collectionPicker = mountCollectionPicker(host);
   const palettePanel = mountPalettePanel(host);
 

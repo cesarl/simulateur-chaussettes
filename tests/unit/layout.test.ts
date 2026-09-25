@@ -57,6 +57,9 @@ function layout(
     gapColor: GAP,
     offsetStitches: 0,
     offsetRows: 0,
+    seam: 'dos',
+    tilesAround: 6,
+    tileSizeMode: 'around',
     ...rest,
   };
 }

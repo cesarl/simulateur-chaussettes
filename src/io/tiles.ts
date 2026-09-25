@@ -63,7 +63,12 @@ function targetSize(width: number, height: number, source: TileAsset['source']):
   return { width, height };
 }
 
-async function rasterize(src: string, name: string, source: TileAsset['source']): Promise<TileAsset> {
+async function rasterize(
+  src: string,
+  name: string,
+  source: TileAsset['source'],
+  svgText?: string,
+): Promise<TileAsset> {
   const image = await loadImage(src, name);
   const naturalWidth = image.naturalWidth;
   const naturalHeight = image.naturalHeight;
@@ -78,7 +83,7 @@ async function rasterize(src: string, name: string, source: TileAsset['source'])
   if (!context) throw new TileImportError(`Impossible de lire « ${name} ».`);
   context.drawImage(image, 0, 0, size.width, size.height);
   const pixels = context.getImageData(0, 0, size.width, size.height);
-  return {
+  const tile: TileAsset = {
     id: nextTileId(),
     name,
     source,
@@ -86,12 +91,24 @@ async function rasterize(src: string, name: string, source: TileAsset['source'])
     height: size.height,
     rgba: pixels.data,
   };
+  if (svgText !== undefined) tile.svgText = svgText;
+  return tile;
 }
 
 /** Importe un fichier choisi par l'utilisateur. */
 export async function loadTileFromFile(file: File): Promise<TileAsset> {
   const source = detectSource(file.name, file.type);
   if (!source) throw unsupported(file.name);
+  if (source === 'svg') {
+    const svgText = await file.text();
+    const blob = new Blob([svgText], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    try {
+      return await rasterize(url, file.name, source, svgText);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
   const url = URL.createObjectURL(file);
   try {
     return await rasterize(url, file.name, source);
@@ -116,7 +133,7 @@ export async function loadTileFromSvgText(svgText: string, name: string): Promis
   const blob = new Blob([svgText], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
   try {
-    return await rasterize(url, name, 'svg');
+    return await rasterize(url, name, 'svg', svgText);
   } finally {
     URL.revokeObjectURL(url);
   }

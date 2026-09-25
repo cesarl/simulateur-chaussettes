@@ -41,6 +41,9 @@ describe('multi-motifs', () => {
       gapColor: '#000000',
       offsetStitches: 0,
       offsetRows: 0,
+      seam: 'dos',
+      tilesAround: 6,
+      tileSizeMode: 'around',
     };
     const dims = { ...defaultDimensions('homme'), needles: 16, cuffRows: 0, legRows: 4, heelRows: 0, footRows: 0, toeRows: 0 };
     const rgb = samplePattern(tiles, layout, dims, zones, 'majoritaire');
@@ -76,6 +79,9 @@ describe('multi-motifs', () => {
       gapColor: '#000000',
       offsetStitches: 0,
       offsetRows: 0,
+      seam: 'dos',
+      tilesAround: 6,
+      tileSizeMode: 'around',
     };
     expect(preset.tilesUsed).toBe(16);
     const dims = {
