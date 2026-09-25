@@ -15,18 +15,28 @@ test('la page se charge, la 3D s’affiche, pas d’erreur console', async ({ pa
   await expect(canvas).toBeVisible();
 
   // Le canvas ne doit pas être uniforme (quelque chose est dessiné).
-  const distinctColors = await page.evaluate(() => {
-    const c = document.querySelector<HTMLCanvasElement>('[data-testid="sock-canvas"]')!;
-    const tmp = document.createElement('canvas');
-    tmp.width = 64;
-    tmp.height = 64;
-    const ctx = tmp.getContext('2d')!;
-    ctx.drawImage(c, 0, 0, 64, 64);
-    const d = ctx.getImageData(0, 0, 64, 64).data;
-    const set = new Set<string>();
-    for (let i = 0; i < d.length; i += 4) set.add(`${d[i]},${d[i + 1]},${d[i + 2]}`);
-    return set.size;
-  });
-  expect(distinctColors).toBeGreaterThan(2);
+  await page.waitForFunction(() => (window.__SIM__?.geometryBuilds ?? 0) >= 1);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+  await expect
+    .poll(async () => {
+      return page.evaluate(() => {
+        const c = document.querySelector<HTMLCanvasElement>('[data-testid="sock-canvas"]')!;
+        const tmp = document.createElement('canvas');
+        tmp.width = 64;
+        tmp.height = 64;
+        const ctx = tmp.getContext('2d')!;
+        ctx.drawImage(c, 0, 0, 64, 64);
+        const d = ctx.getImageData(0, 0, 64, 64).data;
+        const set = new Set<string>();
+        for (let i = 0; i < d.length; i += 4) set.add(`${d[i]},${d[i + 1]},${d[i + 2]}`);
+        return set.size;
+      });
+    }, { timeout: 30_000 })
+    .toBeGreaterThan(2);
   expect(errors).toEqual([]);
 });
