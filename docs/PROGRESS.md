@@ -136,3 +136,30 @@ Fait : Raccourcis R/F/T/E/D/I, bandeau d’aide, bulles « ? » sur les réglage
 Vérification : `npm run verify` ✅ (43 tests unitaires, 18 e2e).
 Décisions : D17 (raccourcis et aides).
 Reste / risques : pas de bulles sur chaque export individuel (les réglages métier sont couverts).
+
+## T17 — Intégration continue et publication — 2026-09-25 07:41
+Statut : terminée
+Fait : Vérifié `.github/workflows/ci.yml` : `npm ci`, `npx playwright install --with-deps chromium`, `npm run verify` sur push et PR, Node 22. Documenté dans `README.md` le déploiement de `dist/` (Cloudflare Pages et GitHub Pages), sans déployer.
+Vérification : `npm run verify` ✅ (inchangé côté code applicatif hors README).
+Décisions : aucune.
+Reste / risques : aucun.
+
+## T18 — Valeurs fabricant — 2026-09-25 07:41
+Statut : bloquée
+Fait : `config/sizes.json` n’a pas été mis à jour par César (valeurs toujours provisoires). Impossible de relancer l’ajustement des tests et captures de référence sans les nouvelles valeurs. Modification de `config/sizes.json` interdite à l’agent.
+Vérification : non applicable.
+Décisions : aucune.
+Reste / risques : dès que César confirme les tailles, reprendre T18 (tests + captures).
+
+## Point pour César
+
+Ce qui marche : import PNG/SVG et exemple, calepinage, réduction de couleurs, chaussette 3D texturée (simple/fidèle), vue à plat, exports PNG (5 angles, plat exact, plat lisible), BMP indexé, planche, projet JSON + IndexedDB, contrôles de fabrication, raccourcis clavier, CI documentée.
+
+Tester en 3 étapes :
+1. `npm install` puis `npm run dev`, ouvrir l’adresse affichée.
+2. « Charger un exemple », basculer Rendu fidèle / simple, exporter Face + BMP + Planche.
+3. Touches R (cadrage) et F (face) hors d’un champ de saisie.
+
+Décisions à relire : D03 à D17 dans `docs/DECISIONS.md`.
+
+Blocages : T18 en attente de `config/sizes.json` confirmé par le fabricant (ne pas modifier ce fichier tant que César n’a pas validé).

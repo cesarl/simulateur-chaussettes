@@ -106,3 +106,9 @@ Contexte : le cahier demande un BMP 8 bits et une planche, sans fixer biClrUsed 
 Options : toujours 256 entrées de palette / seulement les couleurs utilisées ; 5 vues / 4 vues.
 Choix : palette = couleurs de la grille (`biClrUsed` = longueur), lignes bas → haut, padding 4 octets. Planche = face, trois-quarts, profil extérieur, dos (512²) + grille agrandie ×4 + légende, titre = nom du modèle.
 Conséquence : à valider avec le fabricant pour le BMP. Fichiers `src/io/exportBmp.ts` et `renderBoard` dans `exportPng.ts`.
+
+## D17 — Raccourcis et bulles d’aide (T16)
+Contexte : le cahier demande des raccourcis et des aides sans lister toutes les touches ni le format des bulles.
+Options : menu modal / `title` natif + bouton « ? ».
+Choix : touches R (cadrage libre), F/T/E/D/I (vues d’export). Aide = bouton « ? » avec `title`/`aria-label` sur les réglages principaux. Sous 1280 px, panneau sous la vue.
+Conséquence : les raccourcis sont ignorés quand un champ a le focus.

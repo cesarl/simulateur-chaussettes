@@ -181,9 +181,9 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 ### [x] T16 — Finitions de l'interface
 - Raccourcis (R : réinitialiser la vue, F : face…), bulles d'aide sur chaque réglage (vocabulaire du tricot expliqué simplement), état vide accueillant, responsive ≥ 1280 px, accessibilité clavier des contrôles.
 
-### [~] T17 — Intégration continue et publication
+### [x] T17 — Intégration continue et publication
 - Workflow GitHub Actions `npm ci && npx playwright install --with-deps chromium && npm run verify` (le fichier `.github/workflows/ci.yml` existe déjà : le vérifier).
 - Documenter dans `README.md` le déploiement du dossier `dist/` (Cloudflare Pages ou GitHub Pages), sans le faire.
 
-### [ ] T18 — Valeurs fabricant
+### [!] T18 — Valeurs fabricant
 - Quand `config/sizes.json` est mis à jour par César (valeurs confirmées), relancer tous les tests, ajuster ceux qui dépendaient des anciennes valeurs, régénérer les captures de référence.
