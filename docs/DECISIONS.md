@@ -167,4 +167,10 @@ Options : ne stocker que les PNG rasterisés / stocker id + codes zones + commit
 Choix : champ optionnel `collection: { id, zoneColors, paletteOptionId, syncCommit }` dans le JSON projet. À l’ouverture, si la collection existe encore → `tilesFromCollection` ; sinon → carreaux PNG du fichier + message. Catalogue chargé avant la restauration IndexedDB.
 Conséquence : les anciens projets sans `collection` restent valides.
 
+## D30 — Contenant du panneau et fichiers absolus (T33)
+Contexte : `#panel` défilait correctement, mais `document.scrollingElement.scrollHeight` restait énorme : les `input.file-input` en `position: absolute` (sans ancêtre positionné) élargissaient le débordement scrollable de la racine.
+Options : `position: fixed` sur `body` / retirer absolute des file-input / `position: relative` sur `#panel`.
+Choix : `position: relative` sur `#panel`, plus `html/body` overflow hidden, `#app` en `100dvh` + `overflow: hidden`, `min-height: 0` sur panel/viewport, et sous 1280 px deux rangées `minmax(0, 1fr)`.
+Conséquence : un seul ascenseur (celui du panneau) ; les file-input restent accessibles dans le flux du panneau.
+
 

@@ -13,14 +13,14 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Chaque tâche : tests d'abo
 
 ---
 
-### [ ] T33 — Un seul ascenseur
+### [x] T33 — Un seul ascenseur
 Cause : `#panel` est un élément de grille sans `min-height: 0` ; la rangée grandit avec son contenu et la page entière défile en plus du panneau.
 - `html, body { height: 100%; overflow: hidden; }` ; `#app { height: 100dvh; grid-template-rows: minmax(0, 1fr); }` ; `#panel, #viewport { min-height: 0; }` ; en dessous de 1280 px : `grid-template-rows: minmax(0, 1fr) minmax(0, 1fr)`.
 
 **Critères**
-- [ ] e2e (1400×900 et 1100×800) : panneau ouvert au maximum (toutes sections dépliées) → `document.scrollingElement.scrollHeight <= innerHeight` et le panneau défile seul (`#panel.scrollHeight > #panel.clientHeight`).
+- [x] e2e (1400×900 et 1100×800) : panneau ouvert au maximum (toutes sections dépliées) → `document.scrollingElement.scrollHeight <= innerHeight` et le panneau défile seul (`#panel.scrollHeight > #panel.clientHeight`).
 
-### [ ] T34 — Visionneuse par défaut, réglages en mode dev
+### [~] T34 — Visionneuse par défaut, réglages en mode dev
 - Par défaut : **uniquement la 3D, en plein écran**, avec une petite barre discrète : nom du modèle / de la collection, boutons de vue (3/4, profil, dos, face), « Copier le lien ». Pas de panneau, pas de vue à plat.
 - `?dev` dans l'URL active le mode dev (panneau complet, vue à plat, exports) et le **mémorise** (localStorage, `resolveDevMode`) : on reste en dev même sans `?dev`, jusqu'au bouton **« Quitter le mode dev »** (en bas du panneau, `leaveDevMode`). `?dev` est retiré de la barre d'adresse au chargement.
 - Stockage indisponible : l'application fonctionne (dev seulement pour la session si `?dev`).
