@@ -12,7 +12,7 @@ import { createScene } from './render/scene';
 import { createSockObject, type SockObject } from './render/sock3d/sockObject';
 import type { SockShapeInput } from './render/sock3d/sockShape';
 import { capturePng, frameView, type ViewName } from './render/sock3d/studio';
-import { getState, subscribe, update, type DesignPatch } from './state';
+import { getState, subscribe, update, undo, redo, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
@@ -370,6 +370,13 @@ async function boot(): Promise<void> {
 
   window.addEventListener('keydown', (event) => {
     if (isTypingTarget(event.target)) return;
+    const mod = event.metaKey || event.ctrlKey;
+    if (mod && event.key.toLowerCase() === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) redo();
+      else undo();
+      return;
+    }
     const key = event.key.toLowerCase();
     if (key === 'r') {
       event.preventDefault();

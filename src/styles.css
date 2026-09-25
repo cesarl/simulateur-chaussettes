@@ -209,3 +209,23 @@ details.section summary { cursor: pointer; font-weight: 600; font-size: 14px; }
   border-radius: 3px;
   padding: 1px 4px;
 }
+
+.section-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+.section-summary::-webkit-details-marker { display: none; }
+.section-title { flex: 1; font-weight: 600; }
+.section-dirty {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+}
+.section-reset {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+.history-bar { margin-bottom: 8px; }
+.history-bar button:disabled { opacity: 0.45; cursor: default; }

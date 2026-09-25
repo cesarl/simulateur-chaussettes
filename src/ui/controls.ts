@@ -10,13 +10,46 @@ export function debounce(run: () => void, delay = DEBOUNCE_MS): () => void {
   };
 }
 
-export function details(title: string, testId: string): HTMLDetailsElement {
+export function details(
+  title: string,
+  testId: string,
+  options?: {
+    resetId?: string;
+    dirtyId?: string;
+    onReset?: () => void;
+  },
+): HTMLDetailsElement {
   const section = document.createElement('details');
   section.open = true;
   section.className = 'section';
   section.dataset.testid = testId;
   const summary = document.createElement('summary');
-  summary.textContent = title;
+  summary.className = 'section-summary';
+  const label = document.createElement('span');
+  label.className = 'section-title';
+  label.textContent = title;
+  summary.appendChild(label);
+  if (options?.dirtyId) {
+    const badge = document.createElement('span');
+    badge.className = 'section-dirty';
+    badge.dataset.testid = options.dirtyId;
+    badge.textContent = 'modifié';
+    badge.hidden = true;
+    summary.appendChild(badge);
+  }
+  if (options?.resetId && options.onReset) {
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'section-reset';
+    reset.dataset.testid = options.resetId;
+    reset.textContent = 'Réinitialiser';
+    reset.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      options.onReset?.();
+    });
+    summary.appendChild(reset);
+  }
   section.appendChild(summary);
   return section;
 }

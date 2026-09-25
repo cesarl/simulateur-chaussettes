@@ -14,6 +14,9 @@ import type { Preset } from './core/calepinage';
 
 export type FootSide = 'droite' | 'gauche';
 
+/** Sections réinitialisables (hors carreaux importés). */
+export type DesignSection = 'layout' | 'dimensions' | 'quantize' | 'zones';
+
 /** Réglage partiel : chaque sous-objet est fusionné, pas remplacé. */
 export interface DesignPatch {
   name?: string;
@@ -54,7 +57,24 @@ export interface StatePatch {
   calepWarnings?: string[];
 }
 
+export interface UpdateOptions {
+  /** Mouvement continu d’un curseur : un seul pas d’historique. */
+  coalesce?: boolean;
+  /** Ne pas enregistrer dans l’historique (undo/redo internes). */
+  skipHistory?: boolean;
+}
+
 type Listener = (state: AppState) => void;
+
+const HISTORY_MAX = 100;
+
+interface HistoryEntry {
+  design: SockDesign;
+  tiles: TileAsset[];
+  knitFidelity: KnitFidelity;
+  footSide: FootSide;
+  coalesce: boolean;
+}
 
 function defaultCalepinage(): CalepinageSpec {
   return migrateLegacyKind('grille', 1, 0);
@@ -114,8 +134,60 @@ function createInitial(): AppState {
   };
 }
 
+function cloneDesign(design: SockDesign): SockDesign {
+  return structuredClone(design);
+}
+
+function snapshot(coalesce: boolean): HistoryEntry {
+  return {
+    design: cloneDesign(state.design),
+    tiles: state.tiles,
+    knitFidelity: state.knitFidelity,
+    footSide: state.footSide,
+    coalesce,
+  };
+}
+
+function restore(entry: HistoryEntry): void {
+  state = {
+    ...state,
+    design: cloneDesign(entry.design),
+    tiles: entry.tiles,
+    knitFidelity: entry.knitFidelity,
+    footSide: entry.footSide,
+  };
+}
+
 let state: AppState = createInitial();
 const listeners = new Set<Listener>();
+let past: HistoryEntry[] = [];
+let future: HistoryEntry[] = [];
+let coalesceActive = false;
+let coalesceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function pushHistory(coalesce: boolean): void {
+  if (coalesce) {
+    if (!coalesceActive) {
+      past.push(snapshot(false));
+      coalesceActive = true;
+      future = [];
+    }
+    if (coalesceTimer !== undefined) clearTimeout(coalesceTimer);
+    coalesceTimer = setTimeout(() => {
+      coalesceActive = false;
+      coalesceTimer = undefined;
+    }, 400);
+  } else {
+    if (coalesceTimer !== undefined) {
+      clearTimeout(coalesceTimer);
+      coalesceTimer = undefined;
+    }
+    coalesceActive = false;
+    past.push(snapshot(false));
+    future = [];
+  }
+  if (past.length > HISTORY_MAX) past.shift();
+}
 
 export function getState(): AppState {
   return state;
@@ -123,7 +195,24 @@ export function getState(): AppState {
 
 export function resetState(): void {
   state = createInitial();
+  past = [];
+  future = [];
+  coalesceActive = false;
+  if (coalesceTimer !== undefined) clearTimeout(coalesceTimer);
+  coalesceTimer = undefined;
   listeners.clear();
+}
+
+export function canUndo(): boolean {
+  return past.length > 0;
+}
+
+export function canRedo(): boolean {
+  return future.length > 0;
+}
+
+function notify(): void {
+  for (const listener of listeners) listener(state);
 }
 
 function mergeCalepinage(
@@ -175,7 +264,15 @@ function applyDesign(design: SockDesign, patch: DesignPatch): SockDesign {
   };
 }
 
-export function update(patch: StatePatch): void {
+export function update(patch: StatePatch, options: UpdateOptions = {}): void {
+  const records =
+    !options.skipHistory &&
+    (patch.design !== undefined ||
+      patch.tiles !== undefined ||
+      patch.knitFidelity !== undefined ||
+      patch.footSide !== undefined);
+  if (records) pushHistory(options.coalesce === true);
+
   let design = patch.design ? applyDesign(state.design, patch.design) : state.design;
   const tiles = patch.tiles ?? state.tiles;
   if (patch.tiles) {
@@ -193,7 +290,71 @@ export function update(patch: StatePatch): void {
     calepPresets: patch.calepPresets ?? state.calepPresets,
     calepWarnings: patch.calepWarnings ?? state.calepWarnings,
   };
-  for (const listener of listeners) listener(state);
+  notify();
+}
+
+export function undo(): boolean {
+  if (past.length === 0) return false;
+  coalesceActive = false;
+  const previous = past.pop()!;
+  future.push(snapshot(false));
+  restore(previous);
+  notify();
+  return true;
+}
+
+export function redo(): boolean {
+  if (future.length === 0) return false;
+  coalesceActive = false;
+  const next = future.pop()!;
+  past.push(snapshot(false));
+  restore(next);
+  notify();
+  return true;
+}
+
+/** Empreinte d’une section hors liste de carreaux (pour pastille « modifié »). */
+export function sectionFingerprint(section: DesignSection, design: SockDesign): string {
+  if (section === 'layout') {
+    const { tileIds: _ids, ...rest } = design.layout;
+    return JSON.stringify(rest);
+  }
+  return JSON.stringify(design[section]);
+}
+
+export function isSectionDirty(section: DesignSection, design: SockDesign = state.design): boolean {
+  return sectionFingerprint(section, design) !== sectionFingerprint(section, defaultDesign());
+}
+
+export function resetSection(section: DesignSection): void {
+  const defaults = defaultDesign();
+  if (section === 'layout') {
+    update({
+      design: {
+        layout: {
+          ...defaults.layout,
+          tileIds: state.design.layout.tileIds,
+        },
+      },
+    });
+    return;
+  }
+  update({ design: { [section]: defaults[section] } });
+}
+
+/** Remet tout au défaut sauf les carreaux importés. */
+export function resetAllDesign(): void {
+  coalesceActive = false;
+  const defaults = defaultDesign();
+  update({
+    design: {
+      ...defaults,
+      layout: { ...defaults.layout, tileIds: state.design.layout.tileIds },
+      name: state.design.name,
+    },
+    knitFidelity: 'fidele',
+    footSide: 'droite',
+  });
 }
 
 export function subscribe(listener: Listener): () => void {
