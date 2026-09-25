@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.9 566.9">
+  <g id="zone-1" data-color-id="BL026">
+    <rect class="st2" x="304.8" y="183.1" width="32.1" height=".1" fill="#2c6fa1"/>
+    <rect class="st2" x="304.8" y="183.2" width="32.1" height="201.4" fill="#2c6fa1"/>
+    <rect class="st2" x="229.5" y="183.1" width="32.1" height=".1" fill="#2c6fa1"/>
+    <rect class="st2" x="229.5" y="183.2" width="32.1" height="201.4" fill="#2c6fa1"/>
+    <rect class="st2" x="464.1" y="183.1" width="32.1" height=".1" fill="#2c6fa1"/>
+    <rect class="st2" x="464.1" y="183.2" width="32.1" height="201.4" fill="#2c6fa1"/>
+    <polygon class="st2" points="388.9 183.1 388.9 183.2 421 183.2 421 183.2 421 183.1 421 183.1 388.9 183.1" fill="#2c6fa1"/>
+    <rect class="st2" x="388.9" y="183.2" width="32.1" height="201.4" fill="#2c6fa1"/>
+    <rect class="st2" x="421" y="183.2" width="0" height="201.4" fill="#2c6fa1"/>
+    <rect class="st2" x="146.2" y="183.1" width="32.1" height=".1" fill="#2c6fa1"/>
+    <rect class="st2" x="146.2" y="183.2" width="32.1" height="201.4" fill="#2c6fa1"/>
+    <polygon class="st2" points="103.2 183.2 103.2 183.1 103.1 183.1 71.1 183.1 71.1 183.2 103.1 183.2 103.2 183.2" fill="#2c6fa1"/>
+    <rect class="st2" x="71.1" y="183.2" width="32" height="201.4" fill="#2c6fa1"/>
+    <rect class="st2" x="103.1" y="183.2" width=".1" height="201.4" fill="#2c6fa1"/>
+  </g>
+  <g id="zone-2" data-color-id="WT000">
+    <polygon class="st1" points="261.6 183.2 261.6 384.6 229.5 384.6 229.5 183.2 178.3 183.2 178.3 384.6 146.2 384.6 146.2 183.2 146.1 183.2 146.1 384.7 146.2 384.7 178.3 384.7 229.5 384.7 261.6 384.7 261.7 384.7 261.7 183.2 261.6 183.2" fill="#e9e0d4"/>
+    <polygon class="st1" points="421 384.6 388.9 384.6 388.9 183.2 336.9 183.2 336.9 384.6 304.8 384.6 304.8 183.2 304.7 183.2 304.7 384.7 304.8 384.7 336.9 384.7 388.9 384.7 421 384.7 421 384.6" fill="#e9e0d4"/>
+    <polygon class="st1" points="103.1 384.7 103.1 384.6 71.1 384.6 71.1 183.2 -.3 183.2 -.3 384.7 71.1 384.7 103.1 384.7" fill="#e9e0d4"/>
+    <polygon class="st1" points="496.2 384.6 464.1 384.6 464.1 183.2 464 183.2 464 384.7 464.1 384.7 496.2 384.7 566.6 384.7 566.6 183.2 496.2 183.2 496.2 384.6" fill="#e9e0d4"/>
+    <rect class="st1" x="261.7" y=".4" width="43" height="182.7" fill="#e9e0d4"/>
+    <rect class="st1" x="261.7" y="567.3" width="43" height="0" fill="#e9e0d4"/>
+    <rect class="st1" x="261.7" y="384.7" width="43" height="182.6" fill="#e9e0d4"/>
+    <polygon class="st1" points="421 103.8 421 183.1 464 183.1 464 .4 421 .4 421 103.8 421 103.8" fill="#e9e0d4"/>
+    <rect class="st1" x="421" y="567.3" width="43" height="0" fill="#e9e0d4"/>
+    <polygon class="st1" points="421 384.7 421 464.7 421 464.7 421 567.3 464 567.3 464 384.7 421 384.7" fill="#e9e0d4"/>
+    <polygon class="st1" points="103.2 103.8 103.2 183.1 146.1 183.1 146.1 .4 103.1 .4 103.1 103.8 103.2 103.8" fill="#e9e0d4"/>
+    <rect class="st1" x="103.1" y="567.3" width="43" height="0" fill="#e9e0d4"/>
+    <polygon class="st1" points="103.2 384.7 103.2 464.7 103.1 464.7 103.1 567.3 146.1 567.3 146.1 384.7 103.2 384.7" fill="#e9e0d4"/>
+  </g>
+  <g id="zone-3" data-color-id="BK002">
+    <rect class="st3" x="261.7" y="183.2" width="43" height="201.5" fill="#474a4e"/>
+    <rect class="st3" x="304.8" y="103.8" width="32.1" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="304.8" y="384.7" width="32.1" height="80" fill="#474a4e"/>
+    <rect class="st3" x="229.5" y="103.8" width="32.1" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="229.5" y="384.7" width="32.1" height="80" fill="#474a4e"/>
+    <polygon class="st3" points="421 384.6 421 384.7 421 384.7 464 384.7 464 183.2 421 183.2 421 384.6 421 384.6" fill="#474a4e"/>
+    <rect class="st3" x="464.1" y="103.8" width="32.1" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="464.1" y="384.7" width="32.1" height="80" fill="#474a4e"/>
+    <rect class="st3" x="388.9" y="103.8" width="32.1" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="421" y="103.8" width="0" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="388.9" y="384.7" width="32.1" height="80" fill="#474a4e"/>
+    <rect class="st3" x="421" y="384.7" width="0" height="80" fill="#474a4e"/>
+    <polygon class="st3" points="103.2 183.2 103.2 384.6 103.1 384.6 103.1 384.7 103.2 384.7 146.1 384.7 146.1 183.2 103.2 183.2" fill="#474a4e"/>
+    <rect class="st3" x="146.2" y="103.8" width="32.1" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="146.2" y="384.7" width="32.1" height="80" fill="#474a4e"/>
+    <rect class="st3" x="71.1" y="103.8" width="32" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="103.1" y="103.8" width=".1" height="79.3" fill="#474a4e"/>
+    <rect class="st3" x="71.1" y="384.7" width="32" height="80" fill="#474a4e"/>
+    <rect class="st3" x="103.1" y="384.7" width=".1" height="80" fill="#474a4e"/>
+  </g>
+  <g id="zone-4" data-color-id="GN024">
+    <polygon class="st0" points="71.1 183.1 71.1 103.8 103.1 103.8 103.1 .4 -.3 .4 -.3 183.2 71.1 183.2 71.1 183.1" fill="#a3a677"/>
+    <polygon class="st0" points="388.9 464.7 388.9 384.7 336.9 384.7 336.9 464.7 304.8 464.7 304.8 384.7 304.7 384.7 304.7 567.3 421 567.3 421 464.7 388.9 464.7" fill="#a3a677"/>
+    <polygon class="st0" points="71.1 464.7 71.1 384.7 -.3 384.7 -.3 567.3 103.1 567.3 103.1 464.7 71.1 464.7" fill="#a3a677"/>
+    <polygon class="st0" points="261.6 384.7 261.6 464.7 229.5 464.7 229.5 384.7 178.3 384.7 178.3 464.7 146.2 464.7 146.2 384.7 146.1 384.7 146.1 567.3 261.7 567.3 261.7 384.7 261.6 384.7" fill="#a3a677"/>
+    <polygon class="st0" points="103.2 183.1 103.2 183.2 146.1 183.2 146.2 183.2 146.2 183.1 146.2 103.8 178.3 103.8 178.3 183.1 178.3 183.2 229.5 183.2 229.5 183.1 229.5 103.8 261.6 103.8 261.6 183.1 261.6 183.2 261.7 183.2 304.7 183.2 304.8 183.2 304.8 183.1 304.8 103.8 336.9 103.8 336.9 183.1 336.9 183.2 388.9 183.2 388.9 183.1 388.9 103.8 421 103.8 421 .4 304.7 .4 304.7 183.1 261.7 183.1 261.7 .4 146.1 .4 146.1 183.1 103.2 183.1" fill="#a3a677"/>
+    <polygon class="st0" points="464 .4 464 183.1 421 183.1 421 183.2 464 183.2 464.1 183.2 464.1 183.1 464.1 103.8 496.2 103.8 496.2 183.1 496.2 183.2 566.6 183.2 566.6 .4 464 .4" fill="#a3a677"/>
+    <polygon class="st0" points="496.2 464.7 464.1 464.7 464.1 384.7 464 384.7 464 567.3 566.6 567.3 566.6 384.7 496.2 384.7 496.2 464.7" fill="#a3a677"/>
+  </g>
+</svg>

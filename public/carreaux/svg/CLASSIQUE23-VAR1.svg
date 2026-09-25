@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.93 566.93">
+  <g id="zone-1" data-color-id="GN006">
+    <polygon class="st0" points="283.46 283.5 0 566.93 398.95 398.95 566.93 0 283.46 283.5" fill="#d7e8cf"/>
+    <polygon class="st0" points="167.98 167.98 0 566.93 566.93 0 167.98 167.98" fill="#d7e8cf"/>
+  </g>
+  <g id="zone-2" data-color-id="BW006">
+    <polygon class="st1" points="398.95 398.95 566.93 566.93 566.93 0 398.95 398.95" fill="#5e5055"/>
+    <polygon class="st1" points="167.98 167.98 0 0 0 566.93 167.98 167.98" fill="#5e5055"/>
+  </g>
+  <g id="zone-3" data-color-id="BK011">
+    <polygon class="st2" points="168.02 167.98 .04 0 566.96 0 168.02 167.98" fill="#3c4144"/>
+    <polygon class="st2" points="398.98 398.95 566.96 566.93 .04 566.93 398.98 398.95" fill="#3c4144"/>
+  </g>
+</svg>

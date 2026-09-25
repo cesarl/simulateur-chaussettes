@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.93 566.93">
+  <g id="zone-1" data-color-id="WT000">
+    <polygon class="st1" points="162.02 0 0 162.02 0 404.91 162.02 566.93 404.91 566.93 566.93 404.91 566.93 162.02 404.91 0 162.02 0" fill="#f7f7f7"/>
+  </g>
+  <g id="zone-2" data-color-id="BK000">
+    <polygon class="st0" points="0 0 0 162.02 162.02 0 0 0" fill="#323233"/>
+    <polygon class="st0" points="566.93 566.93 566.93 404.91 404.91 566.93 566.93 566.93" fill="#323233"/>
+    <polygon class="st0" points="0 566.93 162.02 566.93 0 404.91 0 566.93" fill="#323233"/>
+    <polygon class="st0" points="404.91 0 566.93 162.02 566.93 0 404.91 0" fill="#323233"/>
+  </g>
+</svg>

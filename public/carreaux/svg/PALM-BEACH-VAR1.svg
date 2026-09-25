@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.9 566.9">
+  <g id="zone-1" data-color-id="RD007">
+    <rect class="st1" x="330.7" y=".7" width="149.2" height="218.3" fill="#cf9a8e"/>
+    <rect class="st1" x="92.2" y=".7" width="43.3" height="438" fill="#cf9a8e"/>
+    <rect class="st1" x=".6" y=".7" width="48.3" height="438" fill="#cf9a8e"/>
+    <rect class="st1" x="48.9" y="438.7" width="43.3" height="127.5" fill="#cf9a8e"/>
+    <rect class="st1" x="266.9" y="219" width="63.7" height="219.7" fill="#cf9a8e"/>
+    <rect class="st1" x="479.9" y="219" width="86.3" height="219.7" fill="#cf9a8e"/>
+    <rect class="st1" x="178.5" y=".7" width="43" height="438" fill="#cf9a8e"/>
+    <rect class="st1" x="135.5" y="438.7" width="43" height="127.5" fill="#cf9a8e"/>
+    <rect class="st1" x="221.5" y="438.7" width="45.4" height="127.5" fill="#cf9a8e"/>
+    <rect class="st1" x="330.7" y="438.7" width="149.2" height="127.5" fill="#cf9a8e"/>
+  </g>
+  <g id="zone-2" data-color-id="OR002">
+    <rect class="st0" x="92.4" y="438.7" width="43.3" height="127.5" fill="#d37549"/>
+    <rect class="st0" x=".8" y="438.7" width="48.3" height="127.5" fill="#d37549"/>
+    <rect class="st0" x="49.1" y=".7" width="43.3" height="438" fill="#d37549"/>
+    <rect class="st0" x="267.1" y="438.7" width="63.7" height="127.5" fill="#d37549"/>
+    <rect class="st0" x="480" y="438.7" width="86.3" height="127.5" fill="#d37549"/>
+    <polygon class="st0" points="221.7 .7 221.7 438.7 267.1 438.7 267.1 219 330.9 219 330.9 .7 221.7 .7" fill="#d37549"/>
+    <rect class="st0" x="135.7" y=".7" width="43" height="438" fill="#d37549"/>
+    <rect class="st0" x="178.7" y="438.7" width="43" height="127.5" fill="#d37549"/>
+    <rect class="st0" x="480" y=".7" width="86.3" height="218.3" fill="#d37549"/>
+    <rect class="st0" x="330.9" y="219" width="149.2" height="219.7" fill="#d37549"/>
+  </g>
+</svg>

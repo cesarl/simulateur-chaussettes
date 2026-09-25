@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.9 566.9">
+  <g id="zone-1" data-color-id="BL003">
+    <polygon class="st0" points="566.9 566.9 566.9 287.5 477.5 427.2 566.9 566.9" fill="#56a8f0"/>
+    <polygon class="st0" points="194 566.9 372.9 566.9 283.5 427.2 194 566.9" fill="#56a8f0"/>
+    <polygon class="st0" points="0 287.5 0 566.9 89.4 427.2 0 287.5" fill="#56a8f0"/>
+    <polygon class="st0" points="283.5 427.2 372.9 287.5 283.5 147.8 194 287.5 283.5 427.2" fill="#56a8f0"/>
+    <polygon class="st0" points="194 0 283.5 147.8 372.9 0 566.9 0 566.9 0 194 0" fill="#56a8f0"/>
+    <polygon class="st0" points="0 0 0 287.5 89.4 147.8 0 0" fill="#56a8f0"/>
+    <polygon class="st0" points="566.9 287.5 566.9 0 477.5 147.8 566.9 287.5" fill="#56a8f0"/>
+  </g>
+  <g id="zone-2" data-color-id="BL006">
+    <polygon class="st2" points="283.5 427.2 372.9 566.9 566.9 566.9 477.5 427.2 283.5 427.2" fill="#bcd5eb"/>
+    <polygon class="st2" points="283.5 427.2 194 287.5 0 287.5 89.4 427.2 283.5 427.2" fill="#bcd5eb"/>
+    <polygon class="st2" points="283.5 147.8 372.9 287.5 566.9 287.5 477.5 147.8 283.5 147.8" fill="#bcd5eb"/>
+    <polygon class="st2" points="283.5 147.8 194 0 0 0 89.4 147.8 283.5 147.8" fill="#bcd5eb"/>
+  </g>
+  <g id="zone-3" data-color-id="BL022">
+    <polygon class="st1" points="89.4 427.2 0 566.9 194 566.9 283.5 427.2 89.4 427.2" fill="#4368b1"/>
+    <polygon class="st1" points="283.5 427.2 477.5 427.2 566.9 287.5 372.9 287.5 283.5 427.2" fill="#4368b1"/>
+    <polygon class="st1" points="283.5 147.8 89.4 147.8 0 287.5 194 287.5 283.5 147.8" fill="#4368b1"/>
+    <polygon class="st1" points="283.5 147.8 477.5 147.8 566.9 0 372.9 0 283.5 147.8" fill="#4368b1"/>
+  </g>
+</svg>

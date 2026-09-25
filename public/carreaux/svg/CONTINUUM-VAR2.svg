@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.9 566.9">
+  <g id="zone-1" data-color-id="BL026">
+    <rect class="st2" x="305" y="103.4" width="32.1" height="79.3" fill="#2c6fa1"/>
+    <rect class="st2" x="305" y="384.3" width="32.1" height="80" fill="#2c6fa1"/>
+    <rect class="st2" x="229.9" y="103.4" width="32.1" height="79.3" fill="#2c6fa1"/>
+    <rect class="st2" x="229.9" y="384.3" width="32.1" height="80" fill="#2c6fa1"/>
+    <rect class="st2" x="464.3" y="103.4" width="32.1" height="79.3" fill="#2c6fa1"/>
+    <rect class="st2" x="464.3" y="384.3" width="32.1" height="80" fill="#2c6fa1"/>
+    <rect class="st2" x="389.2" y="103.4" width="32.1" height="79.3" fill="#2c6fa1"/>
+    <rect class="st2" x="421.3" y="103.4" width="0" height="79.3" fill="#2c6fa1"/>
+    <rect class="st2" x="389.2" y="384.3" width="32.1" height="80" fill="#2c6fa1"/>
+    <rect class="st2" x="421.3" y="384.3" width="0" height="80" fill="#2c6fa1"/>
+    <rect class="st2" x="146.5" y="103.4" width="32.1" height="79.3" fill="#2c6fa1"/>
+    <rect class="st2" x="146.5" y="384.3" width="32.1" height="80" fill="#2c6fa1"/>
+    <rect class="st2" x="71.3" y="103.4" width="32.1" height="79.3" fill="#2c6fa1"/>
+    <rect class="st2" x="71.3" y="384.3" width="32.1" height="80" fill="#2c6fa1"/>
+  </g>
+  <g id="zone-2" data-color-id="WT000">
+    <rect class="st1" y="182.7" width="71.3" height="201.5" fill="#e9e0d4"/>
+    <rect class="st1" x="464.3" y="182.7" width="0" height="201.5" fill="#e9e0d4"/>
+    <rect class="st1" x="496.4" y="182.7" width="70.5" height="201.5" fill="#e9e0d4"/>
+    <rect class="st1" x="337.1" y="182.7" width="52.1" height="201.5" fill="#e9e0d4"/>
+    <rect class="st1" x="178.6" y="182.7" width="51.3" height="201.5" fill="#e9e0d4"/>
+    <rect class="st1" x="146.4" y="182.7" width="0" height="201.5" fill="#e9e0d4"/>
+    <polygon class="st1" points="262 182.7 305 182.7 305 103.4 305 0 262 0 262 103.4 262 182.7" fill="#e9e0d4"/>
+    <polygon class="st1" points="305 384.3 305 384.2 262 384.2 262 384.3 262 464.3 262 566.9 305 566.9 305 464.3 305 384.3" fill="#e9e0d4"/>
+    <polygon class="st1" points="421.3 103.4 421.3 182.7 464.3 182.7 464.3 0 421.3 0 421.3 103.4 421.3 103.4" fill="#e9e0d4"/>
+    <polygon class="st1" points="421.3 384.2 421.3 384.2 421.3 384.3 421.3 384.3 421.3 464.3 421.3 464.3 421.3 566.9 464.3 566.9 464.3 384.2 421.3 384.2" fill="#e9e0d4"/>
+    <polygon class="st1" points="103.4 182.7 146.4 182.7 146.4 0 103.4 0 103.4 103.4 103.4 182.7" fill="#e9e0d4"/>
+    <polygon class="st1" points="103.4 384.2 103.4 384.3 103.4 464.3 103.4 566.9 146.4 566.9 146.4 384.2 103.4 384.2" fill="#e9e0d4"/>
+  </g>
+  <g id="zone-3" data-color-id="BK002">
+    <polygon class="st3" points="71.3 464.3 71.3 384.3 103.4 384.3 103.4 384.2 71.3 384.2 0 384.2 0 566.9 103.4 566.9 103.4 464.3 71.3 464.3" fill="#474a4e"/>
+    <path class="st3" d="M229.9,464.3v-80h32.1c0,0-32.1,0-32.1,0h-83.5v182.7h115.6v-102.6h-32.1ZM178.6,464.3h-32.1v-80h32.1v80Z" fill="#474a4e"/>
+    <polygon class="st3" points="389.2 464.3 389.2 384.3 421.3 384.3 421.3 384.2 389.2 384.2 337.1 384.2 305 384.2 305 384.3 337.1 384.3 337.1 464.3 305 464.3 305 566.9 421.3 566.9 421.3 464.3 389.2 464.3" fill="#474a4e"/>
+    <polygon class="st3" points="71.3 103.4 103.4 103.4 103.4 0 0 0 0 182.7 71.3 182.7 71.3 103.4" fill="#474a4e"/>
+    <polygon class="st3" points="146.5 182.7 146.5 103.4 178.6 103.4 178.6 182.7 229.9 182.7 229.9 103.4 262 103.4 262 0 146.4 0 146.4 182.7 146.5 182.7" fill="#474a4e"/>
+    <polygon class="st3" points="337.1 103.4 337.1 182.7 389.2 182.7 389.2 103.4 421.3 103.4 421.3 0 305 0 305 103.4 337.1 103.4" fill="#474a4e"/>
+    <path class="st3" d="M464.3,384.2h0v182.7h102.6v-182.7h-102.6ZM496.4,464.3h-32.1v-80h32.1v80Z" fill="#474a4e"/>
+    <polygon class="st3" points="464.3 0 464.3 182.7 464.3 182.7 464.3 103.4 496.4 103.4 496.4 182.7 566.9 182.7 566.9 0 464.3 0" fill="#474a4e"/>
+    <rect class="st3" x="262" y="182.7" width="43" height="201.5" fill="#474a4e"/>
+    <rect class="st3" x="421.3" y="182.7" width="43" height="201.5" fill="#474a4e"/>
+    <rect class="st3" x="103.4" y="182.7" width="43" height="201.5" fill="#474a4e"/>
+  </g>
+  <g id="zone-4" data-color-id="GN024">
+    <rect class="st0" x="305" y="182.7" width="32.1" height="201.5" fill="#a3a677"/>
+    <rect class="st0" x="229.9" y="182.7" width="32.1" height="201.5" fill="#a3a677"/>
+    <rect class="st0" x="464.3" y="182.7" width="32.1" height="201.5" fill="#a3a677"/>
+    <rect class="st0" x="389.2" y="182.7" width="32.1" height="201.5" fill="#a3a677"/>
+    <rect class="st0" x="421.3" y="182.7" width="0" height="201.5" fill="#a3a677"/>
+    <rect class="st0" x="146.5" y="182.7" width="32.1" height="201.5" fill="#a3a677"/>
+    <rect class="st0" x="71.3" y="182.7" width="32.1" height="201.5" fill="#a3a677"/>
+  </g>
+</svg>

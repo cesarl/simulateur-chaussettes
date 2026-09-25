@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 283.46 283.46">
+  <g id="zone-1" data-color-id="BL011">
+    <rect y="0" width="283.46" height="283.46" fill="#507186" stroke="#fff" stroke-miterlimit="10"/>
+  </g>
+  <g id="zone-2" data-color-id="PP011">
+    <path d="M141.73,73.84v135.78c37.49,0,67.89-30.4,67.89-67.89s-30.39-67.89-67.89-67.89Z" fill="#654f53"/>
+  </g>
+  <g id="zone-3" data-color-id="YL003">
+    <path d="M73.84,141.73c0,37.49,30.39,67.89,67.89,67.89V73.84c-37.49,0-67.89,30.4-67.89,67.89Z" fill="#f7b945"/>
+  </g>
+</svg>

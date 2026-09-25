@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.9 566.9">
+  <g id="zone-1" data-color-id="BL026">
+    <rect class="st2" y="464.3" width="566.9" height="102.7" fill="#2c6fa1"/>
+    <rect class="st2" width="566.9" height="103.4" fill="#2c6fa1"/>
+  </g>
+  <g id="zone-2" data-color-id="WT000">
+    <polygon class="st1" points="122.8 384 0 384 0 464.3 566.9 464.3 566.9 384 443 384 122.8 384" fill="#e9e0d4"/>
+    <polygon class="st1" points="0 182.7 122.8 182.7 443 182.7 566.9 182.7 566.9 103.4 0 103.4 0 182.7" fill="#e9e0d4"/>
+    <rect class="st1" y="247.8" width="122.8" height="71" fill="#e9e0d4"/>
+    <rect class="st1" x="443" y="247.8" width="124" height="71" fill="#e9e0d4"/>
+  </g>
+  <g id="zone-3" data-color-id="BK002">
+    <rect class="st3" x="443" y="318.9" width="124" height="65.1" fill="#474a4e"/>
+    <rect class="st3" y="318.9" width="122.8" height="65.1" fill="#474a4e"/>
+    <rect class="st3" x="443" y="182.7" width="124" height="65.1" fill="#474a4e"/>
+    <rect class="st3" y="182.7" width="122.8" height="65.1" fill="#474a4e"/>
+    <rect class="st3" x="122.8" y="247.8" width="320.2" height="71" fill="#474a4e"/>
+  </g>
+  <g id="zone-4" data-color-id="GN024">
+    <rect class="st0" x="122.8" y="318.9" width="320.2" height="65.1" fill="#a3a677"/>
+    <rect class="st0" x="122.8" y="182.7" width="320.2" height="65.1" fill="#a3a677"/>
+  </g>
+</svg>
