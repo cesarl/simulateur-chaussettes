@@ -8,7 +8,7 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Si des tâches de `tasks/TA
 
 ---
 
-### [ ] T29 — Script de synchronisation et catalogue
+### [x] T29 — Script de synchronisation et catalogue
 - `scripts/sync-carreaux.mjs` est fourni (ne pas le réécrire). Ajouter à `package.json` : `"sync:carreaux": "node scripts/sync-carreaux.mjs"`.
 - Déplacer `tests/unit/collections.test.ts` (fourni, utilise `tests/fixtures/configurateur-mini/`) ; il doit passer tel quel.
 - Copier `reference/collections/collections.ts` dans `src/core/collections.ts`. Mettre à jour `src/core/calepinage.ts` et `tests/unit/calepinage.test.ts` avec les versions de `reference/calepinage/` (alignées sur le simulateur de carreaux : numéro de motif trop grand → dernier motif, listes de motifs, rotations non reconnues → 0°, cases hors bloc ignorées).
@@ -16,8 +16,8 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Si des tâches de `tasks/TA
 - La bibliothèque de calepinages de la galerie (T26) vient désormais de `public/carreaux/calepinages.json` quand il existe (sinon `config/calepinages.json`).
 
 **Critères**
-- [ ] `collections.test.ts` et `calepinage.test.ts` fournis verts.
-- [ ] e2e : sans `public/carreaux/`, aucune erreur console et le message s'affiche (simuler l'absence en interceptant la requête).
+- [x] `collections.test.ts` et `calepinage.test.ts` fournis verts.
+- [x] e2e : sans `public/carreaux/`, aucune erreur console et le message s'affiche (simuler l'absence en interceptant la requête).
 
 ### [ ] T30 — Choisir une collection
 - Nouvelle section en tête du panneau : **« Collection »**, avec recherche par nom, groupes par catégorie (Signature, Classiques, Nouveautés, Autres), vignette = SVG VAR1 recoloré avec ses couleurs d'origine, badge « N motifs ». Collections `dev_only` masquées (case « afficher les collections en développement »).

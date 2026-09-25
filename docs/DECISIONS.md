@@ -143,4 +143,10 @@ Options : pointerup / debounce flag / coalescence temporelle.
 Choix : `update(..., { coalesce: true })` via `slide()` ; premier update d’un geste pousse l’historique, les suivants sont fusionnés ; fin de geste après 400 ms d’inactivité.
 Conséquence : un glissement = un Annuler ; les clics discrets (galerie, cases) restent des pas séparés.
 
+## D26 — Catalogue synchronisé optionnel (T29)
+Contexte : les collections viennent de `public/carreaux/` produit par `npm run sync:carreaux` ; l’agent n’a pas toujours ces fichiers.
+Options : exiger le dossier / charger à l’exécution avec repli.
+Choix : `loadCatalogue('./carreaux/')` au boot ; si absent ou invalide → `catalogueMissing` + bandeau `catalogue-missing` ; galerie garde `config/calepinages.json`. Si présent, remplace `calepPresets` par `calepinages.json` synchronisé. Calepinage aligné sur le simulateur de carreaux (rotations hors 0/90/180/270 → 0°, motif trop grand → dernier, listes de motifs).
+Conséquence : l’app reste utilisable sans sync ; e2e simule l’absence via `page.route` (corps `{}` pour éviter le bruit console 404).
+
 

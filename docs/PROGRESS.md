@@ -272,3 +272,10 @@ D22 (talon aperçu), D23 (CalepinageSpec), D24 (galerie), D25 (historique coales
 
 ### Blocages
 T18 — `config/sizes.json` en attente fabricant.
+
+## T29 — Script de synchronisation et catalogue — 2026-09-25 15:10
+Statut : terminée
+Fait : `npm run sync:carreaux` ; `src/core/collections.ts` + `calepinage.ts` alignés sur `reference/` ; `src/io/catalogue.ts` charge `./carreaux/` ; bandeau `catalogue-missing` si absent ; galerie utilise les calepinages sync quand présents.
+Vérification : unitaires collections + calepinage verts ; e2e catalogue (absent / présent) verts ; `npm run verify` en cours de boucle.
+Décisions : D26.
+Reste / risques : T30 choix de collection.
