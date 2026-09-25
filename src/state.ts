@@ -124,10 +124,11 @@ export function defaultDecor(): DecorSettings {
   return {
     mode: 'aucun',
     tileCm: 20,
-    groutMm: 2,
-    groutColor: '#d9d3c7',
-    patina: 0.35,
-    attenuation: 0.25,
+    groutMm: 1.5,
+    groutColor: '#f3f1ec',
+    patina: 0.3,
+    attenuation: 0,
+    grainStrength: 0.7,
     tileSource: 'sock',
     otherCollectionId: null,
   };

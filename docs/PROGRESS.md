@@ -394,29 +394,41 @@ Reste / risques : T18 fabricant.
 
 ---
 
+## T40 — Décor v2 mats + grain photo — 2026-09-25 21:55
+Statut : terminée
+Fait : `tileSurface.ts` = référence v2 (mat, joint 1,5 mm `#f3f1ec`, `normalScale` 0,25, `envMapIntensity` 0,6) ; grain `public/textures/grain-ciment.jpg` chargé une fois ; `tileCmFromFormat` ; `tilesPerSide ≈ 240/tileCm` ; curseur Grain ; défauts atténuation 0.
+Vérification : `npm run verify` ✅ (101 unitaires, 45 e2e) ; unit `decor.test.ts` 5/5 ; e2e `decor-v2` + `decor` OK.
+Contrôle visuel :
+- `visuel-T40-medina-sol.png` : Medina trois-quarts sur sol carrelé assorti (marine/terracotta/beige) ; joints fins blancs ; finition mate sans reflet brillant ; grain ciment visible ; ombre douce sur le sol ; horizon studio.
+- `visuel-T40-medina-mur.png` : mur carrelé face caméra derrière la chaussette ; sol = ombre studio plainte ; mêmes couleurs franches ; joints visibles.
+- `visuel-T40-ramo-sol.png` : RAMO (jaune/rose/bleu/vert) ; carreaux nettement plus petits qu’en 20 cm (grille plus dense) ; grain et joints clairs ; ombre au sol.
+- `visuel-T40-ramo-mur.png` : même motif sur mur, carreaux 10 cm, joints fins, aspect mat.
+Décisions : D36.
+Reste / risques : textures 10 cm lourdes en e2e (SwiftShader) — timeout 180 s.
+
+---
+
 ## Point pour César
 
-### Ce qui marche (V5)
+### Ce qui marche (V5 + T40)
 - **Un seul ascenseur** : la page ne défile plus ; seul le panneau défile.
 - **Visionneuse par défaut** : plein écran 3D + barre (vues, copier le lien). `?dev` ouvre les réglages et les mémorise ; **Quitter le mode dev** revient à la visionneuse.
 - **Lien de partage** `#p=1.…` : collection, couleurs, calepinage, talon, raccord, décor — recharge sans localStorage.
 - **Jauge** : « Carreaux sur le tour » + encadré cm ; réglages machine repliés.
 - **Raccord** : dos / intérieur / extérieur / devant ; trait « raccord » à plat.
-- **Décor** : sol / mur / sol+mur en carreaux de ciment (même motif ou autre collection).
+- **Décor v2** : sol / mur / sol+mur mats, grain photo, joints blancs fins, couleurs franches ; format 20 cm / 10 cm.
 
 ### Tester en 3 étapes
-1. `npm install` puis `npm run dev` → ouvrir `/` : visionneuse seule ; `/?dev` : panneau.
-2. Collection **Medina** → Décor **Sol + mur** → **Copier le lien** → coller dans un onglet privé : même chaussette + décor, sans panneau.
-3. Calepinage : changer **Raccord** (dos → intérieur) ; basculer **À plat** pour voir le trait pointillé.
+1. `npm install` puis `npm run dev` → `/?dev`.
+2. Collection **Medina** → Décor **Sol** : joints clairs, pas de brillance plastique.
+3. Collection **Ramo** → Décor **Sol** : carreaux ~2× plus petits ; curseur **Grain**.
 
 ### Captures (`test-results/` + store `media/`)
-- `visuel-T39-visionneuse.png` : barre « modele » + ¾/Profil/Dos/Face + Copier le lien ; chaussette crème défaut, pas de panneau.
-- `visuel-T39-medina-decor.png` : Medina + sol/mur carrelés assortis.
-- `visuel-T39-lianes-decor.png` : Lianes vert/crème, talon rouge, même décor assorti.
-- Aussi T37 (raccord) et T38 (sol/mur/coin Medina + Lianes).
+- `visuel-T40-medina-sol/mur.png`, `visuel-T40-ramo-sol/mur.png`.
+- Aussi T37–T39.
 
 ### Décisions à relire
-D30 (ascenseur), D31–D32 (share), D33 (jauge), D34 (raccord), D35 (décor).
+D30–D36 (dont D36 décor v2).
 
 ### Blocages
 T18 — `config/sizes.json` en attente fabricant.

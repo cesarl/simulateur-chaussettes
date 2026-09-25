@@ -43,6 +43,8 @@ export interface SimHook {
   captureView: (view: ViewName, size: number, background?: string | null) => Promise<string>;
   /** Export paire (data URL). */
   capturePair: (size: number, background?: string | null) => Promise<string>;
+  /** Incrémenté à chaque fin de (re)génération du décor (tests e2e). */
+  decorBuildId: number;
 }
 
 declare global {

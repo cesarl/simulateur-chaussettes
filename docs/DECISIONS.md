@@ -203,4 +203,10 @@ Options : photo d’ambiance / générer depuis SVG collection / CDN.
 Choix : copie de `reference/decor/tileSurface.ts` ; `decorController` (idle + cache sources) ; `scene.setBeforeRender` pour `faceCamera` à chaque frame ; `capturePng(..., beforeRender)` pour les exports ; mode `coin` = sol + mur.
 Conséquence : pas de dépendance réseau ; le décor suit les couleurs choisies ; régénération seulement si options/carreaux changent.
 
+## D36 — Décor v2 mats + grain photo (T40)
+Contexte : César trouve le décor T38 trop brillant, joints trop creusés, couleurs pâlies (« jeu vidéo années 90 »).
+Options : retoucher les paramètres T38 / remplacer par `reference/decor` v2 (mat, grain photo).
+Choix : intégrer sans réécrire `reference/decor/tileSurface.ts` (import `../../core/calepinage`) ; charger `public/textures/grain-ciment.jpg` une fois ; défauts `groutMm` 1,5 / `#f3f1ec` / `attenuation` 0 / `grainStrength` 0,7 ; `tilesPerSide = round(240/tileCm)` ; `pxPerTile` 160 si ≤12 cm sinon 256 ; curseur Grain 0–100 % dans le panneau.
+Conséquence : couleurs franches, joints fins clairs, grain visible ; textures 10 cm plus lourdes (timeout e2e 180 s + `decorBuildId`).
+
 

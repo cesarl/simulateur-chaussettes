@@ -200,10 +200,11 @@ function readDesign(value: unknown): SockDesign {
   const decor: DecorSettings = {
     mode: decorMode,
     tileCm: optionalNumber(decorRaw, 'tileCm', 20),
-    groutMm: optionalNumber(decorRaw, 'groutMm', 2),
-    groutColor: typeof decorRaw.groutColor === 'string' ? needHex(decorRaw, 'groutColor') : '#d9d3c7',
-    patina: optionalNumber(decorRaw, 'patina', 0.35),
-    attenuation: optionalNumber(decorRaw, 'attenuation', 0.25),
+    groutMm: optionalNumber(decorRaw, 'groutMm', 1.5),
+    groutColor: typeof decorRaw.groutColor === 'string' ? needHex(decorRaw, 'groutColor') : '#f3f1ec',
+    patina: optionalNumber(decorRaw, 'patina', 0.3),
+    attenuation: optionalNumber(decorRaw, 'attenuation', 0),
+    grainStrength: optionalNumber(decorRaw, 'grainStrength', 0.7),
     tileSource:
       tileSourceRaw === 'collection-origin' || tileSourceRaw === 'other-collection'
         ? tileSourceRaw

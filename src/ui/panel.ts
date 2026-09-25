@@ -1301,6 +1301,17 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const decorGroutColor = makeColor('Couleur du joint', 'ctl-decor-grout-color', design.decor.groutColor, (value) => {
     slide({ design: { decor: { groutColor: value } } });
   });
+  const decorGrain = makeSliderNumber({
+    label: 'Grain',
+    testId: 'ctl-decor-grain',
+    min: 0,
+    max: 100,
+    step: 5,
+    value: Math.round(design.decor.grainStrength * 100),
+    unit: '%',
+    onChange: (value) => slide({ design: { decor: { grainStrength: value / 100 } } }),
+    help: 'Texture photo du ciment (matière, piqûres). 0 = lisse.',
+  });
   const decorPatina = makeSliderNumber({
     label: 'Patine',
     testId: 'ctl-decor-patina',
@@ -1319,7 +1330,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 0.05,
     value: design.decor.attenuation,
     onChange: (value) => slide({ design: { decor: { attenuation: value } } }),
-    help: 'Éclaircit le décor pour laisser la chaussette au premier plan.',
+    help: 'Éclaircit le décor pour laisser la chaussette au premier plan (0 = couleurs franches).',
   });
   const decorSource = makeSelect(
     'Carreaux du décor',
@@ -1364,6 +1375,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     decorTileCm.root.hidden = !on;
     decorGrout.root.hidden = !on;
     decorGroutColor.root.hidden = !on;
+    decorGrain.root.hidden = !on;
     decorPatina.root.hidden = !on;
     decorAttenuation.root.hidden = !on;
     decorSource.root.hidden = !on;
@@ -1376,6 +1388,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     decorTileCm.root,
     decorGrout.root,
     decorGroutColor.root,
+    decorGrain.root,
     decorPatina.root,
     decorAttenuation.root,
     decorSource.root,
@@ -1508,6 +1521,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     decorTileCm.setValue(current.decor.tileCm);
     decorGrout.setValue(current.decor.groutMm);
     if (document.activeElement !== decorGroutColor.input) decorGroutColor.input.value = current.decor.groutColor;
+    decorGrain.setValue(Math.round(current.decor.grainStrength * 100));
     decorPatina.setValue(current.decor.patina);
     decorAttenuation.setValue(current.decor.attenuation);
     if (document.activeElement !== decorSource.input) decorSource.input.value = current.decor.tileSource;

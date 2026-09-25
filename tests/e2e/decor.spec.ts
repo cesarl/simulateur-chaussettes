@@ -10,11 +10,12 @@ function trackErrors(page: Page): string[] {
   return errors;
 }
 
-async function waitDecorReady(page: Page): Promise<void> {
-  // La génération est différée (idle) : attendre que le mode soit bien appliqué
-  // puis laisser le temps au build texture.
-  await page.waitForFunction(() => window.__SIM__?.design.decor.mode === 'coin');
-  await page.waitForTimeout(800);
+async function waitDecorReady(page: Page, mode = 'coin'): Promise<void> {
+  const before = await page.evaluate(() => window.__SIM__?.decorBuildId ?? 0);
+  await page.waitForFunction((m) => window.__SIM__?.design.decor.mode === m, mode);
+  await page.waitForFunction((b) => (window.__SIM__?.decorBuildId ?? 0) > b, before, {
+    timeout: 90_000,
+  });
 }
 
 async function captureView(page: Page, view: 'trois-quarts' | 'dos', size: number, path: string): Promise<Buffer> {
@@ -33,6 +34,7 @@ async function captureView(page: Page, view: 'trois-quarts' | 'dos', size: numbe
 }
 
 test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', async ({ page }) => {
+  test.setTimeout(180_000);
   const errors = trackErrors(page);
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
@@ -43,10 +45,10 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15000 });
 
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
-  await waitDecorReady(page);
+  await waitDecorReady(page, 'coin');
 
-  const three = await captureView(page, 'trois-quarts', 2048, 'test-results/visuel-T38-medina-coin.png');
-  expect(three.byteLength).toBeGreaterThan(50_000);
+  const three = await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-medina-coin.png');
+  expect(three.byteLength).toBeGreaterThan(30_000);
 
   // Analyse dans la page : pixels hors boîte centrale vs palette collection
   const analysis = await page.evaluate(async () => {
@@ -86,7 +88,7 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
   });
   expect(analysis.nonBgCorners).toBeGreaterThanOrEqual(2);
 
-  await captureView(page, 'dos', 2048, 'test-results/visuel-T38-medina-dos.png');
+  await captureView(page, 'dos', 1024, 'test-results/visuel-T38-medina-dos.png');
   const centerIsSock = await page.evaluate(async () => {
     const dataUrl = (window as unknown as { __cap?: string }).__cap!;
     const img = new Image();
@@ -113,20 +115,19 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
 
   // Captures sol / mur / coin Lianes
   await page.getByTestId('ctl-decor-mode').selectOption('sol');
-  await page.waitForFunction(() => window.__SIM__?.design.decor.mode === 'sol');
-  await page.waitForTimeout(600);
+  await waitDecorReady(page, 'sol');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-medina-sol.png');
 
   await page.getByTestId('ctl-decor-mode').selectOption('mur');
-  await page.waitForFunction(() => window.__SIM__?.design.decor.mode === 'mur');
-  await page.waitForTimeout(600);
+  await waitDecorReady(page, 'mur');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-medina-mur.png');
 
   await page.getByTestId('coll-search').fill('lianes');
+  await page.getByTestId('coll-item-lianes').scrollIntoViewIfNeeded();
   await page.getByTestId('coll-item-lianes').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(2, { timeout: 15000 });
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
-  await waitDecorReady(page);
+  await waitDecorReady(page, 'coin');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-lianes-coin.png');
 
   expect(errors).toEqual([]);

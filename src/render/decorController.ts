@@ -1,5 +1,6 @@
 /**
  * Branche le décor sol/mur sur la scène : régénération différée, face caméra.
+ * Charge une fois le grain photo `public/textures/grain-ciment.jpg`.
  */
 import * as THREE from 'three';
 import type { CalepinageSpec } from '../core/calepinage';
@@ -13,9 +14,25 @@ import {
   buildTileSurface,
   createDecor,
   DEFAULT_DECOR,
+  tileCmFromFormat,
   type DecorHandle,
   type DecorOptions,
+  type TileSource,
 } from './decor/tileSurface';
+
+export { tileCmFromFormat };
+
+const GRAIN_URL = '/textures/grain-ciment.jpg';
+
+/** ≈ 2,4 m de côté de décor. */
+function tilesPerSideFor(tileCm: number): number {
+  return Math.max(4, Math.round(240 / tileCm));
+}
+
+/** 256 px pour ~20 cm, 160 px pour ~10 cm — texture totale < 4096. */
+function pxPerTileFor(tileCm: number): number {
+  return tileCm <= 12 ? 160 : 256;
+}
 
 function tileToCanvas(tile: TileAsset): HTMLCanvasElement & { width: number; height: number } {
   const c = document.createElement('canvas');
@@ -36,14 +53,9 @@ function toOptions(d: DecorSettings): DecorOptions {
     groutColor: d.groutColor,
     patina: d.patina,
     attenuation: d.attenuation,
+    grainStrength: d.grainStrength,
+    tilesPerSide: tilesPerSideFor(d.tileCm),
   };
-}
-
-/** « 20x20 » / « 10 × 10 » → cm (borné 10–30). */
-export function tileCmFromFormat(format: string): number {
-  const match = format.match(/(\d+)/);
-  const n = match ? Number(match[1]) : 20;
-  return Math.min(30, Math.max(10, Number.isFinite(n) ? n : 20));
 }
 
 function calepinageForCollection(c: Collection): CalepinageSpec {
@@ -56,11 +68,23 @@ function calepinageForCollection(c: Collection): CalepinageSpec {
   };
 }
 
+function loadGrainOnce(): Promise<TileSource | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => resolve(img as unknown as TileSource);
+    img.onerror = () => resolve(null);
+    img.src = GRAIN_URL;
+  });
+}
+
 export interface DecorController {
   /** Met à jour le décor si options/carreaux ont changé. */
   sync: () => void;
   faceCamera: (camera: THREE.Camera, target: THREE.Vector3) => void;
   dispose: () => void;
+  /** Compteur de builds terminés (tests e2e). */
+  getBuildId: () => number;
 }
 
 export function createDecorController(
@@ -74,7 +98,41 @@ export function createDecorController(
   let lastKey = '';
   let idle = 0;
   let buildGen = 0;
+  let finishedBuildId = 0;
   const tileCache = new Map<string, TileAsset[]>();
+  let grain: TileSource | null | undefined;
+  let grainPrepared: TileSource | null | undefined;
+  let grainLoading: Promise<TileSource | null> | null = null;
+
+  function markBuilt(): void {
+    finishedBuildId += 1;
+    lastKey = decorKey();
+    onChanged?.();
+  }
+
+  function ensureGrain(): Promise<TileSource | null> {
+    if (grain !== undefined) return Promise.resolve(grain);
+    if (!grainLoading) {
+      grainLoading = loadGrainOnce().then((g) => {
+        grain = g;
+        return g;
+      });
+    }
+    return grainLoading;
+  }
+
+  /** Prépare le grain une seule fois (soft-light). */
+  async function ensurePreparedGrain(): Promise<TileSource | null> {
+    const raw = await ensureGrain();
+    if (grainPrepared !== undefined) return grainPrepared;
+    if (!raw) {
+      grainPrepared = null;
+      return null;
+    }
+    // buildTileSurface appellera prepareGrain ; on passe l’image brute (préparation interne).
+    grainPrepared = raw;
+    return raw;
+  }
 
   function disposeHandle(): void {
     if (!handle) return;
@@ -93,6 +151,7 @@ export function createDecorController(
       groutColor: d.groutColor,
       patina: d.patina,
       attenuation: d.attenuation,
+      grainStrength: d.grainStrength,
       tileSource: d.tileSource,
       otherCollectionId: d.otherCollectionId,
       sockTiles: tiles.map((t) => t.id),
@@ -143,25 +202,27 @@ export function createDecorController(
     mapsTiles: TileAsset[],
     spec: CalepinageSpec,
     opts: DecorOptions,
+    grainSrc: TileSource | null,
   ): void {
     const { calepPresets, design } = getState();
     const sources = mapsTiles.map(tileToCanvas);
     const preset = resolvePreset(spec, calepPresets);
     const maps = buildTileSurface({
       tiles: sources,
+      grain: grainSrc,
       spec,
       preset,
       cols: opts.tilesPerSide,
       rows: opts.tilesPerSide,
       options: opts,
+      pxPerTile: pxPerTileFor(opts.tileCm),
       seed: design.layout.calepinage.graine,
     });
     disposeHandle();
     handle = createDecor(maps, opts, getCenter(), renderer);
     scene.add(handle.group);
     studioGround.visible = opts.mode === 'mur';
-    lastKey = decorKey();
-    onChanged?.();
+    markBuilt();
   }
 
   async function buildNow(gen: number): Promise<void> {
@@ -171,20 +232,18 @@ export function createDecorController(
       if (gen !== buildGen) return;
       disposeHandle();
       studioGround.visible = true;
-      lastKey = decorKey();
-      onChanged?.();
+      markBuilt();
       return;
     }
-    const resolved = await resolveTilesAndSpec();
+    const [resolved, grainSrc] = await Promise.all([resolveTilesAndSpec(), ensurePreparedGrain()]);
     if (gen !== buildGen) return;
     if (!resolved || resolved.tiles.length === 0) {
       disposeHandle();
       studioGround.visible = true;
-      lastKey = decorKey();
-      onChanged?.();
+      markBuilt();
       return;
     }
-    applyBuilt(resolved.tiles, resolved.spec, opts);
+    applyBuilt(resolved.tiles, resolved.spec, opts, grainSrc);
   }
 
   function scheduleBuild(): void {
@@ -203,6 +262,9 @@ export function createDecorController(
     }
   }
 
+  // Précharge le grain dès le démarrage
+  void ensurePreparedGrain();
+
   return {
     sync() {
       const key = decorKey();
@@ -218,6 +280,9 @@ export function createDecorController(
       disposeHandle();
       studioGround.visible = true;
       tileCache.clear();
+    },
+    getBuildId() {
+      return finishedBuildId;
     },
   };
 }

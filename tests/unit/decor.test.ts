@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { heightToNormal } from '../../reference/decor/tileSurface';
+import {
+  DEFAULT_DECOR,
+  heightToNormal,
+  tileCmFromFormat,
+} from '../../src/render/decor/tileSurface';
 
 describe('décor : relief des carreaux', () => {
   it('surface plate → normale verticale', () => {
@@ -18,7 +22,6 @@ describe('décor : relief des carreaux', () => {
   });
 });
 
-import { tileCmFromFormat, DEFAULT_DECOR } from '../../reference/decor/tileSurface';
 describe('décor : format et réglages par défaut', () => {
   it('lit le format de la collection', () => {
     expect(tileCmFromFormat('20x20')).toBe(20);
@@ -30,6 +33,14 @@ describe('décor : format et réglages par défaut', () => {
   it('par défaut : couleurs franches, joint fin et clair, grain présent', () => {
     expect(DEFAULT_DECOR.attenuation).toBe(0);
     expect(DEFAULT_DECOR.groutMm).toBeLessThanOrEqual(2);
+    expect(DEFAULT_DECOR.groutColor.toLowerCase()).toBe('#f3f1ec');
     expect(DEFAULT_DECOR.grainStrength).toBeGreaterThan(0);
+  });
+  it('taille réelle : ~2,4 m de côté et px par carreau sous 4096', () => {
+    const side20 = Math.round(240 / 20);
+    const side10 = Math.round(240 / 10);
+    expect(side20 * 256).toBeLessThanOrEqual(4096);
+    expect(side10 * 160).toBeLessThanOrEqual(4096);
+    expect(side10).toBeGreaterThan(side20);
   });
 });

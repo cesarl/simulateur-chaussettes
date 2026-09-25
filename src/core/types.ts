@@ -62,7 +62,10 @@ export interface DecorSettings {
   groutMm: number;
   groutColor: Hex;
   patina: number;
+  /** 0 = couleurs franches (défaut), 1 = décor très pâle. */
   attenuation: number;
+  /** Intensité du grain photo de ciment, 0–1. */
+  grainStrength: number;
   /** Source des carreaux du décor. */
   tileSource: 'sock' | 'collection-origin' | 'other-collection';
   otherCollectionId: string | null;

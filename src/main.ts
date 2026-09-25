@@ -139,7 +139,10 @@ const decor = createDecorController(
     }
     return handle.controls.target.clone();
   },
-  () => handle.requestRender(),
+  () => {
+    handle.requestRender();
+    publish();
+  },
 );
 handle.setBeforeRender(() => {
   decor.faceCamera(handle.camera, handle.controls.target);
@@ -349,6 +352,7 @@ function publish(): void {
     flatCenter: flat.centerOf,
     captureView,
     capturePair,
+    decorBuildId: decor.getBuildId(),
   };
   window.__SIM__ = hook;
 }
