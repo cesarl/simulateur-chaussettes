@@ -3,6 +3,7 @@ import { hexToRgb } from '../core/color';
 import type { StitchGrid } from '../core/types';
 import { Zone } from '../core/types';
 import { viewById, type ViewId } from '../render/views';
+import { capturePng } from '../render/sock3d/studio';
 import { encodeIndexedBmp } from './exportBmp';
 
 /** Échelle du plat lisible : au moins 8 px de large par maille, hauteur au rapport réel. */
@@ -91,16 +92,6 @@ function rgbaToPng(pixels: Uint8ClampedArray, width: number, height: number): Pr
   });
 }
 
-function flipY(pixels: Uint8Array, width: number, height: number): Uint8ClampedArray {
-  const out = new Uint8ClampedArray(pixels.length);
-  const stride = width * 4;
-  for (let y = 0; y < height; y++) {
-    const source = (height - 1 - y) * stride;
-    out.set(pixels.subarray(source, source + stride), y * stride);
-  }
-  return out;
-}
-
 /** Pixels du plat exact : 1 px = 1 maille, sans quadrillage ni légende. */
 export function exactFlatPixels(grid: StitchGrid): Uint8ClampedArray {
   const pixels = new Uint8ClampedArray(grid.width * grid.height * 4);
@@ -116,40 +107,6 @@ export function exactFlatPixels(grid: StitchGrid): Uint8ClampedArray {
   return pixels;
 }
 
-function placeCamera(camera: THREE.PerspectiveCamera, box: THREE.Box3, direction: THREE.Vector3): void {
-  const center = box.getCenter(new THREE.Vector3());
-  const sphere = box.getBoundingSphere(new THREE.Sphere());
-  const fov = THREE.MathUtils.degToRad(camera.fov);
-  let distance = sphere.radius / Math.tan(fov / 2);
-  const corner = new THREE.Vector3();
-  for (let pass = 0; pass < 2; pass++) {
-    camera.position.copy(center).addScaledVector(direction, distance);
-    camera.near = Math.max(distance / 200, 0.001);
-    camera.far = distance + sphere.radius * 8;
-    camera.lookAt(center);
-    camera.updateProjectionMatrix();
-    camera.updateMatrixWorld();
-    let maxNdc = 0.001;
-    const xs = [box.min.x, box.max.x];
-    const ys = [box.min.y, box.max.y];
-    const zs = [box.min.z, box.max.z];
-    for (const x of xs) {
-      for (const y of ys) {
-        for (const z of zs) {
-          corner.set(x, y, z).project(camera);
-          maxNdc = Math.max(maxNdc, Math.abs(corner.x), Math.abs(corner.y));
-        }
-      }
-    }
-    distance *= maxNdc / 0.85;
-  }
-  camera.position.copy(center).addScaledVector(direction, distance);
-  camera.near = Math.max(distance / 200, 0.001);
-  camera.far = distance + sphere.radius * 8;
-  camera.lookAt(center);
-  camera.updateProjectionMatrix();
-}
-
 async function renderView(
   source: ExportSource,
   viewId: ViewId,
@@ -158,43 +115,30 @@ async function renderView(
   transparent: boolean,
 ): Promise<Blob> {
   if (!source.mesh) throw new Error('La chaussette n’est pas prête.');
-  const view = viewById(viewId);
-  const direction = new THREE.Vector3(...view.direction).normalize();
-  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
-  const box = new THREE.Box3().setFromObject(source.mesh);
-  if (box.isEmpty()) throw new Error('Rien à exporter.');
-  placeCamera(camera, box, direction);
-
-  const target = new THREE.WebGLRenderTarget(size, size, {
-    format: THREE.RGBAFormat,
-    type: THREE.UnsignedByteType,
-    colorSpace: THREE.SRGBColorSpace,
-  });
-  const previousTarget = source.renderer.getRenderTarget();
-  const previousBackground = source.scene.background;
-  const previousColor = source.renderer.getClearColor(new THREE.Color());
-  const previousAlpha = source.renderer.getClearAlpha();
   try {
-    if (transparent) {
-      source.scene.background = null;
-      source.renderer.setClearColor(0x000000, 0);
-    } else {
-      source.scene.background = new THREE.Color(background);
-      source.renderer.setClearColor(background, 1);
-    }
-    source.renderer.setRenderTarget(target);
-    source.renderer.clear();
-    source.renderer.render(source.scene, camera);
-    const pixels = new Uint8Array(size * size * 4);
-    source.renderer.readRenderTargetPixels(target, 0, 0, size, size, pixels);
-    return await rgbaToPng(flipY(pixels, size, size), size, size);
+    return await capturePng(
+      source.renderer,
+      source.scene,
+      source.mesh,
+      viewId,
+      size,
+      transparent ? null : background,
+    );
   } finally {
-    source.scene.background = previousBackground;
-    source.renderer.setClearColor(previousColor, previousAlpha);
-    source.renderer.setRenderTarget(previousTarget);
-    target.dispose();
     source.redraw();
   }
+}
+
+async function blobToRgba(blob: Blob, size: number): Promise<Uint8ClampedArray> {
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas 2D indisponible.');
+  context.drawImage(bitmap, 0, 0);
+  bitmap.close();
+  return context.getImageData(0, 0, size, size).data;
 }
 
 function readableCells(aspect: number): { w: number; h: number } {
@@ -316,39 +260,8 @@ async function renderViewPixels(
   size: number,
   background: string,
 ): Promise<Uint8ClampedArray> {
-  if (!source.mesh) throw new Error('La chaussette n’est pas prête.');
-  const view = viewById(viewId);
-  const direction = new THREE.Vector3(...view.direction).normalize();
-  const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
-  const box = new THREE.Box3().setFromObject(source.mesh);
-  if (box.isEmpty()) throw new Error('Rien à exporter.');
-  placeCamera(camera, box, direction);
-
-  const target = new THREE.WebGLRenderTarget(size, size, {
-    format: THREE.RGBAFormat,
-    type: THREE.UnsignedByteType,
-    colorSpace: THREE.SRGBColorSpace,
-  });
-  const previousTarget = source.renderer.getRenderTarget();
-  const previousBackground = source.scene.background;
-  const previousColor = source.renderer.getClearColor(new THREE.Color());
-  const previousAlpha = source.renderer.getClearAlpha();
-  try {
-    source.scene.background = new THREE.Color(background);
-    source.renderer.setClearColor(background, 1);
-    source.renderer.setRenderTarget(target);
-    source.renderer.clear();
-    source.renderer.render(source.scene, camera);
-    const pixels = new Uint8Array(size * size * 4);
-    source.renderer.readRenderTargetPixels(target, 0, 0, size, size, pixels);
-    return flipY(pixels, size, size);
-  } finally {
-    source.scene.background = previousBackground;
-    source.renderer.setClearColor(previousColor, previousAlpha);
-    source.renderer.setRenderTarget(previousTarget);
-    target.dispose();
-    source.redraw();
-  }
+  const blob = await renderView(source, viewId, size, background, false);
+  return blobToRgba(blob, size);
 }
 
 async function renderBoard(source: ExportSource, background: string): Promise<Blob> {
@@ -468,7 +381,7 @@ export async function runExports(source: ExportSource, request: ExportRequest): 
   if (request.board) {
     jobs.push({
       filename: exportFileName(source.modelName, source.sizeId, 'planche'),
-      render: () => renderBoard(source, request.transparent ? '#eeeae4' : request.background),
+      render: () => renderBoard(source, request.transparent ? '#ecebe8' : request.background),
     });
   }
   if (jobs.length === 0) throw new Error('Cochez au moins une vue.');

@@ -107,9 +107,10 @@ Options : toujours 256 entrées de palette / seulement les couleurs utilisées ;
 Choix : palette = couleurs de la grille (`biClrUsed` = longueur), lignes bas → haut, padding 4 octets. Planche = face, trois-quarts, profil extérieur, dos (512²) + grille agrandie ×4 + légende, titre = nom du modèle.
 Conséquence : à valider avec le fabricant pour le BMP. Fichiers `src/io/exportBmp.ts` et `renderBoard` dans `exportPng.ts`.
 
-## D18 — Module sock3d sous `src/render/` (T19)
-Contexte : la forme / atlas / cartes de maille du module de référence sont purs (pas de Three.js ni DOM), mais propres au rendu 3D anatomique, pas à la logique métier de grille.
-Options : les placer dans `src/core/` / les laisser dans `reference/` et importer depuis là / les copier dans `src/render/sock3d/`.
-Choix : copie dans `src/render/sock3d/` (forme, atlas, knitMaps, sockObject, studio). `reference/sock3d/` reste la source de vérité visuelle + démo. `setChevron` ajouté sur `SockObject` pour brancher l’option « rendu simple / fidèle » déjà présente (0 vs 0,9). Anciens `sockGeometry.ts` et `knitTexture.ts` supprimés.
-Conséquence : `src/core/` reste sans code 3D. Le studio (NeutralToneMapping, RoomEnvironment, ombres) remplace l’éclairage provisoire.
+## D19 — Exports 3D via studio.capturePng (T20)
+Contexte : T20 impose `frameView` / `capturePng` du module référence, fond `#ecebe8`, vue `trois-quarts-dos` ajoutée, zoom borné.
+Options : garder le RenderTarget custom / basculer entièrement sur `capturePng`.
+Choix : `capturePng` pour toutes les vues 3D et la planche (décodage PNG → pixels). Fond export par défaut `#ecebe8`. OrbitControls : `minDistance` / `maxDistance` dérivés du rayon de la sphère englobante après chaque `frameView`.
+Conséquence : le tone mapping Neutral et l’espace couleur écran sont identiques à l’export. `dessous` n’est pas proposé dans le panneau.
+
 

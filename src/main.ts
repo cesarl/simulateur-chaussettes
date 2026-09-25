@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
 import { samplePattern, seamMismatch } from './core/layout';
@@ -63,7 +64,11 @@ function shapeFromDesign(dims: SockDimensions, zones: ZoneSettings): SockShapeIn
 function frameCamera(view: ViewName = 'trois-quarts'): void {
   if (!sock) return;
   const center = frameView(handle.camera, sock.mesh, view);
+  const box = new THREE.Box3().setFromObject(sock.mesh);
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
   handle.controls.target.copy(center);
+  handle.controls.minDistance = Math.max(sphere.radius * 0.55, 0.05);
+  handle.controls.maxDistance = Math.max(sphere.radius * 12, 0.5);
   handle.controls.update();
   handle.requestRender();
 }

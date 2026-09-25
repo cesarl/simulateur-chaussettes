@@ -319,7 +319,7 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
     '2048',
     () => {},
   );
-  const background = makeColor('Fond', 'export-bg', '#eeeae4', () => {});
+  const background = makeColor('Fond', 'export-bg', '#ecebe8', () => {});
   const transparent = makeCheckbox('Fond transparent', 'export-transparent', false, () => {});
   const button = document.createElement('button');
   button.type = 'button';

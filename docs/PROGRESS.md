@@ -158,15 +158,22 @@ Vérification : `npm run verify` ✅ (48 unitaires dont 9 sock3d, 19 e2e). Contr
 Décisions : D18.
 Reste / risques : exports 3D encore via l’ancien cadrage `views.ts` (T20).
 
+## T20 — Vues et exports studio — 2026-09-25 08:54
+Statut : terminée
+Fait : Exports 3D via `capturePng` / `frameView`. Vue « trois-quarts dos » ajoutée. Fond défaut `#ecebe8`. Zoom OrbitControls borné après cadrage. e2e studio-export.
+Vérification : `npm run verify` ✅ (48 unitaires, 20 e2e). Capture `visuel-t20-trois-quarts.png` : chaussette anatomique cadrée, fond clair, ombre de contact. Transparent : alpha coin = 0 ; canvas et caméra inchangés après export.
+Décisions : D19.
+Reste / risques : T21 comparaison silhouette vs captures référence.
+
 ## Point pour César
 
-Ce qui marche : import PNG/SVG et exemple, calepinage, réduction de couleurs, **chaussette 3D anatomique** (module sock3d), vue à plat, exports PNG/BMP/planche, projet JSON + IndexedDB, contrôles de fabrication, raccourcis, CI.
+Ce qui marche : import PNG/SVG et exemple, calepinage, réduction de couleurs, **chaussette 3D anatomique** (module sock3d), exports 3D studio (dont transparent), vue à plat, BMP/planche, projet JSON + IndexedDB, contrôles de fabrication, raccourcis, CI.
 
 Tester en 3 étapes :
-1. `npm install` puis `npm run dev`, ouvrir l’adresse affichée (optionnel : `/sock-demo.html` pour la démo référence).
-2. « Charger un exemple », basculer Rendu fidèle / simple, tourner la vue — la forme doit être une chaussette portée, pas un tube.
-3. Touches R (cadrage ¾) et F/T/E/D/I.
+1. `npm install` puis `npm run dev`.
+2. « Charger un exemple », exporter Trois-quarts 2048 (fond `#ecebe8` ou transparent).
+3. Touches R (cadrage ¾) et F/T/E/D/I — le zoom molette ne traverse pas la chaussette.
 
-Décisions à relire : D03 à D18 dans `docs/DECISIONS.md`.
+Décisions à relire : D03 à D19.
 
-Blocages : T18 en attente de `config/sizes.json` confirmé par le fabricant.
+Blocages : T18 en attente de `config/sizes.json` confirmé.
