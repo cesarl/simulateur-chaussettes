@@ -48,7 +48,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T04 — Calepinage (`src/core/layout.ts`)
+### [x] T04 — Calepinage (`src/core/layout.ts`)
 **Objectif** : calculer la couleur de chaque maille des zones motif.
 - `samplePattern(tiles, layout, dims, zones, sampling)` → `Uint8ClampedArray` RGB (ou RGBA) de taille `needles × rangsMotif`, où rangsMotif = rangs de tige (+ rangs du pied si `patternOnFoot`).
 - Implémenter tous les `LayoutKind` de `types.ts`, le joint (couleur `gapColor`), le décalage, la rotation globale, la graine (générateur pseudo-aléatoire déterministe, ex. mulberry32).
@@ -58,10 +58,10 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 - `repeatWidth(layout)` et `seamMismatch(layout, needles)` (reste de la division) + `nearestFittingWidth(...)`.
 
 **Critères**
-- [ ] Tests avec des carreaux synthétiques (ex. 2×2 pixels de 4 couleurs) : grille, quinconce-h (décalage d'une demi-largeur sur les rangées impaires), quinconce-v, rotation-4, miroir-4, damier (A/B alternés), rotation-aléatoire (même graine = même résultat, graine différente = résultat différent).
-- [ ] Test : joint de 1 maille → colonne de couleur `gapColor` au bon endroit.
-- [ ] Test : `seamMismatch` = 0 quand la répétition divise `needles`, `nearestFittingWidth` retourne un diviseur.
-- [ ] Test de performance : 200 × 600 mailles en < 200 ms (Vitest, marge ×2 tolérée en CI).
+- [x] Tests avec des carreaux synthétiques (ex. 2×2 pixels de 4 couleurs) : grille, quinconce-h (décalage d'une demi-largeur sur les rangées impaires), quinconce-v, rotation-4, miroir-4, damier (A/B alternés), rotation-aléatoire (même graine = même résultat, graine différente = résultat différent).
+- [x] Test : joint de 1 maille → colonne de couleur `gapColor` au bon endroit.
+- [x] Test : `seamMismatch` = 0 quand la répétition divise `needles`, `nearestFittingWidth` retourne un diviseur.
+- [x] Test de performance : 200 × 600 mailles en < 200 ms (Vitest, marge ×2 tolérée en CI).
 
 ---
 

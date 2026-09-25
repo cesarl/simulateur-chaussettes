@@ -34,3 +34,9 @@ Contexte : le cahier impose taille homme, calepinage grille, 4 couleurs auto et 
 Options : tout à zéro / valeurs de démonstration lisibles.
 Choix : carreau de 24 mailles × `round(24 / rapport)` rangs (32 avec la jauge actuelle), motif aussi sur le pied, couleurs bord-côte `#1f3a5f`, talon `#b5462f`, pointe `#1d1d1b`, pied `#f4f1ea`, nom de fichier `modele`.
 Conséquence : tout est modifiable dans le panneau ; les défauts sont regroupés dans `defaultDesign()` (`src/state.ts`).
+
+## D05 — Géométrie du calepinage (T04)
+Contexte : le cahier décrit les familles de calepinage sans fixer le sens des décalages, l’emplacement du joint, ni le traitement de la transparence.
+Options : pavage infini / motif recadré sur un seul tour ; joint centré / joint en bas à droite ; transparence ignorée / remplacée.
+Choix : pavage infini, maille `(col, rang)` = coordonnée `(col − décalage, rang − décalage)` ; joint à droite et en bas ; quinconce horizontal vers la droite et vertical vers le bas, d’une demi-taille de carreau ; pixels d’alpha inférieur à 128 remplacés par le premier pixel opaque (coin haut-gauche, parcours ligne à ligne), sinon `#f4f1ea` ; sortie RVB (3 octets). Période = pas du carreau, ×2 pour rotation-4, miroir-4 et damier. À distance égale, `nearestFittingWidth` choisit la largeur la plus grande. Rotation aléatoire : un pas de mulberry32 mélangé à la position du carreau.
+Conséquence : le raccord (`seamMismatch`) ne dépend pas du décalage. Le détail est en tête de `src/core/layout.ts`.

@@ -38,3 +38,10 @@ Fait : Store (`getState`, `update` par fusion, `subscribe`) avec modèle homme, 
 Vérification : `npm run verify` ✅ (13 tests unitaires, 5 e2e).
 Décisions : D04 (valeurs du modèle par défaut).
 Reste / risques : la grille affichée ignore encore le motif (calepinage en T04). Le cylindre 3D reste provisoire.
+
+## T04 — Calepinage — 2026-09-25 06:47
+Statut : terminée
+Fait : `samplePattern` (tous les `LayoutKind`, joint, décalage, rotation globale, graine mulberry32), sur-échantillonnage 4×4 majoritaire ou moyenne, transparence vers le fond du carreau. `tileRowsForWidth`, `repeatWidth`, `seamMismatch`, `nearestFittingWidth`. Sortie RVB de la zone motif seulement.
+Vérification : `npm run verify` ✅ (28 tests unitaires, 5 e2e). Le test 200×600 tient dans la marge ×2 (la suite unitaire entière fait ~300 ms).
+Décisions : D05 (sens des décalages, joint, transparence, période ×2).
+Reste / risques : le panneau n’appelle pas encore le calepinage (branché au recalcul en T08).
