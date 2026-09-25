@@ -26,7 +26,7 @@ test('3 carreaux à la suite, rotation aléatoire : motifs visibles 3D et à pla
   }
   await expect(page.getByTestId('tile-thumb')).toHaveCount(3);
 
-  await page.getByTestId('ctl-layout-kind').selectOption('g-suite-rotalea');
+  await page.getByTestId('calep-thumb-g-suite-rotalea').click();
   await page.waitForFunction(() => {
     const c = window.__SIM__?.design.layout.calepinage;
     return c?.genere.ordre === 'suite' && c.genere.rotation === 'aleatoire-90';

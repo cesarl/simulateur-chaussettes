@@ -227,3 +227,10 @@ Vérification : unitaires (dont calepinage 13 + multi 2 + migration) verts ; e2e
 - `visuel-T25-suite-rotalea-plat.png` : vue à plat ; même enchaînement de carreaux sur la tige (étoile / damier / quart), bord-côte marine, talon terracotta à gauche.
 Décisions : D23.
 Reste / risques : T26 galerie 75 préréglages.
+
+## T26 — Galerie de calepinages — 2026-09-25 13:10
+Statut : terminée
+Fait : `src/ui/calepGallery.ts` — Rapides (11) + 75 préréglages par famille, filtre, personnaliser, nouveau tirage, import JSON, numéros de motifs sur les carreaux.
+Vérification : e2e galerie (86 vignettes / tous ; rosace ; reroll ; filtre ≤) verts. Capture `visuel-T26-galerie.png` : bloc de vignettes (aperçus en grille), familles, « Aléatoire » sélectionné (bordure accent), bouton « Nouveau tirage », « Personnaliser » replié, import JSON, avertissements d’import.
+Décisions : D24.
+Reste / risques : T27 reset/undo.

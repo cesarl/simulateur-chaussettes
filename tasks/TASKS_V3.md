@@ -36,7 +36,7 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Traiter dans l'ordre. T18 r
 - [x] Test unitaire : préréglage `damier_16` avec 16 carreaux unis → 16 couleurs dans la grille avant réduction de palette.
 - [x] e2e : importer les 3 carreaux d'exemple, choisir « À la suite, rotation aléatoire » → capture 3D et vue à plat montrent les 3 motifs (vérification visuelle décrite dans `PROGRESS.md`).
 
-### [~] T26 — Galerie de calepinages
+### [x] T26 — Galerie de calepinages
 Section « Calepinage » du panneau, organisée ainsi :
 - **Galerie** de vignettes cliquables, en deux blocs : « Rapides » (`GENERATED_PRESETS`) et « Préréglages du configurateur » (groupés par `famille` : Rosaces, Compositions, Damier, Damier iflip, Damier rotation aléatoire, Lianes, Ophis, Aléatoire).
 - Chaque vignette est un **aperçu réel** (petit canvas, bloc répété 2 fois, avec les carreaux importés ; formes grises numérotées s'il n'y a pas encore de carreau), recalculé quand les carreaux changent. Badge « N motifs ». Si le préréglage demande plus de motifs qu'il n'y en a d'importés : badge orange « motifs réutilisés ».
@@ -48,11 +48,11 @@ Section « Calepinage » du panneau, organisée ainsi :
 - `data-testid` : `calep-gallery`, `calep-thumb-<id>`, `calep-reroll`, `calep-custom`, `calep-filter`.
 
 **Critères**
-- [ ] e2e : 75 préréglages + 11 rapides visibles avec le filtre « tous » ; cliquer `calep-thumb-rosace` change la grille (empreinte différente) ; `calep-reroll` change la grille pour un calepinage aléatoire et ne la change pas pour `ramo`.
-- [ ] e2e : avec 2 carreaux importés et le filtre « ≤ », `damier_16` est masqué, `damier_2` visible.
-- [ ] Capture de la galerie ouverte et décrite dans `PROGRESS.md`.
+- [x] e2e : 75 préréglages + 11 rapides visibles avec le filtre « tous » ; cliquer `calep-thumb-rosace` change la grille (empreinte différente) ; `calep-reroll` change la grille pour un calepinage aléatoire et ne la change pas pour `ramo`.
+- [x] e2e : avec 2 carreaux importés et le filtre « ≤ », `damier_16` est masqué, `damier_2` visible.
+- [x] Capture de la galerie ouverte et décrite dans `PROGRESS.md`.
 
-### [ ] T27 — Réinitialiser, annuler, rétablir
+### [~] T27 — Réinitialiser, annuler, rétablir
 - `defaultDesign()` unique (source des valeurs par défaut). Dans l'en-tête de **chaque section** (Carreaux excepté : on ne supprime pas les images), bouton « Réinitialiser » qui remet seulement cette partie de l'état à sa valeur par défaut.
 - Une pastille discrète « modifié » à côté du titre des sections qui diffèrent des valeurs par défaut.
 - En bas du panneau : « Tout réinitialiser » (garde les carreaux importés) avec confirmation en place (le bouton devient « Confirmer ? » pendant 4 s, pas de `window.confirm`).

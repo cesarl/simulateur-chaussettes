@@ -19,14 +19,14 @@ test('état vide, raccourcis, aides et largeur 1280', async ({ page }) => {
   await expect(empty).toBeVisible();
   await expect(empty).toContainText(/bienvenue|exemple|importez/i);
 
-  const help = page.getByTestId('help-ctl-layout-kind');
+  const help = page.getByTestId('help-ctl-tile-width');
   await expect(help).toBeVisible();
   const tip = await help.getAttribute('title');
   expect(tip?.length ?? 0).toBeGreaterThan(10);
 
-  const layout = page.getByTestId('ctl-layout-kind');
-  await layout.focus();
-  await expect(layout).toBeFocused();
+  const filter = page.getByTestId('calep-filter');
+  await filter.focus();
+  await expect(filter).toBeFocused();
   await page.keyboard.press('ArrowDown');
 
   const viewport = page.getByTestId('viewport');

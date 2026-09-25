@@ -1,8 +1,6 @@
+import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
+import type { CalepinageSpec } from './core/calepinage';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
-import { migrateLegacyKind } from './core/presets';
-import type {
-  CalepinageSpec,
-} from './core/calepinage';
 import type {
   KnitFidelity,
   LayoutSettings,
@@ -12,6 +10,7 @@ import type {
   TileAsset,
   ZoneSettings,
 } from './core/types';
+import type { Preset } from './core/calepinage';
 
 export type FootSide = 'droite' | 'gauche';
 
@@ -40,6 +39,9 @@ export interface AppState {
   knitFidelity: KnitFidelity;
   /** Pied droit ou gauche (miroir X du maillage). Hors sérialisation projet. */
   footSide: FootSide;
+  /** Bibliothèque de préréglages (session / projet) ; défaut = config/calepinages.json. */
+  calepPresets: Preset[];
+  calepWarnings: string[];
 }
 
 export interface StatePatch {
@@ -48,6 +50,8 @@ export interface StatePatch {
   error?: string | null;
   knitFidelity?: KnitFidelity;
   footSide?: FootSide;
+  calepPresets?: Preset[];
+  calepWarnings?: string[];
 }
 
 type Listener = (state: AppState) => void;
@@ -99,7 +103,15 @@ export function defaultDesign(): SockDesign {
 }
 
 function createInitial(): AppState {
-  return { design: defaultDesign(), tiles: [], error: null, knitFidelity: 'fidele', footSide: 'droite' };
+  return {
+    design: defaultDesign(),
+    tiles: [],
+    error: null,
+    knitFidelity: 'fidele',
+    footSide: 'droite',
+    calepPresets: [...BUILTIN_PRESETS],
+    calepWarnings: [...BUILTIN_PRESET_WARNINGS],
+  };
 }
 
 let state: AppState = createInitial();
@@ -178,6 +190,8 @@ export function update(patch: StatePatch): void {
     error: patch.error === undefined ? state.error : patch.error,
     knitFidelity: patch.knitFidelity ?? state.knitFidelity,
     footSide: patch.footSide ?? state.footSide,
+    calepPresets: patch.calepPresets ?? state.calepPresets,
+    calepWarnings: patch.calepWarnings ?? state.calepWarnings,
   };
   for (const listener of listeners) listener(state);
 }

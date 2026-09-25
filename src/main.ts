@@ -232,7 +232,7 @@ function publish(): void {
 
 function recompute(): void {
   const started = performance.now();
-  const { design, tiles } = getState();
+  const { design, tiles, calepPresets } = getState();
   let pattern: Uint8Array | null = null;
   patternPalette = [];
   patternCounts = [];
@@ -243,6 +243,7 @@ function recompute(): void {
       design.dimensions,
       design.zones,
       design.quantize.sampling,
+      calepPresets,
     );
     const reduced = quantize(rgb, design.dimensions.needles, design.quantize);
     pattern = reduced.indices;
@@ -265,7 +266,7 @@ function recompute(): void {
   computeId += 1;
   publish();
   const tileCount = Math.max(1, tiles.length || design.layout.tileIds.length);
-  const preset = resolvePreset(design.layout.calepinage);
+  const preset = resolvePreset(design.layout.calepinage, calepPresets);
   const mismatch = seamMismatch(design.layout, design.dimensions.needles, tileCount, preset);
   const raccordInfo = layoutRaccord(design.layout, design.dimensions.needles, tileCount, preset);
   renderStatus({

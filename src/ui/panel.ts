@@ -1,13 +1,13 @@
 import type { FabricationReport } from '../core/checks';
-import { GENERATED_PRESETS, type Rot } from '../core/calepinage';
+import type { Rot } from '../core/calepinage';
 import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
-import { applyGeneratedPreset, generatedPresetId } from '../core/presets';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
 import type { ExportRequest, FlatKind } from '../io/exportPng';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { VIEW_ANGLES, type ViewId } from '../render/views';
 import { getState, subscribe, update } from '../state';
 import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
+import { mountCalepGallery } from './calepGallery';
 import {
   details,
   makeCheckbox,
@@ -66,9 +66,15 @@ function renderTiles(list: HTMLElement, empty: HTMLElement): void {
   const { tiles } = getState();
   list.replaceChildren();
   empty.hidden = tiles.length > 0;
-  for (const tile of tiles) {
+  tiles.forEach((tile, index) => {
     const item = document.createElement('li');
     item.className = 'tile';
+
+    const num = document.createElement('span');
+    num.className = 'tile-num';
+    num.dataset.testid = `tile-num-${index + 1}`;
+    num.textContent = String(index + 1);
+    item.appendChild(num);
 
     const image = document.createElement('img');
     image.src = thumbUrl(tile);
@@ -95,7 +101,7 @@ function renderTiles(list: HTMLElement, empty: HTMLElement): void {
     body.appendChild(actions);
     item.appendChild(body);
     list.appendChild(item);
-  }
+  });
 }
 
 function actionButton(label: string, testId: string, onClick: () => void): HTMLButtonElement {
@@ -200,11 +206,6 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
 
   mountSettings(host, actions);
 }
-
-const LAYOUT_OPTIONS: { value: string; label: string }[] = GENERATED_PRESETS.map((preset) => ({
-  value: preset.id,
-  label: preset.nom,
-}));
 
 const MANUAL_SEED: Hex[] = ['#1f3a5f', '#b5462f', '#f4f1ea', '#1d1d1b'];
 
@@ -411,10 +412,6 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
   );
 }
 
-function isGeneratedPresetId(value: string): boolean {
-  return GENERATED_PRESETS.some((option) => option.id === value);
-}
-
 function isSize(value: string): value is SizeId {
   return value === 'homme' || value === 'femme';
 }
@@ -431,22 +428,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   let paletteKey = '';
 
   const layout = details('Calepinage', 'section-layout');
-  const kind = makeSelect(
-    'Calepinage',
-    'ctl-layout-kind',
-    LAYOUT_OPTIONS,
-    generatedPresetId(design.layout.calepinage) ?? 'g-unique',
-    (value) => {
-      if (!isGeneratedPresetId(value)) return;
-      const next = applyGeneratedPreset(
-        value,
-        getState().design.layout.calepinage.graine,
-        getState().design.layout.calepinage.rotationGlobale,
-      );
-      if (next) update({ design: { layout: { calepinage: next } } });
-    },
-    'Façon d’assembler les carreaux : un seul motif, à la suite, rotations, miroirs, aléatoire…',
-  );
+  const gallery = mountCalepGallery(layout);
   const tileWidth = makeSliderNumber({
     label: 'Largeur du carreau',
     testId: 'ctl-tile-width',
@@ -588,7 +570,6 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     update({ design: { layout: next } });
   });
   layout.append(
-    kind.root,
     tileWidth.root,
     tileRows.root,
     keepBox.root,
@@ -958,7 +939,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   };
 
   const sync = (current: SockDesign): void => {
-    kind.input.value = generatedPresetId(current.layout.calepinage) ?? 'g-unique';
+    gallery.sync(getState().tiles, current.layout.calepinage, getState().calepPresets);
     tileWidth.setValue(current.layout.tileStitches);
     tileRows.setValue(current.layout.tileRows);
     keepBox.input.checked = keepRatio;

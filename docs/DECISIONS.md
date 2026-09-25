@@ -131,4 +131,10 @@ Options : étendre LayoutKind / remplacer par `CalepinageSpec` du module référ
 Choix : `layout.calepinage: CalepinageSpec` ; migration à l’import projet et via `setDesign({ layout: { kind } })` ; bibliothèque dans `config/calepinages.json` via `presets.ts`. Liste panneau provisoire = GENERATED_PRESETS (galerie T26).
 Conséquence : projets V1 restent ouvrables ; `seed`/`rotation` migrent vers `graine`/`rotationGlobale`. Sur-échantillonnage 3×3 (comme `sampler.ts` de référence) pour tenir le budget 300 ms.
 
+## D24 — Galerie de calepinages (T26)
+Contexte : 75 préréglages + 11 rapides à présenter sans saturer le panneau.
+Options : liste déroulante / galerie à vignettes réelles.
+Choix : galerie (`calep-gallery`) avec filtre par nombre de motifs (défaut ≤), aperçus canvas 4×4 cases, bibliothèque remplaçable en session (`calepPresets` dans l’état).
+Conséquence : la liste déroulante T25 est retirée ; sélection via `calep-thumb-<id>`.
+
 
