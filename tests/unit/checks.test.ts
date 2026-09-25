@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { checkFabrication } from '../../src/core/checks';
+import { migrateLegacyKind } from '../../src/core/presets';
 import { MACHINE_LIMITS } from '../../src/core/sizes';
 import { defaultDesign } from '../../src/state';
 import type { StitchGrid } from '../../src/core/types';
@@ -36,7 +37,12 @@ describe('contrôles de fabrication', () => {
 
   it('voit le raccord circulaire', () => {
     const grid = rowGrid([0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]);
-    const uneven = { ...layout, tileStitches: 5, gapStitches: 0, kind: 'grille' as const };
+    const uneven = {
+      ...layout,
+      tileStitches: 5,
+      gapStitches: 0,
+      calepinage: migrateLegacyKind('grille'),
+    };
     const bad = checkFabrication(grid, uneven, zones, MACHINE_LIMITS, 99);
     expect(bad.seamMismatch).toBe(2);
     expect(bad.seamOk).toBe(false);

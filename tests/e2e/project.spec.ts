@@ -14,7 +14,7 @@ test('enregistrer, recharger et ouvrir retrouve la même grille', async ({ page 
   await page.goto('/');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await page.getByTestId('tile-fixture').click();
-  await expect(page.getByTestId('tile-thumb')).toHaveCount(1);
+  await expect(page.getByTestId('tile-thumb')).toHaveCount(1, { timeout: 15_000 });
   await page.getByTestId('ctl-size').selectOption('femme');
   await page.waitForFunction(() => {
     const sim = window.__SIM__;

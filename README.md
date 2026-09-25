@@ -35,8 +35,11 @@ Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites 
 ## Utilisation
 
 1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).
-2. Dans **Carreaux**, cliquer « Exemple » ou déposer un PNG/SVG. Régler le calepinage, la taille (homme / femme), les couleurs et les zones : l'aperçu 3D se met à jour.
-3. Basculer sur **À plat** pour contrôler la grille (zoom à la molette, déplacement en glissant). Dans **Exports**, cocher les vues, choisir 1024, 2048 ou 4096, puis **Exporter**. Chaque fichier se télécharge sous le nom `<modele>_<taille>_<vue>.png` (face, trois-quarts, profil extérieur, dos, profil intérieur, plat exact, plat lisible). Cases **BMP indexé** et **Planche** disponibles. Raccourcis 3D : R réinitialise la vue ; F/T/E/D/I changent l’angle.
+2. Dans **Carreaux**, cliquer « Charger un exemple » ou déposer un PNG/SVG. Les vignettes sont numérotées (motif 1, 2…).
+3. Dans **Calepinage**, choisir un préréglage dans la **galerie** (Rapides ou familles du configurateur). Filtrer par nombre de motifs. Si le calepinage est aléatoire, **Nouveau tirage** change la graine. Le bloc **Personnaliser** affine ordre / rotation / appareillage. On peut aussi **importer un autre fichier** de préréglages `.json`.
+4. **Dimensions** : taille homme/femme, hauteur de tige, etc. **Zones** : couleurs + **talon d’aperçu** (hauteur / profondeur / largeur mm — n’affecte pas la grille de tricot).
+5. Pastille **modifié** + **Réinitialiser** en tête de chaque section ; **Tout réinitialiser** en bas (garde les carreaux, confirmation « Confirmer ? » 4 s). **Annuler / Rétablir** en haut du panneau, ou Ctrl/Cmd+Z et Ctrl/Cmd+Maj+Z.
+6. Basculer sur **À plat** pour contrôler la grille. Dans **Exports**, cocher les vues puis **Exporter**. Raccourcis 3D : R réinitialise la vue ; F/T/E/D/I changent l’angle.
 
 ## Publication du dossier `dist/`
 

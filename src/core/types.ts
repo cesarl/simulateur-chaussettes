@@ -5,6 +5,8 @@
  * (en notant la décision dans docs/DECISIONS.md), mais pas le contourner.
  */
 
+import type { CalepinageSpec } from './calepinage';
+
 /** Couleur au format '#rrggbb' (minuscules). */
 export type Hex = string;
 
@@ -19,19 +21,13 @@ export interface TileAsset {
   rgba: Uint8ClampedArray;
 }
 
-/** Calepinages disponibles (mêmes idées que le simulateur de carreaux). */
-export type LayoutKind =
-  | 'grille'          // grille droite
-  | 'quinconce-h'     // rangées décalées d'une demi-largeur (appareillage brique)
-  | 'quinconce-v'     // colonnes décalées d'une demi-hauteur
-  | 'rotation-4'      // bloc 2×2 : 0°, 90°, 180°, 270°
-  | 'miroir-4'        // bloc 2×2 : normal, miroir H, miroir V, miroir HV
-  | 'damier'          // alternance de 2 carreaux (A/B) en damier
-  | 'rotation-aleatoire'; // rotation par carreau tirée au hasard (graine fixe)
-
+/**
+ * Réglages de calepinage : géométrie des carreaux + spec multi-motifs (`CalepinageSpec`).
+ * Ancien champ `kind` (LayoutKind) migré via `migrateLegacyKind`.
+ */
 export interface LayoutSettings {
-  kind: LayoutKind;
-  /** Carreaux utilisés, dans l'ordre (A, B…). Au moins 1. */
+  calepinage: CalepinageSpec;
+  /** Carreaux utilisés, dans l'ordre (motif 1, 2…). Au moins 1. */
   tileIds: string[];
   /** Taille d'un carreau en mailles (colonnes) et en rangs (lignes). */
   tileStitches: number;
@@ -43,10 +39,6 @@ export interface LayoutSettings {
   /** Décalage global du motif (pour choisir où tombe le raccord). */
   offsetStitches: number;
   offsetRows: number;
-  /** Rotation globale appliquée à chaque carreau avant calepinage. */
-  rotation: 0 | 90 | 180 | 270;
-  /** Graine pour les calepinages aléatoires (rendu reproductible). */
-  seed: number;
 }
 
 export type SizeId = 'homme' | 'femme';
@@ -75,6 +67,15 @@ export interface ZoneSettings {
   patternOnFoot: boolean;
   /** Couleur de fond du pied si patternOnFoot = false. */
   footColor: Hex;
+  /**
+   * Aperçu 3D seulement : hauteur du talon au dos (mm, taille homme ; 25–110).
+   * N’affecte pas le nombre de rangs de talon de la grille.
+   */
+  heelHeightMm: number;
+  /** Aperçu 3D : profondeur du talon sous le pied (mm ; 40–130). */
+  heelDepthMm: number;
+  /** Aperçu 3D : largeur du talon autour de la cheville (50–100 %). */
+  heelSpread: number;
 }
 
 export interface QuantizeSettings {

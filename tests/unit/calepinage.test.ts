@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import {
   cellAtStitch, DEFAULT_CALEPINAGE, fittingTileWidths, normalizePresets, planPlacements, raccord, tileUV,
   type CalepinageSpec, type Placement, type TileGeometry,
-} from '../../reference/calepinage/calepinage';
+} from '../../src/core/calepinage';
 
-const raw = JSON.parse(fs.readFileSync(new URL('../../reference/calepinage/calepinages.json', import.meta.url), 'utf8'));
+const raw = JSON.parse(fs.readFileSync(new URL('../../config/calepinages.json', import.meta.url), 'utf8'));
 const { presets, warnings } = normalizePresets(raw);
 const byId = (id: string) => presets.find((p) => p.id === id)!;
 const geo: TileGeometry = { needles: 168, tileStitches: 28, tileRows: 37, gapStitches: 0, gapRows: 0, offsetStitches: 0, offsetRows: 0, appareil: 'droit' };

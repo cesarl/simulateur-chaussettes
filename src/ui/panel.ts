@@ -1,11 +1,26 @@
 import type { FabricationReport } from '../core/checks';
+import type { Rot } from '../core/calepinage';
 import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
 import type { ExportRequest, FlatKind } from '../io/exportPng';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { VIEW_ANGLES, type ViewId } from '../render/views';
-import { getState, subscribe, update } from '../state';
-import type { Hex, LayoutKind, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
+import {
+  canRedo,
+  canUndo,
+  getState,
+  isSectionDirty,
+  redo,
+  resetAllDesign,
+  resetSection,
+  subscribe,
+  undo,
+  update as updateState,
+  type StatePatch,
+  type UpdateOptions,
+} from '../state';
+import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
+import { mountCalepGallery } from './calepGallery';
 import {
   details,
   makeCheckbox,
@@ -13,6 +28,15 @@ import {
   makeSelect,
   makeSliderNumber,
 } from './controls';
+
+function update(patch: StatePatch, options?: UpdateOptions): void {
+  updateState(patch, options);
+}
+
+/** Curseurs : un seul pas d’historique pour un glissement. */
+function slide(patch: StatePatch): void {
+  updateState(patch, { coalesce: true });
+}
 
 const thumbs = new Map<string, string>();
 
@@ -64,9 +88,15 @@ function renderTiles(list: HTMLElement, empty: HTMLElement): void {
   const { tiles } = getState();
   list.replaceChildren();
   empty.hidden = tiles.length > 0;
-  for (const tile of tiles) {
+  tiles.forEach((tile, index) => {
     const item = document.createElement('li');
     item.className = 'tile';
+
+    const num = document.createElement('span');
+    num.className = 'tile-num';
+    num.dataset.testid = `tile-num-${index + 1}`;
+    num.textContent = String(index + 1);
+    item.appendChild(num);
 
     const image = document.createElement('img');
     image.src = thumbUrl(tile);
@@ -93,7 +123,7 @@ function renderTiles(list: HTMLElement, empty: HTMLElement): void {
     body.appendChild(actions);
     item.appendChild(body);
     list.appendChild(item);
-  }
+  });
 }
 
 function actionButton(label: string, testId: string, onClick: () => void): HTMLButtonElement {
@@ -199,16 +229,6 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   mountSettings(host, actions);
 }
 
-const LAYOUT_OPTIONS: { value: LayoutKind; label: string }[] = [
-  { value: 'grille', label: 'Grille droite' },
-  { value: 'quinconce-h', label: 'Quinconce horizontal' },
-  { value: 'quinconce-v', label: 'Quinconce vertical' },
-  { value: 'rotation-4', label: 'Rotation ×4' },
-  { value: 'miroir-4', label: 'Miroirs ×4' },
-  { value: 'damier', label: 'Damier' },
-  { value: 'rotation-aleatoire', label: 'Rotation aléatoire' },
-];
-
 const MANUAL_SEED: Hex[] = ['#1f3a5f', '#b5462f', '#f4f1ea', '#1d1d1b'];
 
 let legWarned = false;
@@ -221,12 +241,14 @@ export function renderStatus(info: {
   patternPalette: readonly string[];
   patternCounts: readonly number[];
   mismatch: number;
+  raccordMessage?: string;
 }): void {
   if (computeMs) computeMs.textContent = `Dernier calcul : ${Math.round(info.ms)} ms`;
   if (seamStatus) {
-    seamStatus.textContent = info.mismatch === 0
-      ? 'Le motif tombe juste.'
-      : `Décalage de ${info.mismatch} mailles au dos.`;
+    seamStatus.textContent = info.raccordMessage
+      ?? (info.mismatch === 0
+        ? 'Le motif tombe juste.'
+        : `Décalage de ${info.mismatch} mailles au dos.`);
   }
   if (!swatches) return;
   swatches.replaceChildren();
@@ -412,10 +434,6 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
   );
 }
 
-function isLayoutKind(value: string): value is LayoutKind {
-  return LAYOUT_OPTIONS.some((option) => option.value === value);
-}
-
 function isSize(value: string): value is SizeId {
   return value === 'homme' || value === 'femme';
 }
@@ -430,19 +448,25 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const design = getState().design;
   let keepRatio = true;
   let paletteKey = '';
+  let resetAllArmed: ReturnType<typeof setTimeout> | undefined;
 
-  const layout = details('Calepinage', 'section-layout');
-  const kind = makeSelect(
-    'Calepinage',
-    'ctl-layout-kind',
-    LAYOUT_OPTIONS,
-    design.layout.kind,
-    (value) => {
-      if (!isLayoutKind(value)) return;
-      update({ design: { layout: { kind: value } } });
-    },
-    'Façon d’assembler les carreaux sur la chaussette : grille droite, quinconce (comme des briques), rotations, miroirs…',
-  );
+  const history = document.createElement('div');
+  history.className = 'row history-bar';
+  const undoBtn = actionButton('Annuler', 'undo', () => {
+    undo();
+  });
+  const redoBtn = actionButton('Rétablir', 'redo', () => {
+    redo();
+  });
+  history.append(undoBtn, redoBtn);
+  host.appendChild(history);
+
+  const layout = details('Calepinage', 'section-layout', {
+    resetId: 'reset-calepinage',
+    dirtyId: 'dirty-calepinage',
+    onReset: () => resetSection('layout'),
+  });
+  const gallery = mountCalepGallery(layout);
   const tileWidth = makeSliderNumber({
     label: 'Largeur du carreau',
     testId: 'ctl-tile-width',
@@ -501,7 +525,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     value: design.layout.gapStitches,
     unit: 'mailles',
     help: 'Bande unie entre deux carreaux sur le tour (0 = carreaux collés).',
-    onChange: (value) => update({ design: { layout: { gapStitches: Math.max(0, Math.round(value)) } } }),
+    onChange: (value) => slide({ design: { layout: { gapStitches: Math.max(0, Math.round(value)) } } }),
   });
   const gapRows = makeSliderNumber({
     label: 'Joint vertical',
@@ -512,14 +536,14 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     value: design.layout.gapRows,
     unit: 'rangs',
     help: 'Bande unie entre deux rangées de carreaux.',
-    onChange: (value) => update({ design: { layout: { gapRows: Math.max(0, Math.round(value)) } } }),
+    onChange: (value) => slide({ design: { layout: { gapRows: Math.max(0, Math.round(value)) } } }),
   });
   const gapColor = makeColor(
     'Couleur du joint',
     'ctl-gap-color',
     design.layout.gapColor,
     (value) => {
-      update({ design: { layout: { gapColor: value } } });
+      slide({ design: { layout: { gapColor: value } } });
     },
     'Couleur du fil utilisé pour les joints entre carreaux.',
   );
@@ -532,10 +556,10 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       { value: '180', label: '180°' },
       { value: '270', label: '270°' },
     ],
-    String(design.layout.rotation),
+    String(design.layout.calepinage.rotationGlobale),
     (value) => {
-      const angle = value === '90' || value === '180' || value === '270' ? Number(value) : 0;
-      update({ design: { layout: { rotation: angle as 0 | 90 | 180 | 270 } } });
+      const angle = (value === '90' || value === '180' || value === '270' ? Number(value) : 0) as Rot;
+      update({ design: { layout: { calepinage: { rotationGlobale: angle } } } });
     },
   );
   const offsetX = makeSliderNumber({
@@ -546,7 +570,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.layout.offsetStitches,
     unit: 'mailles',
-    onChange: (value) => update({ design: { layout: { offsetStitches: Math.round(value) } } }),
+    onChange: (value) => slide({ design: { layout: { offsetStitches: Math.round(value) } } }),
   });
   const offsetY = makeSliderNumber({
     label: 'Décalage vertical',
@@ -556,7 +580,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.layout.offsetRows,
     unit: 'rangs',
-    onChange: (value) => update({ design: { layout: { offsetRows: Math.round(value) } } }),
+    onChange: (value) => slide({ design: { layout: { offsetRows: Math.round(value) } } }),
   });
   const seed = makeSliderNumber({
     label: 'Graine',
@@ -564,8 +588,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 1,
     max: 9999,
     step: 1,
-    value: design.layout.seed,
-    onChange: (value) => update({ design: { layout: { seed: Math.max(1, Math.round(value)) } } }),
+    value: design.layout.calepinage.graine,
+    onChange: (value) =>
+      update({ design: { layout: { calepinage: { graine: Math.max(1, Math.round(value)) } } } }),
   });
   seamStatus = document.createElement('p');
   seamStatus.className = 'hint';
@@ -583,7 +608,6 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     update({ design: { layout: next } });
   });
   layout.append(
-    kind.root,
     tileWidth.root,
     tileRows.root,
     keepBox.root,
@@ -598,7 +622,11 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     fit,
   );
 
-  const dimensions = details('Dimensions', 'section-dimensions');
+  const dimensions = details('Dimensions', 'section-dimensions', {
+    resetId: 'reset-dimensions',
+    dirtyId: 'dirty-dimensions',
+    onReset: () => resetSection('dimensions'),
+  });
   const size = makeSelect(
     'Taille',
     'ctl-size',
@@ -646,7 +674,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.dimensions.needles,
     unit: 'mailles',
-    onChange: (value) => update({ design: { dimensions: { needles: Math.max(1, Math.round(value)) } } }),
+    onChange: (value) => slide({ design: { dimensions: { needles: Math.max(1, Math.round(value)) } } }),
   });
   const heelRows = makeSliderNumber({
     label: 'Talon',
@@ -656,7 +684,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.dimensions.heelRows,
     unit: 'rangs',
-    onChange: (value) => update({ design: { dimensions: { heelRows: Math.max(1, Math.round(value)) } } }),
+    onChange: (value) => slide({ design: { dimensions: { heelRows: Math.max(1, Math.round(value)) } } }),
   });
   const footRows = makeSliderNumber({
     label: 'Pied',
@@ -666,7 +694,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.dimensions.footRows,
     unit: 'rangs',
-    onChange: (value) => update({ design: { dimensions: { footRows: Math.max(1, Math.round(value)) } } }),
+    onChange: (value) => slide({ design: { dimensions: { footRows: Math.max(1, Math.round(value)) } } }),
   });
   const toeRows = makeSliderNumber({
     label: 'Pointe',
@@ -676,7 +704,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.dimensions.toeRows,
     unit: 'rangs',
-    onChange: (value) => update({ design: { dimensions: { toeRows: Math.max(1, Math.round(value)) } } }),
+    onChange: (value) => slide({ design: { dimensions: { toeRows: Math.max(1, Math.round(value)) } } }),
   });
   const stitches = makeSliderNumber({
     label: 'Jauge',
@@ -730,7 +758,11 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     sizeCm,
   );
 
-  const pixels = details('Gros pixels', 'section-pixels');
+  const pixels = details('Gros pixels', 'section-pixels', {
+    resetId: 'reset-pixels',
+    dirtyId: 'dirty-pixels',
+    onReset: () => resetSection('quantize'),
+  });
   const sampling = makeSelect(
     'Échantillonnage',
     'ctl-sampling',
@@ -753,7 +785,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.quantize.maxColors,
     help: 'Nombre max de fils pour le motif (hors bord-côte, talon, pointe). La machine a une limite.',
-    onChange: (value) => update({ design: { quantize: { maxColors: Math.round(value) } } }),
+    onChange: (value) => slide({ design: { quantize: { maxColors: Math.round(value) } } }),
   });
   const paletteMode = makeSelect(
     'Palette',
@@ -789,7 +821,11 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   swatches.dataset.testid = 'pattern-palette';
   pixels.append(sampling.root, maxColors.root, paletteMode.root, despeckle.root, manual, swatches);
 
-  const zones = details('Zones', 'section-zones');
+  const zones = details('Zones', 'section-zones', {
+    resetId: 'reset-zones',
+    dirtyId: 'dirty-zones',
+    onReset: () => resetSection('zones'),
+  });
   const cuff = makeCheckbox(
     'Bord-côte',
     'ctl-cuff-enabled',
@@ -807,24 +843,73 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     step: 1,
     value: design.dimensions.cuffRows,
     unit: 'rangs',
-    onChange: (value) => update({ design: { dimensions: { cuffRows: Math.max(0, Math.round(value)) } } }),
+    onChange: (value) => slide({ design: { dimensions: { cuffRows: Math.max(0, Math.round(value)) } } }),
   });
   const cuffColor = makeColor('Couleur du bord-côte', 'ctl-cuff-color', design.zones.cuffColor, (value) => {
-    update({ design: { zones: { cuffColor: value } } });
+    slide({ design: { zones: { cuffColor: value } } });
   });
   const heelColor = makeColor('Couleur du talon', 'ctl-heel-color', design.zones.heelColor, (value) => {
-    update({ design: { zones: { heelColor: value } } });
+    slide({ design: { zones: { heelColor: value } } });
+  });
+  const heelHelp =
+    'Aperçu seulement : la taille réelle du talon dépend du tricotage (rangs de talon), à valider avec le fabricant.';
+  const heelHeight = makeSliderNumber({
+    label: 'Hauteur du talon',
+    testId: 'ctl-heel-height',
+    min: 25,
+    max: 110,
+    step: 1,
+    value: design.zones.heelHeightMm,
+    unit: 'mm',
+    help: heelHelp,
+    onChange: (value) =>
+      slide({ design: { zones: { heelHeightMm: Math.min(110, Math.max(25, Math.round(value))) } } }),
+  });
+  const heelDepth = makeSliderNumber({
+    label: 'Profondeur sous le pied',
+    testId: 'ctl-heel-depth',
+    min: 40,
+    max: 130,
+    step: 1,
+    value: design.zones.heelDepthMm,
+    unit: 'mm',
+    help: heelHelp,
+    onChange: (value) =>
+      slide({ design: { zones: { heelDepthMm: Math.min(130, Math.max(40, Math.round(value))) } } }),
+  });
+  const heelSpread = makeSliderNumber({
+    label: 'Largeur du talon',
+    testId: 'ctl-heel-spread',
+    min: 50,
+    max: 100,
+    step: 1,
+    value: design.zones.heelSpread,
+    unit: '%',
+    help: heelHelp,
+    onChange: (value) =>
+      slide({ design: { zones: { heelSpread: Math.min(100, Math.max(50, Math.round(value))) } } }),
   });
   const toeColor = makeColor('Couleur de la pointe', 'ctl-toe-color', design.zones.toeColor, (value) => {
-    update({ design: { zones: { toeColor: value } } });
+    slide({ design: { zones: { toeColor: value } } });
   });
   const patternFoot = makeCheckbox('Motif sur le pied', 'ctl-pattern-foot', design.zones.patternOnFoot, (checked) => {
     update({ design: { zones: { patternOnFoot: checked } } });
   });
   const footColor = makeColor('Couleur du pied', 'ctl-foot-color', design.zones.footColor, (value) => {
-    update({ design: { zones: { footColor: value } } });
+    slide({ design: { zones: { footColor: value } } });
   });
-  zones.append(cuff.root, cuffRows.root, cuffColor.root, heelColor.root, toeColor.root, patternFoot.root, footColor.root);
+  zones.append(
+    cuff.root,
+    cuffRows.root,
+    cuffColor.root,
+    heelColor.root,
+    heelHeight.root,
+    heelDepth.root,
+    heelSpread.root,
+    toeColor.root,
+    patternFoot.root,
+    footColor.root,
+  );
 
   const fidelity = makeSelect(
     'Rendu des mailles',
@@ -883,7 +968,26 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   computeMs.dataset.testid = 'compute-ms';
   computeMs.textContent = 'Dernier calcul : —';
 
-  host.append(layout, dimensions, pixels, zones, checks, exportsSection, computeMs);
+  const resetAll = document.createElement('button');
+  resetAll.type = 'button';
+  resetAll.dataset.testid = 'reset-all';
+  resetAll.textContent = 'Tout réinitialiser';
+  resetAll.addEventListener('click', () => {
+    if (resetAllArmed !== undefined) {
+      clearTimeout(resetAllArmed);
+      resetAllArmed = undefined;
+      resetAll.textContent = 'Tout réinitialiser';
+      resetAllDesign();
+      return;
+    }
+    resetAll.textContent = 'Confirmer ?';
+    resetAllArmed = setTimeout(() => {
+      resetAll.textContent = 'Tout réinitialiser';
+      resetAllArmed = undefined;
+    }, 4000);
+  });
+
+  host.append(layout, dimensions, pixels, zones, checks, exportsSection, resetAll, computeMs);
 
   const syncManual = (current: SockDesign): void => {
     const isManual = current.quantize.paletteMode === 'manuelle';
@@ -904,17 +1008,17 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   };
 
   const sync = (current: SockDesign): void => {
-    kind.input.value = current.layout.kind;
+    gallery.sync(getState().tiles, current.layout.calepinage, getState().calepPresets);
     tileWidth.setValue(current.layout.tileStitches);
     tileRows.setValue(current.layout.tileRows);
     keepBox.input.checked = keepRatio;
     gapStitches.setValue(current.layout.gapStitches);
     gapRows.setValue(current.layout.gapRows);
     if (document.activeElement !== gapColor.input) gapColor.input.value = current.layout.gapColor;
-    rotation.input.value = String(current.layout.rotation);
+    rotation.input.value = String(current.layout.calepinage.rotationGlobale);
     offsetX.setValue(current.layout.offsetStitches);
     offsetY.setValue(current.layout.offsetRows);
-    seed.setValue(current.layout.seed);
+    seed.setValue(current.layout.calepinage.graine);
     size.input.value = current.dimensions.size;
     leg.setRange(1, SIZE_PRESETS[current.dimensions.size].legRowsMax);
     leg.input.removeAttribute('max');
@@ -938,6 +1042,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     cuffRows.setValue(current.dimensions.cuffRows);
     if (document.activeElement !== cuffColor.input) cuffColor.input.value = current.zones.cuffColor;
     if (document.activeElement !== heelColor.input) heelColor.input.value = current.zones.heelColor;
+    heelHeight.setValue(current.zones.heelHeightMm);
+    heelDepth.setValue(current.zones.heelDepthMm);
+    heelSpread.setValue(current.zones.heelSpread);
     if (document.activeElement !== toeColor.input) toeColor.input.value = current.zones.toeColor;
     patternFoot.input.checked = current.zones.patternOnFoot;
     if (document.activeElement !== footColor.input) footColor.input.value = current.zones.footColor;
@@ -946,8 +1053,22 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     sync(state.design);
     if (document.activeElement !== fidelity.input) fidelity.input.value = state.knitFidelity;
     if (document.activeElement !== footSide.input) footSide.input.value = state.footSide;
+    const dirtyMap: Array<[string, 'layout' | 'dimensions' | 'quantize' | 'zones']> = [
+      ['dirty-calepinage', 'layout'],
+      ['dirty-dimensions', 'dimensions'],
+      ['dirty-pixels', 'quantize'],
+      ['dirty-zones', 'zones'],
+    ];
+    for (const [id, section] of dirtyMap) {
+      const el = host.querySelector(`[data-testid="${id}"]`);
+      if (el instanceof HTMLElement) el.hidden = !isSectionDirty(section, state.design);
+    }
+    undoBtn.disabled = !canUndo();
+    redoBtn.disabled = !canRedo();
   });
   sync(design);
   fidelity.input.value = getState().knitFidelity;
   footSide.input.value = getState().footSide;
+  undoBtn.disabled = !canUndo();
+  redoBtn.disabled = !canRedo();
 }

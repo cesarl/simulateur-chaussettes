@@ -119,4 +119,28 @@ Options : réécrire localement / remplacer à l’identique depuis la référen
 Choix : copie littérale de `reference/sock3d/sockShape.ts` vers `src/render/sock3d/sockShape.ts`. Les autres fichiers du module sont inchangés (sauf `setChevron` déjà ajouté en T19 sur `sockObject`). Les tests unitaires `sock3d.test.ts` importent depuis `src/render/sock3d/` (comme T19). Architecture mise à jour pour mentionner le loft.
 Conséquence : silhouette T21 recalée sur les nouvelles captures ; plus de bosse parasite sur le dessus du pied.
 
+## D22 — Talon réglable en aperçu seulement (T24)
+Contexte : César trouve le talon trop haut ; le CDC V3 demande hauteur / profondeur / largeur sans toucher aux rangs de talon de la grille.
+Options : champs dans `SockDimensions` / dans `ZoneSettings` / état d’affichage hors projet.
+Choix : `heelHeightMm`, `heelDepthMm`, `heelSpread` (%) dans `ZoneSettings` (sérialisés, défauts 55 / 72 / 100). Conversion `heelSpread/100` vers `SockShapeInput.heelSpread`. Anciens projets sans ces champs → défauts à l’import.
+Conséquence : changer ces curseurs reconstruit la géométrie 3D (`geometryBuilds`) ; la vue à plat et le nombre de rangs de talon restent inchangés.
+
+## D23 — CalepinageSpec remplace LayoutKind (T25)
+Contexte : multi-motifs + 75 préréglages ; l’ancien `kind` ne suffit plus.
+Options : étendre LayoutKind / remplacer par `CalepinageSpec` du module référence.
+Choix : `layout.calepinage: CalepinageSpec` ; migration à l’import projet et via `setDesign({ layout: { kind } })` ; bibliothèque dans `config/calepinages.json` via `presets.ts`. Liste panneau provisoire = GENERATED_PRESETS (galerie T26).
+Conséquence : projets V1 restent ouvrables ; `seed`/`rotation` migrent vers `graine`/`rotationGlobale`. Sur-échantillonnage 3×3 (comme `sampler.ts` de référence) pour tenir le budget 300 ms.
+
+## D24 — Galerie de calepinages (T26)
+Contexte : 75 préréglages + 11 rapides à présenter sans saturer le panneau.
+Options : liste déroulante / galerie à vignettes réelles.
+Choix : galerie (`calep-gallery`) avec filtre par nombre de motifs (défaut ≤), aperçus canvas 4×4 cases, bibliothèque remplaçable en session (`calepPresets` dans l’état).
+Conséquence : la liste déroulante T25 est retirée ; sélection via `calep-thumb-<id>`.
+
+## D25 — Historique coalesce curseurs (T27)
+Contexte : chaque `input` de curseur ne doit pas créer un pas d’historique.
+Options : pointerup / debounce flag / coalescence temporelle.
+Choix : `update(..., { coalesce: true })` via `slide()` ; premier update d’un geste pousse l’historique, les suivants sont fusionnés ; fin de geste après 400 ms d’inactivité.
+Conséquence : un glissement = un Annuler ; les clics discrets (galerie, cases) restent des pas séparés.
+
 

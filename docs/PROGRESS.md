@@ -190,7 +190,7 @@ Vérification : `npm run verify` ✅ (48 unitaires, 22 e2e dont IoU ≥ 0,90). C
 - `visuel-T21-profil-exterieur.png` : profil L anatomique, Achille creusé, instep lisse, semelle plate, talon et pointe rouges nets — comparable à la réf. profil.
 - `visuel-T21-dos.png` : talon rouge centré arrondi, tige qui s’affine vers la cheville, motif qui remonte, ombre au sol.
 Décisions : D21.
-Reste / risques : T18 toujours bloquée (tailles fabricant).
+Reste / risques : T18 toujours bloquée (tailles fabricant). CI GitHub a eu un flake e2e (`sock.spec` distinctColors / vignettes lentes sur SwiftShader) — timeouts et attente paint renforcés (commit suivant).
 
 ## Point pour César
 
@@ -208,3 +208,67 @@ Tester en 3 étapes :
 Décisions à relire : D21 (forme v2) ; D18–D20 si pas encore lues.
 
 Blocages : T18 — `config/sizes.json` fabricant.
+
+## T24 — Talon réglable — 2026-09-25 12:42
+Statut : terminée
+Fait : Copie `sockShape.ts` (HEEL_DEFAULTS + heelHeight/Depth/Spread). État `zones.heelHeightMm` / `heelDepthMm` / `heelSpread` (%), migration projets. Curseurs Zones › Talon + aide fabricant. Branchement `shapeFromDesign` / `surfaceKeyOf` → rebuild géométrie. e2e `heel-preview.spec.ts`.
+Vérification : unitaires sock3d + project verts ; e2e talon + T21 IoU ≥ 0,90 verts. Captures ouvertes :
+- T21 trois-quarts / profil / dos : talon rouge **plus bas** qu’en V2 (défaut 55 mm), dessus du pied en pente régulière, semelle plate, motif étoile, relief jersey, pas d’artefact.
+- `visuel-T24-talon-bas.png` (h=40) : poche talon rouge compacte au dos/sous le pied.
+- `visuel-T24-talon-haut.png` (h=95) : même vue, zone rouge nettement plus haute vers la cheville (+30 % pixels talon).
+Décisions : D22.
+Reste / risques : enchaîner T25 (calepinage multi-motifs).
+
+## T25 — Moteur de calepinage multi-motifs — 2026-09-25 12:55
+Statut : terminée
+Fait : `src/core/calepinage.ts` + `config/calepinages.json` ; `LayoutSettings.calepinage` remplace `kind` ; migration V1 ; `layout.ts` réécrit (plan → case → UV → pixel) ; raccord/`fittingTileWidths` ; liste déroulante = 11 GENERATED_PRESETS (galerie en T26).
+Vérification : unitaires (dont calepinage 13 + multi 2 + migration) verts ; e2e multi + T21 verts. Captures :
+- `visuel-T25-suite-rotalea-3d.png` : trois-quarts ; on distingue clairement les 3 motifs (étoile, quart de cercle / diagonales teal, damier) avec rotations variées sur la tige et le pied ; talon terracotta ; pointe sombre ; bord-côte marine.
+- `visuel-T25-suite-rotalea-plat.png` : vue à plat ; même enchaînement de carreaux sur la tige (étoile / damier / quart), bord-côte marine, talon terracotta à gauche.
+Décisions : D23.
+Reste / risques : T26 galerie 75 préréglages.
+
+## T26 — Galerie de calepinages — 2026-09-25 13:10
+Statut : terminée
+Fait : `src/ui/calepGallery.ts` — Rapides (11) + 75 préréglages par famille, filtre, personnaliser, nouveau tirage, import JSON, numéros de motifs sur les carreaux.
+Vérification : e2e galerie (86 vignettes / tous ; rosace ; reroll ; filtre ≤) verts. Capture `visuel-T26-galerie.png` : bloc de vignettes (aperçus en grille), familles, « Aléatoire » sélectionné (bordure accent), bouton « Nouveau tirage », « Personnaliser » replié, import JSON, avertissements d’import.
+Décisions : D24.
+Reste / risques : T27 reset/undo.
+
+## T27 — Réinitialiser, annuler, rétablir — 2026-09-25 13:20
+Statut : terminée
+Fait : historique 100 pas (`undo`/`redo`, Ctrl/Cmd+Z), coalesce curseurs 400 ms, reset par section + pastille « modifié », `reset-all` avec confirmation 4 s (carreaux conservés).
+Vérification : unitaires history + e2e history verts (27 e2e au total).
+Décisions : D25.
+Reste / risques : T28 bilan.
+
+## T28 — Bilan V3 pour César — 2026-09-25 13:22
+Statut : terminée
+Fait : README Utilisation à jour (galerie, tirage, talon, reset, Ctrl+Z). Quatre captures bilan + Point pour César ci-dessous.
+Vérification : `npm run verify` (lancer après ce commit).
+Décisions à relire : D22–D25.
+Reste / risques : T18 toujours bloquée (fabricant).
+
+## Point pour César
+
+### Ce qui marche (V3)
+- **Talon réglable** (aperçu 3D seulement) : hauteur / profondeur / largeur dans Zones.
+- **Calepinage multi-motifs** : moteur + 75 préréglages + 11 rapides, galerie filtrable, nouveau tirage, import JSON.
+- **Confort** : Réinitialiser par section, Tout réinitialiser (garde les carreaux), Annuler/Rétablir (Ctrl/Cmd+Z).
+
+### Tester en 3 étapes
+1. `npm install` puis `npm run dev`.
+2. Charger les 3 exemples ; dans la galerie choisir « À la suite, rotation aléatoire » puis « Rosace » / un Ophis — vérifier les 3 motifs et les rotations.
+3. Baisser « Hauteur du talon » à 40 mm ; Annuler ; Tout réinitialiser (Confirmer ?).
+
+### Captures bilan (`test-results/` + store `media/`)
+- `visuel-T28-suite-rotalea.png` : trois-quarts, 3 motifs (étoile / quart / damier) avec rotations variées, talon terracotta, pointe noire, bord-côte marine.
+- `visuel-T28-rosace.png` : préréglage Rosace — quarts de cercle / losanges bleus-rouges en bloc 2×2 tourné, motif cohérent autour de la jambe.
+- `visuel-T28-ophis.png` : préréglage Ophis — grille noire à pastilles orange + motifs teal/étoile, mapping anatomique propre.
+- `visuel-T28-talon-bas.png` : profil extérieur, talon orange **compact** (40 mm), semelle plate, motif Ophis sur tige/pied.
+
+### Décisions à relire
+D22 (talon aperçu), D23 (CalepinageSpec), D24 (galerie), D25 (historique coalesce).
+
+### Blocages
+T18 — `config/sizes.json` en attente fabricant.

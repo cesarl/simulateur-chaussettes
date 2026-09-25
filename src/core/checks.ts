@@ -120,7 +120,7 @@ export function checkFabrication(
   }
   const floatMask = new Uint8Array(grid.width * grid.height);
   const floatCount = countFloats(grid, zones, maxFloat, floatMask);
-  const mismatch = seamMismatch(layout, grid.width);
+  const mismatch = seamMismatch(layout, grid.width, Math.max(1, layout.tileIds.length));
   return {
     totalColors: used.size,
     maxColorsTotal: limits.maxColorsTotal,

@@ -13,6 +13,9 @@ function zones(partial: Partial<ZoneSettings> = {}): ZoneSettings {
     toeColor: '#778899',
     patternOnFoot: false,
     footColor: '#aabbcc',
+    heelHeightMm: 55,
+    heelDepthMm: 72,
+    heelSpread: 100,
     ...partial,
   };
 }

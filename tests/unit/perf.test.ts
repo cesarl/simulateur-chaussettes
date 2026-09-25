@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { samplePattern } from '../../src/core/layout';
+import { migrateLegacyKind } from '../../src/core/presets';
 import { quantize } from '../../src/core/quantize';
 import { defaultDimensions } from '../../src/core/sizes';
 import { defaultDesign } from '../../src/state';
@@ -35,7 +36,13 @@ describe('performances du recalcul', () => {
       toeRows: 0,
     };
     const zones = { ...design.zones, cuffEnabled: false, patternOnFoot: false };
-    const layout = { ...design.layout, tileIds: ['a', 'b'], tileStitches: 24, tileRows: 32, kind: 'damier' as const };
+    const layout = {
+      ...design.layout,
+      tileIds: ['a', 'b'],
+      tileStitches: 24,
+      tileRows: 32,
+      calepinage: migrateLegacyKind('damier'),
+    };
     const settings = { ...design.quantize, maxColors: 6, paletteMode: 'auto' as const, despeckle: true };
     const started = performance.now();
     const rgb = samplePattern([noisyTile('a', 1), noisyTile('b', 2)], layout, dims, zones, 'majoritaire');

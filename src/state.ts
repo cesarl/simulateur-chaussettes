@@ -1,3 +1,5 @@
+import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
+import type { CalepinageSpec } from './core/calepinage';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import type {
   KnitFidelity,
@@ -8,14 +10,24 @@ import type {
   TileAsset,
   ZoneSettings,
 } from './core/types';
+import type { Preset } from './core/calepinage';
 
 export type FootSide = 'droite' | 'gauche';
+
+/** Sections réinitialisables (hors carreaux importés). */
+export type DesignSection = 'layout' | 'dimensions' | 'quantize' | 'zones';
 
 /** Réglage partiel : chaque sous-objet est fusionné, pas remplacé. */
 export interface DesignPatch {
   name?: string;
   version?: 1;
-  layout?: Partial<LayoutSettings>;
+  layout?: Partial<Omit<LayoutSettings, 'calepinage'>> & {
+    calepinage?: Partial<CalepinageSpec> & { genere?: Partial<CalepinageSpec['genere']> };
+    /** @deprecated V1 — migré vers calepinage */
+    kind?: string;
+    rotation?: 0 | 90 | 180 | 270;
+    seed?: number;
+  };
   dimensions?: Partial<SockDimensions>;
   zones?: Partial<ZoneSettings>;
   quantize?: Partial<QuantizeSettings>;
@@ -30,6 +42,9 @@ export interface AppState {
   knitFidelity: KnitFidelity;
   /** Pied droit ou gauche (miroir X du maillage). Hors sérialisation projet. */
   footSide: FootSide;
+  /** Bibliothèque de préréglages (session / projet) ; défaut = config/calepinages.json. */
+  calepPresets: Preset[];
+  calepWarnings: string[];
 }
 
 export interface StatePatch {
@@ -38,11 +53,34 @@ export interface StatePatch {
   error?: string | null;
   knitFidelity?: KnitFidelity;
   footSide?: FootSide;
+  calepPresets?: Preset[];
+  calepWarnings?: string[];
+}
+
+export interface UpdateOptions {
+  /** Mouvement continu d’un curseur : un seul pas d’historique. */
+  coalesce?: boolean;
+  /** Ne pas enregistrer dans l’historique (undo/redo internes). */
+  skipHistory?: boolean;
 }
 
 type Listener = (state: AppState) => void;
 
-/** Modèle de départ : homme, calepinage en grille, 4 couleurs auto, bord-côte présent. */
+const HISTORY_MAX = 100;
+
+interface HistoryEntry {
+  design: SockDesign;
+  tiles: TileAsset[];
+  knitFidelity: KnitFidelity;
+  footSide: FootSide;
+  coalesce: boolean;
+}
+
+function defaultCalepinage(): CalepinageSpec {
+  return migrateLegacyKind('grille', 1, 0);
+}
+
+/** Modèle de départ : homme, un seul motif, 4 couleurs auto, bord-côte présent. */
 export function defaultDesign(): SockDesign {
   const dimensions = defaultDimensions('homme');
   const tileStitches = 24;
@@ -51,7 +89,7 @@ export function defaultDesign(): SockDesign {
     version: 1,
     name: 'modele',
     layout: {
-      kind: 'grille',
+      calepinage: defaultCalepinage(),
       tileIds: [],
       tileStitches,
       tileRows,
@@ -60,8 +98,6 @@ export function defaultDesign(): SockDesign {
       gapColor: '#d9d3c7',
       offsetStitches: 0,
       offsetRows: 0,
-      rotation: 0,
-      seed: 1,
     },
     dimensions,
     zones: {
@@ -71,6 +107,9 @@ export function defaultDesign(): SockDesign {
       toeColor: '#1d1d1b',
       patternOnFoot: true,
       footColor: '#f4f1ea',
+      heelHeightMm: 55,
+      heelDepthMm: 72,
+      heelSpread: 100,
     },
     quantize: {
       maxColors: 4,
@@ -84,11 +123,71 @@ export function defaultDesign(): SockDesign {
 }
 
 function createInitial(): AppState {
-  return { design: defaultDesign(), tiles: [], error: null, knitFidelity: 'fidele', footSide: 'droite' };
+  return {
+    design: defaultDesign(),
+    tiles: [],
+    error: null,
+    knitFidelity: 'fidele',
+    footSide: 'droite',
+    calepPresets: [...BUILTIN_PRESETS],
+    calepWarnings: [...BUILTIN_PRESET_WARNINGS],
+  };
+}
+
+function cloneDesign(design: SockDesign): SockDesign {
+  return structuredClone(design);
+}
+
+function snapshot(coalesce: boolean): HistoryEntry {
+  return {
+    design: cloneDesign(state.design),
+    tiles: state.tiles,
+    knitFidelity: state.knitFidelity,
+    footSide: state.footSide,
+    coalesce,
+  };
+}
+
+function restore(entry: HistoryEntry): void {
+  state = {
+    ...state,
+    design: cloneDesign(entry.design),
+    tiles: entry.tiles,
+    knitFidelity: entry.knitFidelity,
+    footSide: entry.footSide,
+  };
 }
 
 let state: AppState = createInitial();
 const listeners = new Set<Listener>();
+let past: HistoryEntry[] = [];
+let future: HistoryEntry[] = [];
+let coalesceActive = false;
+let coalesceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function pushHistory(coalesce: boolean): void {
+  if (coalesce) {
+    if (!coalesceActive) {
+      past.push(snapshot(false));
+      coalesceActive = true;
+      future = [];
+    }
+    if (coalesceTimer !== undefined) clearTimeout(coalesceTimer);
+    coalesceTimer = setTimeout(() => {
+      coalesceActive = false;
+      coalesceTimer = undefined;
+    }, 400);
+  } else {
+    if (coalesceTimer !== undefined) {
+      clearTimeout(coalesceTimer);
+      coalesceTimer = undefined;
+    }
+    coalesceActive = false;
+    past.push(snapshot(false));
+    future = [];
+  }
+  if (past.length > HISTORY_MAX) past.shift();
+}
 
 export function getState(): AppState {
   return state;
@@ -96,7 +195,61 @@ export function getState(): AppState {
 
 export function resetState(): void {
   state = createInitial();
+  past = [];
+  future = [];
+  coalesceActive = false;
+  if (coalesceTimer !== undefined) clearTimeout(coalesceTimer);
+  coalesceTimer = undefined;
   listeners.clear();
+}
+
+export function canUndo(): boolean {
+  return past.length > 0;
+}
+
+export function canRedo(): boolean {
+  return future.length > 0;
+}
+
+function notify(): void {
+  for (const listener of listeners) listener(state);
+}
+
+function mergeCalepinage(
+  current: CalepinageSpec,
+  patch: NonNullable<DesignPatch['layout']>['calepinage'],
+): CalepinageSpec {
+  if (!patch) return current;
+  return {
+    ...current,
+    ...patch,
+    genere: patch.genere ? { ...current.genere, ...patch.genere } : current.genere,
+  };
+}
+
+function applyLayout(layout: LayoutSettings, patch: NonNullable<DesignPatch['layout']>): LayoutSettings {
+  let calepinage = layout.calepinage;
+  if (patch.kind && !patch.calepinage) {
+    const seed = patch.seed ?? calepinage.graine;
+    const rotation = patch.rotation ?? calepinage.rotationGlobale;
+    calepinage = migrateLegacyKind(patch.kind, seed, rotation);
+  } else if (patch.calepinage) {
+    calepinage = mergeCalepinage(calepinage, patch.calepinage);
+  } else {
+    if (patch.seed !== undefined) calepinage = { ...calepinage, graine: patch.seed };
+    if (patch.rotation !== undefined) calepinage = { ...calepinage, rotationGlobale: patch.rotation };
+  }
+  return {
+    calepinage,
+    tileIds: patch.tileIds ?? layout.tileIds,
+    tileStitches: patch.tileStitches ?? layout.tileStitches,
+    tileRows: patch.tileRows ?? layout.tileRows,
+    gapStitches: patch.gapStitches ?? layout.gapStitches,
+    gapRows: patch.gapRows ?? layout.gapRows,
+    gapColor: patch.gapColor ?? layout.gapColor,
+    offsetStitches: patch.offsetStitches ?? layout.offsetStitches,
+    offsetRows: patch.offsetRows ?? layout.offsetRows,
+  };
 }
 
 function applyDesign(design: SockDesign, patch: DesignPatch): SockDesign {
@@ -104,14 +257,22 @@ function applyDesign(design: SockDesign, patch: DesignPatch): SockDesign {
     ...design,
     ...(patch.name !== undefined ? { name: patch.name } : {}),
     ...(patch.version !== undefined ? { version: patch.version } : {}),
-    layout: patch.layout ? { ...design.layout, ...patch.layout } : design.layout,
+    layout: patch.layout ? applyLayout(design.layout, patch.layout) : design.layout,
     dimensions: patch.dimensions ? { ...design.dimensions, ...patch.dimensions } : design.dimensions,
     zones: patch.zones ? { ...design.zones, ...patch.zones } : design.zones,
     quantize: patch.quantize ? { ...design.quantize, ...patch.quantize } : design.quantize,
   };
 }
 
-export function update(patch: StatePatch): void {
+export function update(patch: StatePatch, options: UpdateOptions = {}): void {
+  const records =
+    !options.skipHistory &&
+    (patch.design !== undefined ||
+      patch.tiles !== undefined ||
+      patch.knitFidelity !== undefined ||
+      patch.footSide !== undefined);
+  if (records) pushHistory(options.coalesce === true);
+
   let design = patch.design ? applyDesign(state.design, patch.design) : state.design;
   const tiles = patch.tiles ?? state.tiles;
   if (patch.tiles) {
@@ -126,8 +287,74 @@ export function update(patch: StatePatch): void {
     error: patch.error === undefined ? state.error : patch.error,
     knitFidelity: patch.knitFidelity ?? state.knitFidelity,
     footSide: patch.footSide ?? state.footSide,
+    calepPresets: patch.calepPresets ?? state.calepPresets,
+    calepWarnings: patch.calepWarnings ?? state.calepWarnings,
   };
-  for (const listener of listeners) listener(state);
+  notify();
+}
+
+export function undo(): boolean {
+  if (past.length === 0) return false;
+  coalesceActive = false;
+  const previous = past.pop()!;
+  future.push(snapshot(false));
+  restore(previous);
+  notify();
+  return true;
+}
+
+export function redo(): boolean {
+  if (future.length === 0) return false;
+  coalesceActive = false;
+  const next = future.pop()!;
+  past.push(snapshot(false));
+  restore(next);
+  notify();
+  return true;
+}
+
+/** Empreinte d’une section hors liste de carreaux (pour pastille « modifié »). */
+export function sectionFingerprint(section: DesignSection, design: SockDesign): string {
+  if (section === 'layout') {
+    const { tileIds: _ids, ...rest } = design.layout;
+    return JSON.stringify(rest);
+  }
+  return JSON.stringify(design[section]);
+}
+
+export function isSectionDirty(section: DesignSection, design: SockDesign = state.design): boolean {
+  return sectionFingerprint(section, design) !== sectionFingerprint(section, defaultDesign());
+}
+
+export function resetSection(section: DesignSection): void {
+  const defaults = defaultDesign();
+  if (section === 'layout') {
+    update({
+      design: {
+        layout: {
+          ...defaults.layout,
+          tileIds: state.design.layout.tileIds,
+        },
+      },
+    });
+    return;
+  }
+  update({ design: { [section]: defaults[section] } });
+}
+
+/** Remet tout au défaut sauf les carreaux importés. */
+export function resetAllDesign(): void {
+  coalesceActive = false;
+  const defaults = defaultDesign();
+  update({
+    design: {
+      ...defaults,
+      layout: { ...defaults.layout, tileIds: state.design.layout.tileIds },
+      name: state.design.name,
+    },
+    knitFidelity: 'fidele',
+    footSide: 'droite',
+  });
 }
 
 export function subscribe(listener: Listener): () => void {

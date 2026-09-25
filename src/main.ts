@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
-import { samplePattern, seamMismatch } from './core/layout';
+import { layoutRaccord, samplePattern, seamMismatch } from './core/layout';
+import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import { runExports, renderPair } from './io/exportPng';
@@ -11,7 +12,7 @@ import { createScene } from './render/scene';
 import { createSockObject, type SockObject } from './render/sock3d/sockObject';
 import type { SockShapeInput } from './render/sock3d/sockShape';
 import { capturePng, frameView, type ViewName } from './render/sock3d/studio';
-import { getState, subscribe, update, type DesignPatch } from './state';
+import { getState, subscribe, update, undo, redo, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
@@ -45,6 +46,9 @@ function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings, side: string): 
     dims.toeRows,
     dims.rowsPerCm,
     zones.cuffEnabled ? 1 : 0,
+    zones.heelHeightMm,
+    zones.heelDepthMm,
+    zones.heelSpread,
     side,
   ].join('|');
 }
@@ -60,6 +64,9 @@ function shapeFromDesign(dims: SockDimensions, zones: ZoneSettings, side: 'droit
     rowsPerCm: dims.rowsPerCm,
     size: dims.size,
     side,
+    heelHeight: zones.heelHeightMm,
+    heelDepth: zones.heelDepthMm,
+    heelSpread: zones.heelSpread / 100,
   };
 }
 
@@ -225,7 +232,7 @@ function publish(): void {
 
 function recompute(): void {
   const started = performance.now();
-  const { design, tiles } = getState();
+  const { design, tiles, calepPresets } = getState();
   let pattern: Uint8Array | null = null;
   patternPalette = [];
   patternCounts = [];
@@ -236,6 +243,7 @@ function recompute(): void {
       design.dimensions,
       design.zones,
       design.quantize.sampling,
+      calepPresets,
     );
     const reduced = quantize(rgb, design.dimensions.needles, design.quantize);
     pattern = reduced.indices;
@@ -257,11 +265,16 @@ function recompute(): void {
   lastComputeMs = performance.now() - started;
   computeId += 1;
   publish();
+  const tileCount = Math.max(1, tiles.length || design.layout.tileIds.length);
+  const preset = resolvePreset(design.layout.calepinage, calepPresets);
+  const mismatch = seamMismatch(design.layout, design.dimensions.needles, tileCount, preset);
+  const raccordInfo = layoutRaccord(design.layout, design.dimensions.needles, tileCount, preset);
   renderStatus({
     ms: lastComputeMs,
     patternPalette,
     patternCounts,
-    mismatch: seamMismatch(design.layout, design.dimensions.needles),
+    mismatch,
+    raccordMessage: raccordInfo.message,
   });
 }
 
@@ -357,6 +370,13 @@ async function boot(): Promise<void> {
 
   window.addEventListener('keydown', (event) => {
     if (isTypingTarget(event.target)) return;
+    const mod = event.metaKey || event.ctrlKey;
+    if (mod && event.key.toLowerCase() === 'z') {
+      event.preventDefault();
+      if (event.shiftKey) redo();
+      else undo();
+      return;
+    }
     const key = event.key.toLowerCase();
     if (key === 'r') {
       event.preventDefault();

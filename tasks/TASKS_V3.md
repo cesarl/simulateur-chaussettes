@@ -11,7 +11,7 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Traiter dans l'ordre. T18 r
 
 ---
 
-### [ ] T24 — Talon réglable
+### [x] T24 — Talon réglable
 - Reporter `reference/sock3d/sockShape.ts` (nouveaux paramètres `heelHeight`, `heelDepth`, `heelSpread`, constantes `HEEL_DEFAULTS`) dans `src/render/sock3d/`, ainsi que `demo.ts` et `sock-demo.html` s'ils ont été gardés.
 - État : ajouter à la zone Talon `heelHeightMm` (25–110, défaut 55), `heelDepthMm` (40–130, défaut 72), `heelSpread` (50–100 %, défaut 100 %). Anciens projets sans ces champs → valeurs par défaut.
 - Panneau, section Zones › Talon : trois curseurs « Hauteur du talon (mm) », « Profondeur sous le pied (mm) », « Largeur du talon (%) », avec une bulle d'aide : « Aperçu seulement : la taille réelle du talon dépend du tricotage (rangs de talon), à valider avec le fabricant. »
@@ -19,11 +19,11 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Traiter dans l'ordre. T18 r
 - Régénérer les captures du test T21 : elles sont fournies dans `reference/sock3d/captures/` (talon par défaut plus bas).
 
 **Critères**
-- [ ] `tests/unit/sock3d.test.ts` fourni (14 tests, dont les réglages du talon) vert.
-- [ ] e2e : hauteur du talon 40 puis 95 → sur l'export profil extérieur, la proportion de pixels « couleur du talon » augmente nettement (au moins +30 %).
-- [ ] T21 (silhouettes) vert avec les nouvelles captures ; captures ouvertes et décrites dans `PROGRESS.md`.
+- [x] `tests/unit/sock3d.test.ts` fourni (14 tests, dont les réglages du talon) vert.
+- [x] e2e : hauteur du talon 40 puis 95 → sur l'export profil extérieur, la proportion de pixels « couleur du talon » augmente nettement (au moins +30 %).
+- [x] T21 (silhouettes) vert avec les nouvelles captures ; captures ouvertes et décrites dans `PROGRESS.md`.
 
-### [ ] T25 — Moteur de calepinage multi-motifs
+### [x] T25 — Moteur de calepinage multi-motifs
 - Copier `reference/calepinage/calepinage.ts` dans `src/core/calepinage.ts` et `calepinages.json` dans `config/calepinages.json` (importé au build). Déplacer `tests/unit/calepinage.test.ts` (seuls les imports changent ; il doit passer tel quel).
 - Remplacer `LayoutSettings.kind` (ancien `LayoutKind`) par le `CalepinageSpec` du module (garder taille, joint, couleur de joint, décalages). **Migration** des projets enregistrés, avec un test : `grille` → générée `unique` ; `quinconce-h`/`-v` → `unique` + appareillage ; `rotation-4` → `rosace` ; `miroir-4` → `miroir` ; `damier` → `suite` (pas 1) ; `rotation-aleatoire` → `unique` + `aleatoire-90`. La graine existante est conservée.
 - Réécrire l'échantillonnage de `src/core/layout.ts` sur le modèle de `reference/calepinage/sampler.ts` : plan des cases (`planPlacements`, bouclé sur le tour quand `raccord().tilesAround` est entier) → case de la maille (`cellAtStitch`) → rotation/miroir (`tileUV`) → pixel du bon carreau. Tous les carreaux importés sont utilisés, dans l'ordre de la liste (motif 1 = premier de la liste).
@@ -31,12 +31,12 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Traiter dans l'ordre. T18 r
 - Performances : 16 carreaux, 200 aiguilles × 600 rangs, en moins de 300 ms (sinon Web Worker, comme prévu en T13).
 
 **Critères**
-- [ ] `calepinage.test.ts` fourni vert + test de migration.
-- [ ] Test unitaire : 4 carreaux unis de 4 couleurs différentes, calepinage `suite` → les 4 couleurs sont présentes dans la grille, dans l'ordre attendu sur le premier rang de carreaux.
-- [ ] Test unitaire : préréglage `damier_16` avec 16 carreaux unis → 16 couleurs dans la grille avant réduction de palette.
-- [ ] e2e : importer les 3 carreaux d'exemple, choisir « À la suite, rotation aléatoire » → capture 3D et vue à plat montrent les 3 motifs (vérification visuelle décrite dans `PROGRESS.md`).
+- [x] `calepinage.test.ts` fourni vert + test de migration.
+- [x] Test unitaire : 4 carreaux unis de 4 couleurs différentes, calepinage `suite` → les 4 couleurs sont présentes dans la grille, dans l'ordre attendu sur le premier rang de carreaux.
+- [x] Test unitaire : préréglage `damier_16` avec 16 carreaux unis → 16 couleurs dans la grille avant réduction de palette.
+- [x] e2e : importer les 3 carreaux d'exemple, choisir « À la suite, rotation aléatoire » → capture 3D et vue à plat montrent les 3 motifs (vérification visuelle décrite dans `PROGRESS.md`).
 
-### [ ] T26 — Galerie de calepinages
+### [x] T26 — Galerie de calepinages
 Section « Calepinage » du panneau, organisée ainsi :
 - **Galerie** de vignettes cliquables, en deux blocs : « Rapides » (`GENERATED_PRESETS`) et « Préréglages du configurateur » (groupés par `famille` : Rosaces, Compositions, Damier, Damier iflip, Damier rotation aléatoire, Lianes, Ophis, Aléatoire).
 - Chaque vignette est un **aperçu réel** (petit canvas, bloc répété 2 fois, avec les carreaux importés ; formes grises numérotées s'il n'y a pas encore de carreau), recalculé quand les carreaux changent. Badge « N motifs ». Si le préréglage demande plus de motifs qu'il n'y en a d'importés : badge orange « motifs réutilisés ».
@@ -48,11 +48,11 @@ Section « Calepinage » du panneau, organisée ainsi :
 - `data-testid` : `calep-gallery`, `calep-thumb-<id>`, `calep-reroll`, `calep-custom`, `calep-filter`.
 
 **Critères**
-- [ ] e2e : 75 préréglages + 11 rapides visibles avec le filtre « tous » ; cliquer `calep-thumb-rosace` change la grille (empreinte différente) ; `calep-reroll` change la grille pour un calepinage aléatoire et ne la change pas pour `ramo`.
-- [ ] e2e : avec 2 carreaux importés et le filtre « ≤ », `damier_16` est masqué, `damier_2` visible.
-- [ ] Capture de la galerie ouverte et décrite dans `PROGRESS.md`.
+- [x] e2e : 75 préréglages + 11 rapides visibles avec le filtre « tous » ; cliquer `calep-thumb-rosace` change la grille (empreinte différente) ; `calep-reroll` change la grille pour un calepinage aléatoire et ne la change pas pour `ramo`.
+- [x] e2e : avec 2 carreaux importés et le filtre « ≤ », `damier_16` est masqué, `damier_2` visible.
+- [x] Capture de la galerie ouverte et décrite dans `PROGRESS.md`.
 
-### [ ] T27 — Réinitialiser, annuler, rétablir
+### [x] T27 — Réinitialiser, annuler, rétablir
 - `defaultDesign()` unique (source des valeurs par défaut). Dans l'en-tête de **chaque section** (Carreaux excepté : on ne supprime pas les images), bouton « Réinitialiser » qui remet seulement cette partie de l'état à sa valeur par défaut.
 - Une pastille discrète « modifié » à côté du titre des sections qui diffèrent des valeurs par défaut.
 - En bas du panneau : « Tout réinitialiser » (garde les carreaux importés) avec confirmation en place (le bouton devient « Confirmer ? » pendant 4 s, pas de `window.confirm`).
@@ -60,9 +60,9 @@ Section « Calepinage » du panneau, organisée ainsi :
 - `data-testid` : `reset-<section>`, `reset-all`, `undo`, `redo`.
 
 **Critères**
-- [ ] Tests unitaires du store : réinitialiser une section ne touche pas les autres ; annuler/rétablir ; un glissement de curseur = un pas.
-- [ ] e2e : modifier calepinage + talon + gros pixels, `reset-calepinage` → seul le calepinage revient au défaut ; `undo` le rétablit ; `reset-all` + confirmation → tout au défaut, carreaux conservés.
+- [x] Tests unitaires du store : réinitialiser une section ne touche pas les autres ; annuler/rétablir ; un glissement de curseur = un pas.
+- [x] e2e : modifier calepinage + talon + gros pixels, `reset-calepinage` → seul le calepinage revient au défaut ; `undo` le rétablit ; `reset-all` + confirmation → tout au défaut, carreaux conservés.
 
-### [ ] T28 — Bilan V3 pour César
+### [x] T28 — Bilan V3 pour César
 - Mettre à jour `README.md` (section Utilisation : galerie, nouveau tirage, talon, réinitialisation, raccourcis).
 - « Point pour César » dans `PROGRESS.md` avec 4 captures : 3 carreaux à la suite + rotation aléatoire, « Rosace », un préréglage Ophis, talon bas.
