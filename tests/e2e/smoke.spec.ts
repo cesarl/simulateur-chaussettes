@@ -11,12 +11,12 @@ test('la page se charge, la 3D s’affiche, pas d’erreur console', async ({ pa
   await expect(page.getByTestId('panel')).toBeVisible();
   await page.waitForFunction(() => window.__SIM__?.ready === true);
 
-  const canvas = page.locator('[data-testid="viewport"] canvas');
+  const canvas = page.getByTestId('sock-canvas');
   await expect(canvas).toBeVisible();
 
   // Le canvas ne doit pas être uniforme (quelque chose est dessiné).
   const distinctColors = await page.evaluate(() => {
-    const c = document.querySelector<HTMLCanvasElement>('[data-testid="viewport"] canvas')!;
+    const c = document.querySelector<HTMLCanvasElement>('[data-testid="sock-canvas"]')!;
     const tmp = document.createElement('canvas');
     tmp.width = 64;
     tmp.height = 64;

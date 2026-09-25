@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 
 async function distinctColors(page: Page): Promise<number> {
   return page.evaluate(() => {
-    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="viewport"] canvas');
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="sock-canvas"]');
     if (!canvas) return 0;
     const copy = document.createElement('canvas');
     copy.width = 64;

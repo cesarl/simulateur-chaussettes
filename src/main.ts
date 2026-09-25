@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { composeGrid } from './core/grid';
 import { samplePattern, seamMismatch } from './core/layout';
 import { quantize } from './core/quantize';
-import { defaultDimensions } from './core/sizes';
+import { defaultDimensions, stitchAspect } from './core/sizes';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
 import { createKnitMaterial, type KnitMaterial } from './render/knitTexture';
@@ -10,6 +10,7 @@ import { createSockMesh } from './render/sockGeometry';
 import { getState, subscribe, update, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
+import { mountFlatView } from './ui/flatView';
 import { mountPanel, renderStatus } from './ui/panel';
 
 const viewport = document.getElementById('viewport');
@@ -17,6 +18,7 @@ const panel = document.getElementById('panel');
 if (!viewport || !panel) throw new Error('Structure de page introuvable');
 
 const handle = createScene(viewport);
+const flat = mountFlatView(viewport, () => handle.requestRender());
 
 let grid: StitchGrid = composeGrid(getState().design.dimensions, getState().design.zones, null, []);
 let patternPalette: string[] = [];
@@ -134,6 +136,7 @@ function publish(): void {
     loadFixture,
     setDesign,
     getStitch: readStitch,
+    flatCenter: flat.centerOf,
   };
   window.__SIM__ = hook;
 }
@@ -158,6 +161,7 @@ function recompute(): void {
     patternCounts = reduced.counts;
   }
   grid = composeGrid(design.dimensions, design.zones, pattern, patternPalette);
+  flat.setGrid(grid, stitchAspect(design.dimensions));
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
   computeId += 1;

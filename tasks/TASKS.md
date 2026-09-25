@@ -120,14 +120,14 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T09 — Vue à plat (`src/ui/flatView.ts`)
+### [x] T09 — Vue à plat (`src/ui/flatView.ts`)
 **Objectif** : afficher la grille de mailles pour contrôle.
 - Bascule « 3D / À plat » au-dessus de la vue. Canvas 2D, mailles au rapport réel, zoom (molette) et déplacement (glisser), quadrillage visible au-delà d'un certain zoom, repères de zones à gauche, numéros tous les 10 rangs/mailles.
 - Survol : affiche (maille, rang, zone, couleur).
 
 **Critères**
-- [ ] e2e : bascule vers la vue à plat, canvas visible, retour en 3D sans erreur.
-- [ ] La couleur d'une maille lue sur le canvas (sans quadrillage) correspond à celle de la grille (test via `__SIM__`).
+- [x] e2e : bascule vers la vue à plat, canvas visible, retour en 3D sans erreur.
+- [x] La couleur d'une maille lue sur le canvas (sans quadrillage) correspond à celle de la grille (test via `__SIM__`).
 
 ---
 

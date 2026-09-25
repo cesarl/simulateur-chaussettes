@@ -73,3 +73,10 @@ Fait : Sections repliables Carreaux, Calepinage, Dimensions, Gros pixels, Zones,
 Vérification : `npm run verify` ✅ (35 tests unitaires, 10 e2e). Les trois scénarios du panneau passent : quinconce + 3 couleurs + femme (palette de motif ≤ 3), bord-côte retiré (`hauteur − cuffRows`), tige trop haute ramenée au maximum.
 Décisions : D09 (sections Contrôles et Exports en attente, fils manuels de départ).
 Reste / risques : Contrôles de fabrication et exports PNG ne sont pas encore branchés (T12, T10). La vue à plat manque (T09).
+
+## T09 — Vue à plat — 2026-09-25 07:12
+Statut : terminée
+Fait : Bascule « 3D / À plat » au-dessus de la vue. Canvas 2D, mailles en rectangles au rapport réel (4×3 px à la jauge actuelle), zoom molette entier et déplacement au glisser. Quadrillage à partir de 12 px de large. Repères de zones à gauche, numéros tous les 10. Survol : maille, rang, zone, couleur.
+Vérification : `npm run verify` ✅ (35 tests unitaires, 11 e2e). Contrôle visuel de `test-results/visuel-t09-plat.png` : fond beige ; bande bleu marine en haut (bord-côte) puis plage crème (tige) ; pastilles et libellés « Bord-côte » et « Tige » à gauche ; numéros de mailles et de rangs (0, 10, 20…) ; bouton « À plat » actif à droite ; mention « Survolez une maille. » en bas à gauche. Les pixels des mailles (4, 4) et (4, 40), hors quadrillage, coïncident avec la grille. Retour en 3D sans erreur console.
+Décisions : D10 (taille entière des mailles, seuil du quadrillage).
+Reste / risques : le survol et le zoom ne sont pas couverts par un test e2e dédié. Exports PNG ensuite (T10).

@@ -16,6 +16,7 @@ export function createScene(container: HTMLElement): SceneHandle {
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.domElement.dataset.testid = 'sock-canvas';
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();

@@ -64,3 +64,9 @@ Contexte : le cahier demande les sections Contrôles et Exports dès le panneau 
 Options : masquer ces sections / les afficher vides avec une phrase / y mettre des contrôles factices.
 Choix : les deux sections sont présentes, ouvertes, avec une phrase d'attente. Une palette manuelle vide reçoit quatre fils (`#1f3a5f`, `#b5462f`, `#f4f1ea`, `#1d1d1b`). Le champ tige n'a pas d'attribut `max` HTML : le dépassement est détecté puis ramené par `clampLegRows`, avec le message.
 Conséquence : T10 et T12 remplaceront le texte d'attente. Les fils initiaux sont dans `MANUAL_SEED` (`src/ui/panel.ts`).
+
+## D10 — Mailles de la vue à plat (T09)
+Contexte : le rapport réel des mailles et une couleur de pixel exacte (sans lissage) doivent tenir ensemble, et le quadrillage ne doit pas masquer le test de couleur.
+Options : mailles fractionnaires lissées / rectangles entiers zoomés / image 1 px rééchantillonnée.
+Choix : rectangle de base 4 px de large sur `round(4 × rapport)` px de haut, zoom entier de 1 à 8 (molette), déplacement au glisser. Le quadrillage n'est dessiné qu'à partir de 12 px de large. Les noms de zones sont à gauche, les numéros tous les 10 mailles et rangs dans les marges.
+Conséquence : au zoom 1, une maille fait 4×3 px avec la jauge actuelle. Le détail est dans `src/ui/flatView.ts`.

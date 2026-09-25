@@ -24,6 +24,8 @@ export interface SimHook {
   loadFixture: (name: string) => Promise<void>;
   setDesign: (partial: DesignPatch) => void;
   getStitch: (col: number, row: number) => StitchRead | null;
+  /** Centre bitmap d'une maille dans la vue à plat, ou null si elle est hors cadre. */
+  flatCenter: (col: number, row: number) => { x: number; y: number } | null;
 }
 
 declare global {
