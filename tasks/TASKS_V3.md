@@ -52,7 +52,7 @@ Section « Calepinage » du panneau, organisée ainsi :
 - [x] e2e : avec 2 carreaux importés et le filtre « ≤ », `damier_16` est masqué, `damier_2` visible.
 - [x] Capture de la galerie ouverte et décrite dans `PROGRESS.md`.
 
-### [~] T27 — Réinitialiser, annuler, rétablir
+### [x] T27 — Réinitialiser, annuler, rétablir
 - `defaultDesign()` unique (source des valeurs par défaut). Dans l'en-tête de **chaque section** (Carreaux excepté : on ne supprime pas les images), bouton « Réinitialiser » qui remet seulement cette partie de l'état à sa valeur par défaut.
 - Une pastille discrète « modifié » à côté du titre des sections qui diffèrent des valeurs par défaut.
 - En bas du panneau : « Tout réinitialiser » (garde les carreaux importés) avec confirmation en place (le bouton devient « Confirmer ? » pendant 4 s, pas de `window.confirm`).
@@ -60,9 +60,9 @@ Section « Calepinage » du panneau, organisée ainsi :
 - `data-testid` : `reset-<section>`, `reset-all`, `undo`, `redo`.
 
 **Critères**
-- [ ] Tests unitaires du store : réinitialiser une section ne touche pas les autres ; annuler/rétablir ; un glissement de curseur = un pas.
-- [ ] e2e : modifier calepinage + talon + gros pixels, `reset-calepinage` → seul le calepinage revient au défaut ; `undo` le rétablit ; `reset-all` + confirmation → tout au défaut, carreaux conservés.
+- [x] Tests unitaires du store : réinitialiser une section ne touche pas les autres ; annuler/rétablir ; un glissement de curseur = un pas.
+- [x] e2e : modifier calepinage + talon + gros pixels, `reset-calepinage` → seul le calepinage revient au défaut ; `undo` le rétablit ; `reset-all` + confirmation → tout au défaut, carreaux conservés.
 
-### [ ] T28 — Bilan V3 pour César
+### [x] T28 — Bilan V3 pour César
 - Mettre à jour `README.md` (section Utilisation : galerie, nouveau tirage, talon, réinitialisation, raccourcis).
 - « Point pour César » dans `PROGRESS.md` avec 4 captures : 3 carreaux à la suite + rotation aléatoire, « Rosace », un préréglage Ophis, talon bas.

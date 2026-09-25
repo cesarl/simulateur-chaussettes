@@ -137,4 +137,10 @@ Options : liste déroulante / galerie à vignettes réelles.
 Choix : galerie (`calep-gallery`) avec filtre par nombre de motifs (défaut ≤), aperçus canvas 4×4 cases, bibliothèque remplaçable en session (`calepPresets` dans l’état).
 Conséquence : la liste déroulante T25 est retirée ; sélection via `calep-thumb-<id>`.
 
+## D25 — Historique coalesce curseurs (T27)
+Contexte : chaque `input` de curseur ne doit pas créer un pas d’historique.
+Options : pointerup / debounce flag / coalescence temporelle.
+Choix : `update(..., { coalesce: true })` via `slide()` ; premier update d’un geste pousse l’historique, les suivants sont fusionnés ; fin de geste après 400 ms d’inactivité.
+Conséquence : un glissement = un Annuler ; les clics discrets (galerie, cases) restent des pas séparés.
+
 

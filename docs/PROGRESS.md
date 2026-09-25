@@ -234,3 +234,41 @@ Fait : `src/ui/calepGallery.ts` — Rapides (11) + 75 préréglages par famille,
 Vérification : e2e galerie (86 vignettes / tous ; rosace ; reroll ; filtre ≤) verts. Capture `visuel-T26-galerie.png` : bloc de vignettes (aperçus en grille), familles, « Aléatoire » sélectionné (bordure accent), bouton « Nouveau tirage », « Personnaliser » replié, import JSON, avertissements d’import.
 Décisions : D24.
 Reste / risques : T27 reset/undo.
+
+## T27 — Réinitialiser, annuler, rétablir — 2026-09-25 13:20
+Statut : terminée
+Fait : historique 100 pas (`undo`/`redo`, Ctrl/Cmd+Z), coalesce curseurs 400 ms, reset par section + pastille « modifié », `reset-all` avec confirmation 4 s (carreaux conservés).
+Vérification : unitaires history + e2e history verts (27 e2e au total).
+Décisions : D25.
+Reste / risques : T28 bilan.
+
+## T28 — Bilan V3 pour César — 2026-09-25 13:22
+Statut : terminée
+Fait : README Utilisation à jour (galerie, tirage, talon, reset, Ctrl+Z). Quatre captures bilan + Point pour César ci-dessous.
+Vérification : `npm run verify` (lancer après ce commit).
+Décisions à relire : D22–D25.
+Reste / risques : T18 toujours bloquée (fabricant).
+
+## Point pour César
+
+### Ce qui marche (V3)
+- **Talon réglable** (aperçu 3D seulement) : hauteur / profondeur / largeur dans Zones.
+- **Calepinage multi-motifs** : moteur + 75 préréglages + 11 rapides, galerie filtrable, nouveau tirage, import JSON.
+- **Confort** : Réinitialiser par section, Tout réinitialiser (garde les carreaux), Annuler/Rétablir (Ctrl/Cmd+Z).
+
+### Tester en 3 étapes
+1. `npm install` puis `npm run dev`.
+2. Charger les 3 exemples ; dans la galerie choisir « À la suite, rotation aléatoire » puis « Rosace » / un Ophis — vérifier les 3 motifs et les rotations.
+3. Baisser « Hauteur du talon » à 40 mm ; Annuler ; Tout réinitialiser (Confirmer ?).
+
+### Captures bilan (`test-results/` + store `media/`)
+- `visuel-T28-suite-rotalea.png` : trois-quarts, 3 motifs (étoile / quart / damier) avec rotations variées, talon terracotta, pointe noire, bord-côte marine.
+- `visuel-T28-rosace.png` : préréglage Rosace — quarts de cercle / losanges bleus-rouges en bloc 2×2 tourné, motif cohérent autour de la jambe.
+- `visuel-T28-ophis.png` : préréglage Ophis — grille noire à pastilles orange + motifs teal/étoile, mapping anatomique propre.
+- `visuel-T28-talon-bas.png` : profil extérieur, talon orange **compact** (40 mm), semelle plate, motif Ophis sur tige/pied.
+
+### Décisions à relire
+D22 (talon aperçu), D23 (CalepinageSpec), D24 (galerie), D25 (historique coalesce).
+
+### Blocages
+T18 — `config/sizes.json` en attente fabricant.
