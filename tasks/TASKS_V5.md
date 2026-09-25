@@ -72,5 +72,5 @@ Lire `docs/JAUGE_EXPLIQUEE.md` (texte à reprendre dans l'interface).
 - [x] e2e : décor « Sol + mur » → export trois-quarts 2048 contient les couleurs de la collection hors de la silhouette de la chaussette ; export « dos » : le mur est toujours derrière la chaussette (pixels du centre = chaussette).
 - [x] Captures sol / mur / sol + mur avec deux collections, ouvertes et décrites dans `PROGRESS.md`.
 
-### [ ] T39 — Bilan V5
+### [x] T39 — Bilan V5
 - README (visionneuse, `?dev`, lien de partage, raccord, décor) et « Point pour César » avec captures.

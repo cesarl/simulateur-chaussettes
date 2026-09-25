@@ -59,7 +59,10 @@ src/
       sockAtlas.ts       atlas couleur pur
       knitMaps.ts        relief jersey pur
       sockObject.ts      Mesh + MeshPhysicalMaterial
-      studio.ts          lumière, cadrage, capture
+      studio.ts          lumière, cadrage, capture (+ beforeRender)
+    decor/               sol/mur carreaux de ciment (réf. `reference/decor/`)
+      tileSurface.ts     textures + createDecor / faceCamera
+    decorController.ts   sync différé, sources, ombre studio
     views.ts             angles de caméra prédéfinis pour les exports (T20 → studio)
   ui/                    DOM
     panel.ts             construction du panneau

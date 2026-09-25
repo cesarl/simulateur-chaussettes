@@ -384,3 +384,39 @@ Vérification : `npm run verify` ✅ (98 unitaires, 43 e2e). Contrôle visuel :
 - `visuel-T38-lianes-coin.png` : Lianes (vert/crème, talon rouge), sol + mur au même motif à plus grande échelle.
 Décisions : D35.
 Reste / risques : T39 bilan.
+
+## T39 — Bilan V5 — 2026-09-25 21:35
+Statut : terminée
+Fait : README mis à jour (visionneuse, `?dev`, lien `#p=`, jauge, raccord, décor) ; ARCHITECTURE décor ; captures bilan `visuel-T39-*` ; Point pour César ci-dessous.
+Vérification : `npm run verify` ✅.
+Décisions : D30–D35 à relire.
+Reste / risques : T18 fabricant.
+
+---
+
+## Point pour César
+
+### Ce qui marche (V5)
+- **Un seul ascenseur** : la page ne défile plus ; seul le panneau défile.
+- **Visionneuse par défaut** : plein écran 3D + barre (vues, copier le lien). `?dev` ouvre les réglages et les mémorise ; **Quitter le mode dev** revient à la visionneuse.
+- **Lien de partage** `#p=1.…` : collection, couleurs, calepinage, talon, raccord, décor — recharge sans localStorage.
+- **Jauge** : « Carreaux sur le tour » + encadré cm ; réglages machine repliés.
+- **Raccord** : dos / intérieur / extérieur / devant ; trait « raccord » à plat.
+- **Décor** : sol / mur / sol+mur en carreaux de ciment (même motif ou autre collection).
+
+### Tester en 3 étapes
+1. `npm install` puis `npm run dev` → ouvrir `/` : visionneuse seule ; `/?dev` : panneau.
+2. Collection **Medina** → Décor **Sol + mur** → **Copier le lien** → coller dans un onglet privé : même chaussette + décor, sans panneau.
+3. Calepinage : changer **Raccord** (dos → intérieur) ; basculer **À plat** pour voir le trait pointillé.
+
+### Captures (`test-results/` + store `media/`)
+- `visuel-T39-visionneuse.png` : barre « modele » + ¾/Profil/Dos/Face + Copier le lien ; chaussette crème défaut, pas de panneau.
+- `visuel-T39-medina-decor.png` : Medina + sol/mur carrelés assortis.
+- `visuel-T39-lianes-decor.png` : Lianes vert/crème, talon rouge, même décor assorti.
+- Aussi T37 (raccord) et T38 (sol/mur/coin Medina + Lianes).
+
+### Décisions à relire
+D30 (ascenseur), D31–D32 (share), D33 (jauge), D34 (raccord), D35 (décor).
+
+### Blocages
+T18 — `config/sizes.json` en attente fabricant.

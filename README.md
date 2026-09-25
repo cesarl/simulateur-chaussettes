@@ -17,6 +17,8 @@ npm install
 npm run dev          # ouvre http://localhost:5173
 ```
 
+Par défaut : **visionneuse 3D plein écran** (barre discrète : vues + copier le lien). Ajouter `?dev` une fois pour ouvrir le panneau de réglages (mémorisé jusqu’à « Quitter le mode dev »).
+
 ## Commandes
 
 | Commande | Rôle |
@@ -36,12 +38,14 @@ Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites 
 ## Utilisation
 
 1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).
-2. **Collection** (si `public/carreaux/` est synchronisé) : rechercher et choisir une collection — ses variations deviennent les motifs, le calepinage par défaut s’applique. Sinon, dans **Mes carreaux**, « Charger un exemple » ou déposer un PNG/SVG.
-3. Dans **Calepinage**, choisir un préréglage dans la **galerie** (Rapides, familles, ou calepinages de la collection). Filtrer par nombre de motifs. Si le calepinage est aléatoire, **Nouveau tirage** change la graine. Le bloc **Personnaliser** affine ordre / rotation / appareillage.
-4. **Couleurs** (mode collection) : bandes « Couleurs d’origine » / suggestions de l’artiste ; pastilles de zones → nuancier ; **Assortir bord-côte, talon et pointe**.
-5. **Dimensions** : taille homme/femme, hauteur de tige, etc. **Zones** : couleurs + **talon d’aperçu** (hauteur / profondeur / largeur mm — n’affecte pas la grille de tricot).
-6. Pastille **modifié** + **Réinitialiser** en tête de chaque section ; **Tout réinitialiser** en bas (garde les carreaux, confirmation « Confirmer ? » 4 s). **Annuler / Rétablir** en haut du panneau, ou Ctrl/Cmd+Z et Ctrl/Cmd+Maj+Z.
-7. Basculer sur **À plat** pour contrôler la grille. Dans **Exports**, cocher les vues puis **Exporter**. Raccourcis 3D : R réinitialise la vue ; F/T/E/D/I changent l’angle.
+2. **Visionneuse** : uniquement la 3D. Pour les réglages : `/?dev` (puis l’URL perd `?dev` ; le mode reste actif). Bouton **Quitter le mode dev** en bas du panneau.
+3. **Copier le lien** (barre visionneuse ou haut du panneau) : le hash `#p=1.…` embarque tout le projet (collection, couleurs, calepinage, talon, raccord, décor…). Un simple rechargement conserve l’état. Jamais de mode dev dans le lien.
+4. **Collection** (si `public/carreaux/` est synchronisé) : rechercher et choisir une collection — ses variations deviennent les motifs, le calepinage par défaut s’applique. Sinon, dans **Mes carreaux**, « Charger un exemple » ou déposer un PNG/SVG.
+5. **Calepinage** : galerie de préréglages ; **Carreaux sur le tour** (jauge principale, voir [`docs/JAUGE_EXPLIQUEE.md`](docs/JAUGE_EXPLIQUEE.md)) ou taille libre en mailles ; **Raccord du motif** (dos / intérieur / extérieur / devant).
+6. **Couleurs** (mode collection) : bandes « Couleurs d’origine » / suggestions de l’artiste ; pastilles de zones → nuancier ; **Assortir bord-côte, talon et pointe**.
+7. **Dimensions** / **Zones** : taille, tige, talon d’aperçu (mm). **Décor** : aucun / sol / mur / sol + mur en carreaux de ciment (même motif ou autre collection).
+8. Pastille **modifié** + **Réinitialiser** ; **Tout réinitialiser** ; **Annuler / Rétablir** (Ctrl/Cmd+Z).
+9. Basculer sur **À plat** (mode dev) pour contrôler la grille (trait « raccord »). Dans **Exports**, cocher les vues puis **Exporter**. Raccourcis 3D : R / F / T / E / D / I.
 
 ## Collections du simulateur de carreaux
 
