@@ -5,6 +5,10 @@ import * as fs from 'node:fs';
  * Captures bilan V5 : visionneuse, lien, décor Medina / Lianes.
  */
 test('T39 captures bilan V5', async ({ page }) => {
+  // CI SwiftShader : décor + captureView peuvent dépasser 60 s.
+  test.setTimeout(180_000);
+  page.setDefaultTimeout(120_000);
+
   await page.addInitScript(() => {
     try {
       localStorage.removeItem('simulateur-chaussettes:dev');
@@ -30,7 +34,11 @@ test('T39 captures bilan V5', async ({ page }) => {
 
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
   await page.waitForFunction(() => window.__SIM__?.design.decor.mode === 'coin');
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(2500);
+  await page.evaluate(
+    () =>
+      new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))),
+  );
 
   const medina = await page.evaluate(async () => {
     return window.__SIM__!.captureView('trois-quarts', 1024, '#ecebe8');
@@ -39,9 +47,14 @@ test('T39 captures bilan V5', async ({ page }) => {
   fs.writeFileSync('test-results/visuel-T39-medina-decor.png', Buffer.from(medina.split(',')[1]!, 'base64'));
 
   await page.getByTestId('coll-search').fill('lianes');
+  await page.getByTestId('coll-item-lianes').scrollIntoViewIfNeeded();
   await page.getByTestId('coll-item-lianes').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(2, { timeout: 15_000 });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(2500);
+  await page.evaluate(
+    () =>
+      new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))),
+  );
   const lianes = await page.evaluate(async () => {
     return window.__SIM__!.captureView('trois-quarts', 1024, '#ecebe8');
   });
