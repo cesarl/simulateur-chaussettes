@@ -12,7 +12,7 @@ function trackErrors(page: Page): string[] {
 test('état vide, raccourcis, aides et largeur 1280', async ({ page }) => {
   const errors = trackErrors(page);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
 
   const empty = page.getByTestId('tile-empty');

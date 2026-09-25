@@ -16,7 +16,7 @@ test('3 carreaux à la suite, rotation aléatoire : motifs visibles 3D et à pla
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   for (const name of ['carreau-test-etoile.svg', 'carreau-test-quart.svg', 'carreau-test-damier.png']) {

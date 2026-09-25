@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 
 test('enregistrer, recharger et ouvrir retrouve la même grille', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await page.getByTestId('tile-fixture').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(1, { timeout: 15_000 });

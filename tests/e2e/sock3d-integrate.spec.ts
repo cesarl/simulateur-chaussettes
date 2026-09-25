@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 
 test('talon : setColors sans rebuild ; taille / tige / bord-côte reconstruisent', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   const afterHeel = await page.evaluate(async () => {

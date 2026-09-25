@@ -13,7 +13,7 @@ function trackErrors(page: Page): string[] {
 test('export paire 2048 : deux silhouettes distinctes', async ({ page }) => {
   test.setTimeout(90_000);
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   const result = await page.evaluate(async () => {

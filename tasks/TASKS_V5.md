@@ -20,16 +20,16 @@ Cause : `#panel` est un élément de grille sans `min-height: 0` ; la rangée gr
 **Critères**
 - [x] e2e (1400×900 et 1100×800) : panneau ouvert au maximum (toutes sections dépliées) → `document.scrollingElement.scrollHeight <= innerHeight` et le panneau défile seul (`#panel.scrollHeight > #panel.clientHeight`).
 
-### [~] T34 — Visionneuse par défaut, réglages en mode dev
+### [x] T34 — Visionneuse par défaut, réglages en mode dev
 - Par défaut : **uniquement la 3D, en plein écran**, avec une petite barre discrète : nom du modèle / de la collection, boutons de vue (3/4, profil, dos, face), « Copier le lien ». Pas de panneau, pas de vue à plat.
 - `?dev` dans l'URL active le mode dev (panneau complet, vue à plat, exports) et le **mémorise** (localStorage, `resolveDevMode`) : on reste en dev même sans `?dev`, jusqu'au bouton **« Quitter le mode dev »** (en bas du panneau, `leaveDevMode`). `?dev` est retiré de la barre d'adresse au chargement.
 - Stockage indisponible : l'application fonctionne (dev seulement pour la session si `?dev`).
 - `data-testid` : `viewer-bar`, `viewer-copy-link`, `leave-dev`.
 
 **Critères**
-- [ ] e2e : `/` → pas de `panel` visible, canvas plein écran ; `/?dev` → panneau visible et URL sans `dev` ; recharger `/` → toujours dev ; `leave-dev` puis recharger → visionneuse.
+- [x] e2e : `/` → pas de `panel` visible, canvas plein écran ; `/?dev` → panneau visible et URL sans `dev` ; recharger `/` → toujours dev ; `leave-dev` puis recharger → visionneuse.
 
-### [ ] T35 — Lien de partage
+### [~] T35 — Lien de partage
 - Intégrer `shareLink.ts`. Le **lien contient tout le projet** dans le hash `#p=1.…` : réglages, collection + couleurs par zone (codes), calepinage + graine, talon, raccord, décor… (diff par rapport à `defaultDesign()`).
 - Carreaux importés à la main : SVG inclus s'ils sont petits (lien < 6 000 caractères au total) ; sinon message « Les carreaux importés ne sont pas dans le lien : utilisez une collection ou envoyez le projet .json ». Les PNG importés ne sont jamais inclus.
 - Bouton **« Copier le lien »** (mode dev : en haut du panneau ; visionneuse : dans la barre). Le hash est aussi tenu à jour pendant qu'on travaille (`history.replaceState`, anti-rebond 500 ms) pour qu'un simple rechargement conserve tout.

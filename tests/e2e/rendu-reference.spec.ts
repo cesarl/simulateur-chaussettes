@@ -20,7 +20,7 @@ test('silhouette ≥ 0,90 vs captures homme-etoile de référence', async ({ pag
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   const before = await page.evaluate(() => window.__SIM__?.computeId ?? 0);

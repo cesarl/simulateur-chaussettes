@@ -16,7 +16,7 @@ function pngSize(bytes: Buffer): { width: number; height: number } {
 
 test('les exports face et plat exact ont la bonne taille et les bonnes couleurs', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
   await page.getByTestId('export-size').selectOption('1024');
 

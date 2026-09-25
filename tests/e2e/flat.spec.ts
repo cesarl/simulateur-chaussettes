@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 
 test('la vue à plat montre les couleurs de la grille et le retour en 3D est sain', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
 
   await page.getByTestId('view-flat').click();

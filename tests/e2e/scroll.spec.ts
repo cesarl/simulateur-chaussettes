@@ -36,7 +36,7 @@ async function assertSingleScrollbar(page: Page): Promise<void> {
 test('un seul ascenseur à 1400×900', async ({ page }) => {
   const errors = trackErrors(page);
   await page.setViewportSize({ width: 1400, height: 900 });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await expect(page.getByTestId('panel')).toBeVisible();
   await assertSingleScrollbar(page);
@@ -46,7 +46,7 @@ test('un seul ascenseur à 1400×900', async ({ page }) => {
 test('un seul ascenseur à 1100×800', async ({ page }) => {
   const errors = trackErrors(page);
   await page.setViewportSize({ width: 1100, height: 800 });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await expect(page.getByTestId('panel')).toBeVisible();
   await assertSingleScrollbar(page);

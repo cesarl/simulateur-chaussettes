@@ -28,7 +28,7 @@ test('T28 captures bilan V3', async ({ page }) => {
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
   mkdirSync('test-results', { recursive: true });
 

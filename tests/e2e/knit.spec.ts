@@ -13,7 +13,7 @@ function trackErrors(page: Page): string[] {
 
 test('les mailles sont visibles et une couleur ne reconstruit pas le maillage', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.textureUpdates ?? 0) >= 1);
 
   const viewport = page.getByTestId('viewport');

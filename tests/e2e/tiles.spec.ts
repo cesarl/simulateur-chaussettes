@@ -15,7 +15,7 @@ function trackErrors(page: Page): string[] {
 
 async function openApp(page: Page): Promise<string[]> {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   return errors;
 }

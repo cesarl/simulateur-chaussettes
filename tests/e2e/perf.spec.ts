@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 
 test('dix changements rapides laissent le dernier réglage, sans erreur', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   const box = await page.getByTestId('viewport').boundingBox();

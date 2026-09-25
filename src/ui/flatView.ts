@@ -24,6 +24,7 @@ export interface FlatHandle {
   setGrid: (grid: StitchGrid, aspect: number) => void;
   setFloatMask: (mask: Uint8Array | null) => void;
   centerOf: (col: number, row: number) => { x: number; y: number } | null;
+  setDevTools: (visible: boolean) => void;
 }
 
 export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): FlatHandle {
@@ -292,5 +293,10 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
       draw();
     },
     centerOf,
+    setDevTools(visible: boolean) {
+      switcher.hidden = !visible;
+      shortcuts.hidden = !visible;
+      if (!visible) setMode(false);
+    },
   };
 }

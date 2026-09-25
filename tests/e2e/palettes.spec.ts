@@ -51,7 +51,7 @@ test('palettes lianes : suggestion artiste, nuancier zone-1, assortir zones', as
 
   const dir = syncMini();
   await routeCarreaux(page, dir);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && window.__SIM__?.catalogue != null);
 
   await selectCollection(page, 'lianes');
@@ -106,7 +106,7 @@ test('palettes lianes : suggestion artiste, nuancier zone-1, assortir zones', as
 test('captures deux palettes de la même collection', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   const has = await page.evaluate(() => (window.__SIM__?.catalogue?.collections.length ?? 0) > 0);
   test.skip(!has, 'public/carreaux/ absent');

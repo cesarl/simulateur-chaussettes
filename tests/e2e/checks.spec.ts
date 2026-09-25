@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 
 test('ajuster la largeur ramène le décalage du raccord à zéro', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await page.getByTestId('ctl-tile-width').fill('20');
   await expect(page.getByTestId('check-seam')).toContainText('décalage');

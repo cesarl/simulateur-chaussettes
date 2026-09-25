@@ -16,7 +16,7 @@ function pngSize(bytes: Buffer): { width: number; height: number } {
 
 test('export studio : trois-quarts 2048, transparent, vue inchangée', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   const before = await page.evaluate(() => {

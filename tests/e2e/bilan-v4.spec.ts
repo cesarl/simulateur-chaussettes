@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 test('T32 captures bilan 4 collections', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   const has = await page.evaluate(() => (window.__SIM__?.catalogue?.collections.length ?? 0) > 0);
   test.skip(!has, 'public/carreaux/ absent');

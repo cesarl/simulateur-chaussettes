@@ -11,7 +11,7 @@ function trackErrors(page: Page): string[] {
 
 test('quinconce, 3 couleurs et taille femme se reflètent dans le simulateur', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await page.getByTestId('tile-fixture').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(1);
@@ -32,7 +32,7 @@ test('quinconce, 3 couleurs et taille femme se reflètent dans le simulateur', a
 
 test('décocher le bord-côte retire ses rangs', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   const before = await page.evaluate(() => ({
     height: window.__SIM__?.grid.height ?? 0,
@@ -54,7 +54,7 @@ test('une tige trop haute est ramenée au maximum', async ({ page }) => {
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   const max = await page.evaluate(() => window.__SIM__?.design.dimensions.legRows ?? 0);
   await page.getByTestId('ctl-leg-rows').fill(String(max + 80));

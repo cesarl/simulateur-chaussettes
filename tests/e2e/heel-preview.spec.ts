@@ -49,7 +49,7 @@ test('talon aperçu : hauteur 40 → 95 augmente nettement la zone talon en prof
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   const configured = await page.evaluate((heel) => {

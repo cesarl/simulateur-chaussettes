@@ -15,7 +15,7 @@ test('reset section, undo, reset-all avec confirmation', async ({ page }) => {
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
 
   const id0 = await page.evaluate(() => window.__SIM__!.computeId);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeShare, diff, encodeShare, merge, resolveDevMode, DEV_STORAGE_KEY } from '../../reference/share/shareLink';
+import { decodeShare, diff, encodeShare, merge, resolveDevMode, DEV_STORAGE_KEY } from '../../src/io/shareLink';
 
 // état proche de celui de l'application
 const defaults = {

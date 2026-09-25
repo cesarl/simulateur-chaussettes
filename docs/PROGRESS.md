@@ -332,3 +332,17 @@ D26 (catalogue optionnel), D27 (mode collection), D28 (palette forcée), D29 (pr
 
 ### Blocages
 T18 — `config/sizes.json` en attente fabricant.
+
+## T33 — Un seul ascenseur — 2026-09-25 20:19
+Statut : terminée
+Fait : CSS grille (`100dvh`, `minmax(0,1fr)`, `overflow: hidden`) ; `position: relative` sur `#panel` pour contenir les `file-input` absolus qui gonflaient `scrollingElement.scrollHeight`. e2e `scroll.spec.ts` (1400×900 et 1100×800).
+Vérification : `npm run verify` ✅ (94 unitaires, 37 e2e).
+Décisions : D30.
+Reste / risques : T34 masquera le panneau hors `?dev` (les e2e scroll devront alors passer par `/?dev`).
+
+## T34 — Visionneuse et mode ?dev — 2026-09-25 20:30
+Statut : terminée
+Fait : `shareLink.ts` intégré (`resolveDevMode` / `leaveDevMode`) ; barre visionneuse (vues + copier le lien) ; panneau / vue à plat seulement en mode dev mémorisé ; e2e existants pointent vers `/?dev` ; `viewer.spec.ts`.
+Vérification : `npm run verify` ✅ (94 unitaires, 39 e2e).
+Décisions : D31 (copie du module share dans `src/io/`).
+Reste / risques : le bouton « Copier le lien » copie encore l’URL sans payload compressé (T35).

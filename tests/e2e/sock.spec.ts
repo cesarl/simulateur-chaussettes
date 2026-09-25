@@ -37,7 +37,7 @@ async function waitForPaint(page: Page): Promise<void> {
 
 test('la vue 3D montre une chaussette homme puis femme', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(
     () =>
       window.__SIM__?.ready === true &&

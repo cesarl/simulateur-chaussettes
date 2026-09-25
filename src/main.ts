@@ -17,6 +17,7 @@ import {
   type ParsedProject,
   type ProjectCollectionMeta,
 } from './io/project';
+import { leaveDevMode, resolveDevMode } from './io/shareLink';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
 import { createSockObject, type SockObject } from './render/sock3d/sockObject';
@@ -28,13 +29,59 @@ import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
 import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
+import { mountViewerBar } from './ui/viewerBar';
 
-const viewport = document.getElementById('viewport');
-const panel = document.getElementById('panel');
-if (!viewport || !panel) throw new Error('Structure de page introuvable');
+const viewportEl = document.getElementById('viewport');
+const panelEl = document.getElementById('panel');
+const appEl = document.getElementById('app');
+if (!(viewportEl instanceof HTMLElement) || !(panelEl instanceof HTMLElement) || !(appEl instanceof HTMLElement)) {
+  throw new Error('Structure de page introuvable');
+}
+const viewport = viewportEl;
+const panel = panelEl;
+const app = appEl;
+
+function tryLocalStorage(): Storage | null {
+  try {
+    const key = '__sim_storage_probe__';
+    window.localStorage.setItem(key, '1');
+    window.localStorage.removeItem(key);
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+const storage = tryLocalStorage();
+let devMode = resolveDevMode(
+  { search: window.location.search, hash: window.location.hash, pathname: window.location.pathname },
+  storage,
+  (url) => window.history.replaceState(null, '', url),
+);
 
 const handle = createScene(viewport);
 const flat = mountFlatView(viewport, () => handle.requestRender());
+const viewer = mountViewerBar(viewport, {
+  onView: (view) => {
+    frameCamera(view);
+    publish();
+  },
+  onCopyLink: () => {
+    const url = `${window.location.origin}${window.location.pathname}${window.location.hash}`;
+    return navigator.clipboard.writeText(url).catch(() => undefined);
+  },
+});
+
+function applyShellMode(dev: boolean): void {
+  devMode = dev;
+  app.classList.toggle('viewer-mode', !dev);
+  panel.hidden = !dev;
+  viewer.setVisible(!dev);
+  flat.setDevTools(dev);
+  handle.requestRender();
+}
+
+applyShellMode(devMode);
 
 let grid: StitchGrid = composeGrid(getState().design.dimensions, getState().design.zones, null, []);
 let patternPalette: string[] = [];
@@ -391,8 +438,6 @@ function scheduleSave(): void {
 }
 
 async function boot(): Promise<void> {
-  if (!panel) throw new Error('Structure de page introuvable');
-
   const bundle = await loadCatalogue();
   if (bundle.missing) {
     update({ catalogue: null, catalogueMissing: true }, { skipHistory: true });
@@ -457,6 +502,14 @@ async function boot(): Promise<void> {
     openProject: async (text) => {
       const project = await parseProject(text);
       await applyParsedProject(project);
+    },
+    leaveDev: () => {
+      leaveDevMode(storage);
+      applyShellMode(false);
+    },
+    copyShareLink: () => {
+      const url = `${window.location.origin}${window.location.pathname}${window.location.hash}`;
+      return navigator.clipboard.writeText(url).catch(() => undefined);
     },
   });
   subscribe(recompute);

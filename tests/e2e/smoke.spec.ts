@@ -7,7 +7,7 @@ test('la page se charge, la 3D s’affiche, pas d’erreur console', async ({ pa
     if (m.type() === 'error') errors.push(m.text());
   });
 
-  await page.goto('/');
+  await page.goto('/?dev');
   await expect(page.getByTestId('panel')).toBeVisible();
   await page.waitForFunction(() => window.__SIM__?.ready === true);
 

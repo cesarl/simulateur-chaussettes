@@ -43,7 +43,7 @@ test('choisir medina charge 4 carreaux, calepinage aleatoire et groupe collectio
   const dir = syncMiniCatalogue();
   await routeCarreaux(page, dir);
 
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && window.__SIM__?.catalogue != null);
 
   await page.getByTestId('coll-search').fill('medina');
@@ -73,7 +73,7 @@ test('captures 3D de trois collections réelles', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
 
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   const hasCatalogue = await page.evaluate(() => (window.__SIM__?.catalogue?.collections.length ?? 0) > 0);
   test.skip(!hasCatalogue, 'public/carreaux/ absent');

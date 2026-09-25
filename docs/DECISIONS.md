@@ -173,4 +173,10 @@ Options : `position: fixed` sur `body` / retirer absolute des file-input / `posi
 Choix : `position: relative` sur `#panel`, plus `html/body` overflow hidden, `#app` en `100dvh` + `overflow: hidden`, `min-height: 0` sur panel/viewport, et sous 1280 px deux rangées `minmax(0, 1fr)`.
 Conséquence : un seul ascenseur (celui du panneau) ; les file-input restent accessibles dans le flux du panneau.
 
+## D31 — Module share dans src/io (T34)
+Contexte : `resolveDevMode` / `leaveDevMode` sont fournis dans `reference/share/shareLink.ts` avec le lien de partage (T35).
+Options : importer depuis `reference/` / copier dans `src/io/`.
+Choix : copie dans `src/io/shareLink.ts` (même contenu) ; les tests unitaires importent depuis `src/`.
+Conséquence : une seule source d’exécution ; la référence reste le fichier d’origine fourni.
+
 

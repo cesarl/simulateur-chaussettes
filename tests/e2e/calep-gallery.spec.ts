@@ -16,7 +16,7 @@ test('galerie : 75+11 avec filtre tous ; rosace change la grille ; reroll aléat
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
 
   await page.getByTestId('calep-filter').selectOption('tous');
@@ -58,7 +58,7 @@ test('filtre ≤ : damier_16 masqué avec 2 carreaux, damier_2 visible', async (
   await page.addInitScript(() => {
     indexedDB.deleteDatabase('cesar-bazaar');
   });
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
 
   for (const name of ['carreau-test-etoile.svg', 'carreau-test-quart.svg']) {

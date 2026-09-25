@@ -148,6 +148,8 @@ export interface PanelActions {
   exportImages: (request: ExportRequest) => Promise<void>;
   saveProject: () => Promise<void>;
   openProject: (text: string) => Promise<void>;
+  leaveDev: () => void;
+  copyShareLink: () => void | Promise<void>;
 }
 
 /** Section Carreaux : import, vignettes, ordre, exemple. */
@@ -1106,4 +1108,12 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   footSide.input.value = getState().footSide;
   undoBtn.disabled = !canUndo();
   redoBtn.disabled = !canRedo();
+
+  const leave = document.createElement('button');
+  leave.type = 'button';
+  leave.dataset.testid = 'leave-dev';
+  leave.className = 'leave-dev';
+  leave.textContent = 'Quitter le mode dev';
+  leave.addEventListener('click', () => actions.leaveDev());
+  host.appendChild(leave);
 }

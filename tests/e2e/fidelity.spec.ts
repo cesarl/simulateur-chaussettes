@@ -22,7 +22,7 @@ async function zoomViewport(page: Page): Promise<void> {
 
 test('rendu simple et fidèle : captures et export plat inchangé', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
   const beforeFixture = await page.evaluate(() => window.__SIM__?.computeId ?? 0);
   await page.evaluate(() => window.__SIM__?.loadFixture('carreau-test-etoile.svg'));

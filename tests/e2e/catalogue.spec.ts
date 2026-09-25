@@ -16,7 +16,7 @@ test('sans public/carreaux/, message discret et pas d’erreur console', async (
     });
   });
 
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await expect(page.getByTestId('catalogue-missing')).toBeVisible();
   await expect(page.getByTestId('catalogue-missing')).toContainText('npm run sync:carreaux');
@@ -33,7 +33,7 @@ test('avec catalogue synchronisé, pas de bandeau d’absence', async ({ page })
     if (m.type() === 'error') errors.push(m.text());
   });
 
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await expect(page.getByTestId('catalogue-missing')).toBeHidden();
   expect(await page.evaluate(() => window.__SIM__?.catalogueMissing)).toBe(false);

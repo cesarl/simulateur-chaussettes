@@ -16,7 +16,7 @@ function readU32LE(bytes: Buffer, offset: number): number {
 
 test('export BMP indexé et planche PNG', async ({ page }) => {
   const errors = trackErrors(page);
-  await page.goto('/');
+  await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
   await page.getByTestId('export-face').uncheck();
