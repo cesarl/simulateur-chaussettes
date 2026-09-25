@@ -1,3 +1,4 @@
+import type { FabricationReport } from '../core/checks';
 import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
 import type { ExportRequest, FlatKind } from '../io/exportPng';
@@ -245,6 +246,46 @@ export function renderStatus(info: {
     item.append(chip, label);
     swatches?.appendChild(item);
   });
+}
+
+function pill(testId: string): HTMLElement {
+  const item = document.createElement('p');
+  item.className = 'pill';
+  item.dataset.testid = testId;
+  item.textContent = '…';
+  return item;
+}
+
+function paintPill(testId: string, ok: boolean, text: string): void {
+  const item = document.querySelector(`[data-testid="${testId}"]`);
+  if (!(item instanceof HTMLElement)) return;
+  item.className = ok ? 'pill ok' : 'pill warn';
+  item.textContent = text;
+}
+
+export function renderChecks(report: FabricationReport): void {
+  paintPill(
+    'check-colors',
+    report.totalOk,
+    `Couleurs : ${report.totalColors} / ${report.maxColorsTotal}`,
+  );
+  paintPill(
+    'check-rows',
+    report.rowsOk,
+    report.rowsOk
+      ? `Rangs : au plus ${report.maxColorsPerRow} couleurs`
+      : `Rangs : ${report.rowsOver} au-dessus de ${report.maxColorsPerRow}`,
+  );
+  paintPill(
+    'check-floats',
+    report.floatsOk,
+    report.floatsOk ? `Flottés : aucun au-dessus de ${report.maxFloat}` : `Flottés : ${report.floatCount}`,
+  );
+  paintPill(
+    'check-seam',
+    report.seamOk,
+    report.seamOk ? 'Raccord : le motif tombe juste' : `Raccord : décalage de ${report.seamMismatch} mailles`,
+  );
 }
 
 function isViewId(value: string): value is ViewId {
@@ -736,10 +777,24 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   zones.append(cuff.root, cuffRows.root, cuffColor.root, heelColor.root, toeColor.root, patternFoot.root, footColor.root);
 
   const checks = details('Contrôles', 'section-checks');
-  const checksHint = document.createElement('p');
-  checksHint.className = 'hint';
-  checksHint.textContent = 'Les alertes de fabrication seront disponibles ensuite.';
-  checks.appendChild(checksHint);
+  checks.append(
+    pill('check-colors'),
+    pill('check-rows'),
+    pill('check-floats'),
+    pill('check-seam'),
+  );
+  const fitSeam = document.createElement('button');
+  fitSeam.type = 'button';
+  fitSeam.dataset.testid = 'ctl-fit-seam';
+  fitSeam.textContent = 'Ajuster la largeur pour que le motif tombe juste';
+  fitSeam.addEventListener('click', () => {
+    const current = getState().design;
+    const tileStitches = nearestFittingWidth(current.layout, current.dimensions.needles);
+    const next: { tileStitches: number; tileRows?: number } = { tileStitches };
+    if (keepRatio) next.tileRows = tileRowsForWidth(tileStitches, stitchAspect(current.dimensions));
+    update({ design: { layout: next } });
+  });
+  checks.appendChild(fitSeam);
 
   const exportsSection = details('Exports', 'section-exports');
   mountExportControls(exportsSection, actions);

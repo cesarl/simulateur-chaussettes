@@ -153,7 +153,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 **Critères** : test unitaire aller-retour sérialisation ; e2e enregistrer → recharger la page → ouvrir → même grille (comparaison d'empreinte de la grille).
 
-### [ ] T12 — Contrôles de fabrication (`src/core/checks.ts` + section « Contrôles »)
+### [x] T12 — Contrôles de fabrication (`src/core/checks.ts` + section « Contrôles »)
 - Couleurs totales et par rang vs `MACHINE_LIMITS`, flottés > `maxFloat` (horizontal circulaire, zones motif seulement), raccord circulaire.
 - Pastilles vert/orange dans le panneau, surlignage des flottés dans la vue à plat, bouton « ajuster la largeur pour que le motif tombe juste ».
 

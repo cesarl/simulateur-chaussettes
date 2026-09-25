@@ -82,3 +82,9 @@ Contexte : le cahier demande un JSON avec les réglages et les carreaux, et une 
 Options : pixels bruts en base64 / PNG ; restauration silencieuse au démarrage / bouton « reprendre ».
 Choix : document `{ version: 1, design, tiles: [{ id, name, source, pngBase64 }] }`. PNG RGBA filtre 0, encodé avec `CompressionStream` en lisant le flux pendant l’écriture (sinon les gros carreaux bloquent). IndexedDB `cesar-bazaar` / magasin `project` / clé `last`, relu avant que `__SIM__.ready` passe à vrai. Si IndexedDB manque ou si le document est illisible, le modèle par défaut reste affiché.
 Conséquence : l’import rejette toute autre version avec « Fichier de projet invalide : … ». Le code est dans `src/io/project.ts` et `src/io/pngCodec.ts`.
+
+## D13 — Ce que comptent les contrôles (T12)
+Contexte : le cahier ne dit pas si les mailles hors tricot entrent dans le nombre de couleurs, ni comment surligner un flotté sans changer la couleur lue au centre de la maille.
+Options : compter toute la grille / seulement les mailles tricotées ; surlignage plein / coin.
+Choix : les mailles `Zone.Empty` sont ignorées pour les couleurs. Un flotté est une suite circulaire, zones de motif seulement (tige, et pied si le motif y est). Le seuil est accepté tel quel (7 passe, 8 est signalé). Le surlignage est un pixel orange au coin de la maille, pour laisser le centre intact.
+Conséquence : une tige unie produit beaucoup de flottés (un rang entier dépasse 7). Le détail est dans `src/core/checks.ts`.

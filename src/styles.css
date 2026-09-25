@@ -107,6 +107,18 @@ details.section summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 .unit { color: var(--muted); font-size: 12px; }
 .leg-message { color: var(--accent); font-size: 12px; margin: 0 0 8px; }
 .compute-ms { margin-top: 12px; }
+.pill { margin: 6px 0; font-size: 13px; }
+.pill::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background: var(--muted);
+}
+.pill.ok::before { background: #2f7d4a; }
+.pill.warn::before { background: #d9822b; }
 .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .swatch { display: flex; align-items: center; gap: 4px; font-size: 12px; }
 .swatch i { width: 16px; height: 16px; border: 1px solid var(--line); display: inline-block; }

@@ -101,3 +101,10 @@ Fait : Export JSON du modèle et des carreaux en PNG base64. Import avec validat
 Vérification : `npm run verify` ✅ (38 tests unitaires, 13 e2e). Aller-retour y compris un carreau 180×180. e2e : exemple + taille femme, enregistrement, retour en homme, rechargement, ouverture du fichier, même empreinte de grille.
 Décisions : D12 (schéma JSON, restauration avant `ready`).
 Reste / risques : un PNG de projet avec un filtre autre que 0 est refusé. Pas encore de contrôles de fabrication (T12).
+
+## T12 — Contrôles de fabrication — 2026-09-25 07:24
+Statut : terminée
+Fait : Pastilles vert/orange pour les couleurs totales, les couleurs par rang, les flottés et le raccord. Flottés circulaires sur les zones de motif, surlignés par un pixel orange dans la vue à plat. Bouton qui ajuste la largeur du carreau pour que le motif tombe juste.
+Vérification : `npm run verify` ✅ (40 tests unitaires, 14 e2e). Un flotté de 8 est signalé avec le seuil 7, un flotté de 7 ne l’est pas. e2e : largeur 20 (décalage), puis ajustement, reste 0.
+Décisions : D13 (hors tricot ignoré, surlignage en coin).
+Reste / risques : une couleur unie sur toute la tige est comptée comme un flotté par rang. Performances du recalcul ensuite (T13).

@@ -1,8 +1,9 @@
 import * as THREE from 'three';
+import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
 import { samplePattern, seamMismatch } from './core/layout';
 import { quantize } from './core/quantize';
-import { defaultDimensions, stitchAspect } from './core/sizes';
+import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import { runExports } from './io/exportPng';
 import { loadLastProject, parseProject, saveLastProject, serializeProject } from './io/project';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
@@ -13,7 +14,7 @@ import { getState, subscribe, update, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
-import { mountPanel, renderStatus } from './ui/panel';
+import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 
 const viewport = document.getElementById('viewport');
 const panel = document.getElementById('panel');
@@ -165,6 +166,15 @@ function recompute(): void {
   }
   grid = composeGrid(design.dimensions, design.zones, pattern, patternPalette);
   flat.setGrid(grid, stitchAspect(design.dimensions));
+  const report = checkFabrication(
+    grid,
+    design.layout,
+    design.zones,
+    MACHINE_LIMITS,
+    design.quantize.maxFloat,
+  );
+  flat.setFloatMask(report.floatMask);
+  renderChecks(report);
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
   computeId += 1;

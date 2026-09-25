@@ -22,6 +22,7 @@ const ZONE_LABEL: Record<number, string> = {
 
 export interface FlatHandle {
   setGrid: (grid: StitchGrid, aspect: number) => void;
+  setFloatMask: (mask: Uint8Array | null) => void;
   centerOf: (col: number, row: number) => { x: number; y: number } | null;
 }
 
@@ -59,6 +60,7 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
   viewport.append(layer, switcher);
 
   let grid: StitchGrid | null = null;
+  let floatMask: Uint8Array | null = null;
   let aspect = 0.75;
   let zoom = 1;
   let panX = 0;
@@ -111,6 +113,16 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
         context.rect(originX + col * w, originY + row * h, w, h);
       }
       context.fill();
+    }
+
+    if (floatMask && floatMask.length === grid.colorIndex.length) {
+      context.fillStyle = '#d9822b';
+      for (let index = 0; index < floatMask.length; index++) {
+        if (floatMask[index] !== 1) continue;
+        const col = index % grid.width;
+        const row = Math.floor(index / grid.width);
+        context.fillRect(originX + col * w, originY + row * h, 1, 1);
+      }
     }
 
     if (w >= GRID_MIN_PX) {
@@ -269,6 +281,10 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
     setGrid(next, nextAspect) {
       grid = next;
       aspect = nextAspect > 0 ? nextAspect : 0.75;
+      draw();
+    },
+    setFloatMask(mask: Uint8Array | null) {
+      floatMask = mask;
       draw();
     },
     centerOf,
