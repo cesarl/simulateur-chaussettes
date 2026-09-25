@@ -65,7 +65,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [~] T05 — Réduction des couleurs (`src/core/quantize.ts`)
+### [x] T05 — Réduction des couleurs (`src/core/quantize.ts`)
 **Objectif** : passer en « gros pixels » avec N couleurs.
 - Mode auto : k-means déterministe (initialisation k-means++ avec graine fixe, ou médiane-coupe), N entre 2 et 8.
 - Mode manuel : chaque maille prend la couleur de palette la plus proche.
@@ -73,7 +73,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 - Retourne `{ palette: Hex[], indices: Uint8Array, counts: number[] }`, palette triée par nombre de mailles décroissant.
 
 **Critères**
-- [ ] Tests : image à 3 couleurs pures + N=3 → exactement ces 3 couleurs ; N=2 → 2 couleurs ; mode manuel respecté ; résultat identique à chaque appel ; despeckle retire une maille isolée et ne touche pas une ligne de 2 mailles.
+- [x] Tests : image à 3 couleurs pures + N=3 → exactement ces 3 couleurs ; N=2 → 2 couleurs ; mode manuel respecté ; résultat identique à chaque appel ; despeckle retire une maille isolée et ne touche pas une ligne de 2 mailles.
 
 ---
 

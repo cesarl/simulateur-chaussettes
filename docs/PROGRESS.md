@@ -46,6 +46,13 @@ Vérification : `npm run verify` ✅ (28 tests unitaires, 5 e2e). Le test 200×6
 Décisions : D05 (sens des décalages, joint, transparence, période ×2).
 Reste / risques : le panneau n’appelle pas encore le calepinage (branché au recalcul en T08).
 
+## T05 — Réduction des couleurs — 2026-09-25 06:49
+Statut : terminée
+Fait : `quantize` en mode auto (k-means++ à graine fixe, ou couleurs exactes s'il y en a déjà au plus N) et manuel (plus proche voisin redmean). Despeckle en un passage sur la grille d'origine. Palette triée par effectif. N borné de 2 à 8.
+Vérification : `npm run verify` ✅ au moment de l'implémentation (31 tests unitaires, 5 e2e). Le code a été poussé avec le commit du maillage, cette entrée ferme la tâche.
+Décisions : D06 (graine, distance, un seul passage de nettoyage).
+Reste / risques : pas encore branché au recalcul de la grille visible (T08).
+
 ## T06 — Maillage 3D de la chaussette — 2026-09-25 06:56
 Statut : terminée
 Fait : `sockPositions` / `sockUvs` purs, maillage (aiguilles+1)×(rangs+1), UV exactes, échelle en mètres, talon avant d'épaisseur nulle, poche arrière, pied horizontal à semelle plate, pointe fermée. Le cylindre provisoire est remplacé. Couleurs de zones en sommets. Caméra recadrée sur la boîte englobante.
