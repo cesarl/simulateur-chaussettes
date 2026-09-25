@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Démo chaussette 3D — référence</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #ecebe8; font-family: system-ui, sans-serif; }
+      #v { position: fixed; inset: 0; }
+      #bar { position: fixed; left: 12px; top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+      #bar button, #bar select { font: inherit; padding: 6px 10px; border: 1px solid #ccc; background: #fff; border-radius: 6px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div id="v"></div>
+    <div id="bar">
+      <select id="size"><option value="homme">Homme</option><option value="femme">Femme</option></select>
+      <select id="tile">
+        <option value="carreau-test-etoile.svg">Étoile</option>
+        <option value="carreau-test-quart.svg">Quart de cercle</option>
+        <option value="carreau-test-damier.png">Damier</option>
+      </select>
+      <label style="background:#fff;padding:6px 10px;border-radius:6px;border:1px solid #ccc"><input type="checkbox" id="cuff" checked /> bord-côte</label>
+      <button data-view="trois-quarts">3/4</button>
+      <button data-view="profil-exterieur">Profil ext.</button>
+      <button data-view="face">Face</button>
+      <button data-view="dos">Dos</button>
+      <button data-view="profil-interieur">Profil int.</button>
+    </div>
+    <script type="module" src="/reference/sock3d/demo.ts"></script>
+  </body>
+</html>
