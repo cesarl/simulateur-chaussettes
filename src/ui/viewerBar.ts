@@ -1,5 +1,7 @@
+import type { DecorMode } from '../core/types';
+import { tileCmFromFormat } from '../render/decorController';
 import type { ViewName } from '../render/sock3d/studio';
-import { getState, subscribe } from '../state';
+import { getState, subscribe, update } from '../state';
 
 const VIEWER_VIEWS: Array<{ id: ViewName; label: string; testId: string }> = [
   { id: 'trois-quarts', label: '¾', testId: 'viewer-view-trois-quarts' },
@@ -7,6 +9,9 @@ const VIEWER_VIEWS: Array<{ id: ViewName; label: string; testId: string }> = [
   { id: 'dos', label: 'Dos', testId: 'viewer-view-dos' },
   { id: 'face', label: 'Face', testId: 'viewer-view-face' },
 ];
+
+/** Dernier mode non-« aucun » pour rétablir au cochetage (session). */
+let lastActiveDecorMode: DecorMode = 'coin';
 
 export interface ViewerBarHandle {
   setVisible: (visible: boolean) => void;
@@ -41,6 +46,31 @@ export function mountViewerBar(
     views.appendChild(button);
   }
 
+  const decorLabel = document.createElement('label');
+  decorLabel.className = 'viewer-decor';
+  decorLabel.dataset.testid = 'viewer-decor';
+  const decorCheck = document.createElement('input');
+  decorCheck.type = 'checkbox';
+  decorCheck.dataset.testid = 'viewer-decor-toggle';
+  decorCheck.setAttribute('aria-label', 'Afficher le décor en carreaux de ciment');
+  const decorText = document.createElement('span');
+  decorText.textContent = 'Décor';
+  decorLabel.append(decorCheck, decorText);
+  decorCheck.addEventListener('change', () => {
+    const { design, catalogue, activeCollectionId } = getState();
+    const current = design.decor.mode;
+    if (decorCheck.checked) {
+      const mode = lastActiveDecorMode === 'aucun' ? 'coin' : lastActiveDecorMode;
+      const patch: { mode: DecorMode; tileCm?: number } = { mode };
+      const coll = catalogue?.collections.find((c) => c.id === activeCollectionId);
+      if (coll) patch.tileCm = tileCmFromFormat(coll.format);
+      update({ design: { decor: patch } });
+    } else {
+      if (current !== 'aucun') lastActiveDecorMode = current;
+      update({ design: { decor: { mode: 'aucun' } } });
+    }
+  });
+
   const copy = document.createElement('button');
   copy.type = 'button';
   copy.dataset.testid = 'viewer-copy-link';
@@ -49,10 +79,10 @@ export function mountViewerBar(
     void options.onCopyLink();
   });
 
-  bar.append(title, views, copy);
+  bar.append(title, views, decorLabel, copy);
   viewport.appendChild(bar);
 
-  function refreshTitle(): void {
+  function refresh(): void {
     const { design, catalogue, activeCollectionId } = getState();
     const coll = activeCollectionId
       ? catalogue?.collections.find((c) => c.id === activeCollectionId)
@@ -60,10 +90,14 @@ export function mountViewerBar(
     const parts = [design.name || 'Modèle'];
     if (coll) parts.push(coll.nom);
     title.textContent = parts.join(' · ');
+
+    const on = design.decor.mode !== 'aucun';
+    if (on) lastActiveDecorMode = design.decor.mode;
+    if (document.activeElement !== decorCheck) decorCheck.checked = on;
   }
 
-  refreshTitle();
-  subscribe(refreshTitle);
+  refresh();
+  subscribe(refresh);
 
   return {
     root: bar,

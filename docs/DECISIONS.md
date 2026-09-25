@@ -214,4 +214,9 @@ Contexte : sur mobile (≤1279 px) la grille `#app` a 2 rangées 1fr/1fr pour vi
 Choix : `#app.viewer-mode { grid-template-rows: minmax(0, 1fr); }` + `#viewport { height: 100%; }`.
 Conséquence : le canvas occupe toute la hauteur viewport hors mode dev.
 
+## D38 — Toggle décor en visionneuse publique
+Contexte : hors `?dev`, l’utilisateur doit pouvoir afficher/masquer le décor sans ouvrir le panneau.
+Choix : case à cocher « Décor » dans `viewerBar` (`viewer-decor-toggle`) ; on ↔ dernier mode non-aucun (défaut `coin`) ; off ↔ `aucun` ; mémorisé via `design.decor.mode` (IndexedDB + lien `#p=` déjà en place).
+Conséquence : pas de nouvel état parallèle ; le panneau `?dev` et la visionneuse restent synchronisés.
+
 

@@ -68,6 +68,20 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
   padding: 4px 8px;
   font-size: 12px;
 }
+.viewer-decor {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.viewer-decor input {
+  margin: 0;
+  accent-color: var(--accent);
+}
 .leave-dev {
   margin-top: 16px;
   width: 100%;

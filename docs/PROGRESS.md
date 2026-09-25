@@ -432,3 +432,43 @@ D30–D36 (dont D36 décor v2).
 
 ### Blocages
 T18 — `config/sizes.json` en attente fabricant.
+
+## Fix — Visionneuse plein écran mobile — 2026-09-25 22:06
+Statut : terminée
+Fait : `#app.viewer-mode { grid-template-rows: minmax(0, 1fr) }` (media ≤1279 px gardait 2 rangées → ~50 % hauteur).
+Vérification : e2e `viewer-mobile` 390×844, canvasH > 90 % de innerHeight.
+Contrôle visuel : `visuel-fix-viewer-mobile.png` — barre en haut, chaussette sur toute la hauteur, plus de bande morte.
+Décisions : D37.
+
+## Fix(ci) — timeout décor.spec — 2026-09-25 22:09
+Statut : terminée
+Fait : timeout 180 s + defaultTimeout 120 s ; attendre `decorBuildId` + 2 rAF ; captures 1024. Porté aussi sur `cursor/v5-t33-t39-75d2` (PR #6 mergée, CI rouge historique).
+Décisions : aucune (durcissement test).
+
+## Fix — Toggle décor visionneuse publique — 2026-09-25 22:10
+Statut : terminée
+Fait : case « Décor » dans la barre visionneuse (`viewer-decor-toggle`) ; on/off via `design.decor.mode` (persisté share + IndexedDB).
+Contrôle visuel :
+- `visuel-fix-decor-toggle-on.png` : Medina + sol/mur carrelés, case Décor cochée.
+- `visuel-fix-decor-toggle-off.png` : même chaussette, fond studio uni, décor absent.
+Décisions : D38.
+
+## Point pour César
+
+### Ce qui marche (V5 + T40 + fixes)
+- Décor v2 mats + grain ; visionneuse plein écran mobile ; **case Décor** hors `?dev`.
+- Lien `#p=`, jauge, raccord.
+
+### Tester en 3 étapes
+1. `npm run dev` → `/` (pas `?dev`) : visionneuse pleine hauteur.
+2. Via `?dev` : Medina + Décor Sol+mur → Quitter le mode dev → case **Décor** visible cochée.
+3. Décocher / recocher : décor disparaît / revient ; **Copier le lien** conserve l’état.
+
+### Captures
+T40 Medina/RAMO ; `visuel-fix-viewer-mobile.png` ; `visuel-fix-decor-toggle-on/off.png`.
+
+### Décisions à relire
+D36–D38.
+
+### Blocages
+T18 — `config/sizes.json` en attente fabricant.
