@@ -58,3 +58,9 @@ Contexte : il faut un V de jersey et des côtes, sur un seul matériau, sans que
 Options : deux maillages / un shader qui choisit le relief selon la zone / tout en V.
 Choix : `DataTexture` NearestFilter pour la couleur ; normales et occlusion du V répétées (aiguilles × rangs), mipmaps et anisotropie max ; dans le bord-côte (`vMapUv.y`), ces cartes sont remplacées par des côtes verticales (une côte pour deux mailles). L'intérieur (face arrière) est multiplié par 0,38. Three r186 n'expose pas `vUv` dès qu'une carte est présente : on lit `vMapUv`.
 Conséquence : le mélange est dans `onBeforeCompile` de `src/render/knitTexture.ts`.
+
+## D09 — Panneau : sections encore vides et palette manuelle (T08)
+Contexte : le cahier demande les sections Contrôles et Exports dès le panneau complet, alors que leur logique arrive en T12 et T10. Le mode palette manuelle n'a pas de fils par défaut.
+Options : masquer ces sections / les afficher vides avec une phrase / y mettre des contrôles factices.
+Choix : les deux sections sont présentes, ouvertes, avec une phrase d'attente. Une palette manuelle vide reçoit quatre fils (`#1f3a5f`, `#b5462f`, `#f4f1ea`, `#1d1d1b`). Le champ tige n'a pas d'attribut `max` HTML : le dépassement est détecté puis ramené par `clampLegRows`, avec le message.
+Conséquence : T10 et T12 remplaceront le texte d'attente. Les fils initiaux sont dans `MANUAL_SEED` (`src/ui/panel.ts`).

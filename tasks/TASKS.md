@@ -105,7 +105,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T08 — Panneau de réglages complet (`src/ui/panel.ts`, `src/ui/controls.ts`)
+### [x] T08 — Panneau de réglages complet (`src/ui/panel.ts`, `src/ui/controls.ts`)
 **Objectif** : tous les réglages du cahier des charges (§4.5 à §4.8) branchés sur le store, recalcul automatique.
 - Sections repliables : Carreaux · Calepinage · Dimensions · Gros pixels · Zones · Contrôles · Exports.
 - Curseurs couplés à des champs numériques, sélecteurs de couleur, listes déroulantes. Libellés en français, unités affichées (mailles, rangs, cm).
@@ -114,9 +114,9 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 - Chaque contrôle a un `data-testid` stable (ex. `ctl-layout-kind`, `ctl-tile-width`, `ctl-max-colors`, `ctl-cuff-enabled`, `ctl-cuff-color`, `ctl-heel-color`, `ctl-toe-color`, `ctl-size`).
 
 **Critères**
-- [ ] e2e : charger un exemple, passer en quinconce, 3 couleurs, taille femme → `__SIM__` reflète ces valeurs, la palette du motif a ≤ 3 couleurs.
-- [ ] e2e : décocher le bord-côte → nombre de rangs diminue de `cuffRows`.
-- [ ] e2e : tenter une tige plus haute que le max → valeur ramenée au max.
+- [x] e2e : charger un exemple, passer en quinconce, 3 couleurs, taille femme → `__SIM__` reflète ces valeurs, la palette du motif a ≤ 3 couleurs.
+- [x] e2e : décocher le bord-côte → nombre de rangs diminue de `cuffRows`.
+- [x] e2e : tenter une tige plus haute que le max → valeur ramenée au max.
 
 ---
 

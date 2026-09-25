@@ -1,6 +1,15 @@
+import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
+import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { getState, subscribe, update } from '../state';
-import type { TileAsset } from '../core/types';
+import type { Hex, LayoutKind, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
+import {
+  details,
+  makeCheckbox,
+  makeColor,
+  makeSelect,
+  makeSliderNumber,
+} from './controls';
 
 const thumbs = new Map<string, string>();
 
@@ -98,13 +107,7 @@ export function mountPanel(panel: HTMLElement): void {
   const body = panel.querySelector('#panel-body');
   const host = body instanceof HTMLElement ? body : panel;
 
-  const section = document.createElement('section');
-  section.className = 'section';
-  section.dataset.testid = 'section-tiles';
-
-  const title = document.createElement('h2');
-  title.textContent = 'Carreaux';
-  section.appendChild(title);
+  const section = details('Carreaux', 'section-tiles');
 
   const drop = document.createElement('div');
   drop.className = 'drop';
@@ -182,4 +185,510 @@ export function mountPanel(panel: HTMLElement): void {
     const files = [...(event.dataTransfer?.files ?? [])];
     if (files.length > 0) void importFiles(files);
   });
+
+  mountSettings(host);
+}
+
+const LAYOUT_OPTIONS: { value: LayoutKind; label: string }[] = [
+  { value: 'grille', label: 'Grille droite' },
+  { value: 'quinconce-h', label: 'Quinconce horizontal' },
+  { value: 'quinconce-v', label: 'Quinconce vertical' },
+  { value: 'rotation-4', label: 'Rotation ×4' },
+  { value: 'miroir-4', label: 'Miroirs ×4' },
+  { value: 'damier', label: 'Damier' },
+  { value: 'rotation-aleatoire', label: 'Rotation aléatoire' },
+];
+
+const MANUAL_SEED: Hex[] = ['#1f3a5f', '#b5462f', '#f4f1ea', '#1d1d1b'];
+
+let legWarned = false;
+let computeMs: HTMLElement | null = null;
+let seamStatus: HTMLElement | null = null;
+let swatches: HTMLElement | null = null;
+
+export function renderStatus(info: {
+  ms: number;
+  patternPalette: readonly string[];
+  patternCounts: readonly number[];
+  mismatch: number;
+}): void {
+  if (computeMs) computeMs.textContent = `Dernier calcul : ${Math.round(info.ms)} ms`;
+  if (seamStatus) {
+    seamStatus.textContent = info.mismatch === 0
+      ? 'Le motif tombe juste.'
+      : `Décalage de ${info.mismatch} mailles au dos.`;
+  }
+  if (!swatches) return;
+  swatches.replaceChildren();
+  if (info.patternPalette.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'hint';
+    empty.textContent = 'Aucune couleur de motif.';
+    swatches.appendChild(empty);
+    return;
+  }
+  info.patternPalette.forEach((color, index) => {
+    const item = document.createElement('span');
+    item.className = 'swatch';
+    const chip = document.createElement('i');
+    chip.style.background = color;
+    const label = document.createElement('span');
+    label.textContent = `${color} · ${info.patternCounts[index] ?? 0}`;
+    item.append(chip, label);
+    swatches?.appendChild(item);
+  });
+}
+
+function isLayoutKind(value: string): value is LayoutKind {
+  return LAYOUT_OPTIONS.some((option) => option.value === value);
+}
+
+function isSize(value: string): value is SizeId {
+  return value === 'homme' || value === 'femme';
+}
+
+function showLegMessage(size: SizeId, message: HTMLElement): void {
+  const max = SIZE_PRESETS[size].legRowsMax;
+  message.hidden = !legWarned;
+  message.textContent = legWarned ? `La tige ne peut pas dépasser ${max} rangs.` : '';
+}
+
+function mountSettings(host: HTMLElement): void {
+  const design = getState().design;
+  let keepRatio = true;
+  let paletteKey = '';
+
+  const layout = details('Calepinage', 'section-layout');
+  const kind = makeSelect('Calepinage', 'ctl-layout-kind', LAYOUT_OPTIONS, design.layout.kind, (value) => {
+    if (!isLayoutKind(value)) return;
+    update({ design: { layout: { kind: value } } });
+  });
+  const tileWidth = makeSliderNumber({
+    label: 'Largeur du carreau',
+    testId: 'ctl-tile-width',
+    min: 4,
+    max: 200,
+    step: 1,
+    value: design.layout.tileStitches,
+    unit: 'mailles',
+    onChange: (value) => {
+      const tileStitches = Math.max(1, Math.round(value));
+      const next: { tileStitches: number; tileRows?: number } = { tileStitches };
+      if (keepRatio) next.tileRows = tileRowsForWidth(tileStitches, stitchAspect(getState().design.dimensions));
+      update({ design: { layout: next } });
+    },
+  });
+  const tileRows = makeSliderNumber({
+    label: 'Hauteur du carreau',
+    testId: 'ctl-tile-rows',
+    min: 4,
+    max: 300,
+    step: 1,
+    value: design.layout.tileRows,
+    unit: 'rangs',
+    onChange: (value) => {
+      keepRatio = false;
+      keepBox.input.checked = false;
+      update({ design: { layout: { tileRows: Math.max(1, Math.round(value)) } } });
+    },
+  });
+  const keepBox = makeCheckbox('Garder les proportions', 'ctl-keep-ratio', true, (checked) => {
+    keepRatio = checked;
+    if (!checked) return;
+    const current = getState().design;
+    update({
+      design: {
+        layout: {
+          tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(current.dimensions)),
+        },
+      },
+    });
+  });
+  const gapStitches = makeSliderNumber({
+    label: 'Joint horizontal',
+    testId: 'ctl-gap-stitches',
+    min: 0,
+    max: 32,
+    step: 1,
+    value: design.layout.gapStitches,
+    unit: 'mailles',
+    onChange: (value) => update({ design: { layout: { gapStitches: Math.max(0, Math.round(value)) } } }),
+  });
+  const gapRows = makeSliderNumber({
+    label: 'Joint vertical',
+    testId: 'ctl-gap-rows',
+    min: 0,
+    max: 32,
+    step: 1,
+    value: design.layout.gapRows,
+    unit: 'rangs',
+    onChange: (value) => update({ design: { layout: { gapRows: Math.max(0, Math.round(value)) } } }),
+  });
+  const gapColor = makeColor('Couleur du joint', 'ctl-gap-color', design.layout.gapColor, (value) => {
+    update({ design: { layout: { gapColor: value } } });
+  });
+  const rotation = makeSelect(
+    'Rotation',
+    'ctl-rotation',
+    [
+      { value: '0', label: '0°' },
+      { value: '90', label: '90°' },
+      { value: '180', label: '180°' },
+      { value: '270', label: '270°' },
+    ],
+    String(design.layout.rotation),
+    (value) => {
+      const angle = value === '90' || value === '180' || value === '270' ? Number(value) : 0;
+      update({ design: { layout: { rotation: angle as 0 | 90 | 180 | 270 } } });
+    },
+  );
+  const offsetX = makeSliderNumber({
+    label: 'Décalage horizontal',
+    testId: 'ctl-offset-stitches',
+    min: -200,
+    max: 200,
+    step: 1,
+    value: design.layout.offsetStitches,
+    unit: 'mailles',
+    onChange: (value) => update({ design: { layout: { offsetStitches: Math.round(value) } } }),
+  });
+  const offsetY = makeSliderNumber({
+    label: 'Décalage vertical',
+    testId: 'ctl-offset-rows',
+    min: -200,
+    max: 200,
+    step: 1,
+    value: design.layout.offsetRows,
+    unit: 'rangs',
+    onChange: (value) => update({ design: { layout: { offsetRows: Math.round(value) } } }),
+  });
+  const seed = makeSliderNumber({
+    label: 'Graine',
+    testId: 'ctl-seed',
+    min: 1,
+    max: 9999,
+    step: 1,
+    value: design.layout.seed,
+    onChange: (value) => update({ design: { layout: { seed: Math.max(1, Math.round(value)) } } }),
+  });
+  seamStatus = document.createElement('p');
+  seamStatus.className = 'hint';
+  seamStatus.dataset.testid = 'seam-status';
+  seamStatus.textContent = 'Le motif tombe juste.';
+  const fit = document.createElement('button');
+  fit.type = 'button';
+  fit.dataset.testid = 'ctl-fit-width';
+  fit.textContent = 'Ajuster la largeur';
+  fit.addEventListener('click', () => {
+    const current = getState().design;
+    const tileStitches = nearestFittingWidth(current.layout, current.dimensions.needles);
+    const next: { tileStitches: number; tileRows?: number } = { tileStitches };
+    if (keepRatio) next.tileRows = tileRowsForWidth(tileStitches, stitchAspect(current.dimensions));
+    update({ design: { layout: next } });
+  });
+  layout.append(
+    kind.root,
+    tileWidth.root,
+    tileRows.root,
+    keepBox.root,
+    gapStitches.root,
+    gapRows.root,
+    gapColor.root,
+    rotation.root,
+    offsetX.root,
+    offsetY.root,
+    seed.root,
+    seamStatus,
+    fit,
+  );
+
+  const dimensions = details('Dimensions', 'section-dimensions');
+  const size = makeSelect(
+    'Taille',
+    'ctl-size',
+    [
+      { value: 'homme', label: 'Homme' },
+      { value: 'femme', label: 'Femme' },
+    ],
+    design.dimensions.size,
+    (value) => {
+      if (!isSize(value)) return;
+      legWarned = false;
+      update({ design: { dimensions: defaultDimensions(value) } });
+    },
+  );
+  const legMessage = document.createElement('p');
+  legMessage.className = 'leg-message';
+  legMessage.dataset.testid = 'ctl-leg-message';
+  legMessage.hidden = true;
+  const leg = makeSliderNumber({
+    label: 'Tige',
+    testId: 'ctl-leg-rows',
+    min: 1,
+    max: SIZE_PRESETS[design.dimensions.size].legRowsMax,
+    step: 1,
+    value: design.dimensions.legRows,
+    unit: 'rangs',
+    onChange: (value) => {
+      const currentSize = getState().design.dimensions.size;
+      const max = SIZE_PRESETS[currentSize].legRowsMax;
+      legWarned = value > max;
+      const clamped = clampLegRows(currentSize, value);
+      leg.setValue(clamped, true);
+      showLegMessage(currentSize, legMessage);
+      update({ design: { dimensions: { legRows: clamped } } });
+    },
+  });
+  leg.input.removeAttribute('max');
+  const needles = makeSliderNumber({
+    label: 'Aiguilles',
+    testId: 'ctl-needles',
+    min: 8,
+    max: 480,
+    step: 1,
+    value: design.dimensions.needles,
+    unit: 'mailles',
+    onChange: (value) => update({ design: { dimensions: { needles: Math.max(1, Math.round(value)) } } }),
+  });
+  const heelRows = makeSliderNumber({
+    label: 'Talon',
+    testId: 'ctl-heel-rows',
+    min: 1,
+    max: 200,
+    step: 1,
+    value: design.dimensions.heelRows,
+    unit: 'rangs',
+    onChange: (value) => update({ design: { dimensions: { heelRows: Math.max(1, Math.round(value)) } } }),
+  });
+  const footRows = makeSliderNumber({
+    label: 'Pied',
+    testId: 'ctl-foot-rows',
+    min: 1,
+    max: 400,
+    step: 1,
+    value: design.dimensions.footRows,
+    unit: 'rangs',
+    onChange: (value) => update({ design: { dimensions: { footRows: Math.max(1, Math.round(value)) } } }),
+  });
+  const toeRows = makeSliderNumber({
+    label: 'Pointe',
+    testId: 'ctl-toe-rows',
+    min: 1,
+    max: 200,
+    step: 1,
+    value: design.dimensions.toeRows,
+    unit: 'rangs',
+    onChange: (value) => update({ design: { dimensions: { toeRows: Math.max(1, Math.round(value)) } } }),
+  });
+  const stitches = makeSliderNumber({
+    label: 'Jauge',
+    testId: 'ctl-stitches-per-cm',
+    min: 1,
+    max: 30,
+    step: 0.1,
+    value: design.dimensions.stitchesPerCm,
+    unit: 'mailles/cm',
+    onChange: (value) => {
+      const stitchesPerCm = Math.max(0.1, value);
+      const current = getState().design;
+      const next = { ...current.dimensions, stitchesPerCm };
+      const layoutPatch = keepRatio
+        ? { tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(next)) }
+        : {};
+      update({ design: { dimensions: { stitchesPerCm }, layout: layoutPatch } });
+    },
+  });
+  const rowsPerCm = makeSliderNumber({
+    label: 'Jauge verticale',
+    testId: 'ctl-rows-per-cm',
+    min: 1,
+    max: 40,
+    step: 0.1,
+    value: design.dimensions.rowsPerCm,
+    unit: 'rangs/cm',
+    onChange: (value) => {
+      const nextRows = Math.max(0.1, value);
+      const current = getState().design;
+      const next = { ...current.dimensions, rowsPerCm: nextRows };
+      const layoutPatch = keepRatio
+        ? { tileRows: tileRowsForWidth(current.layout.tileStitches, stitchAspect(next)) }
+        : {};
+      update({ design: { dimensions: { rowsPerCm: nextRows }, layout: layoutPatch } });
+    },
+  });
+  const sizeCm = document.createElement('p');
+  sizeCm.className = 'hint';
+  sizeCm.dataset.testid = 'size-cm';
+  dimensions.append(
+    size.root,
+    leg.root,
+    legMessage,
+    heelRows.root,
+    footRows.root,
+    toeRows.root,
+    needles.root,
+    stitches.root,
+    rowsPerCm.root,
+    sizeCm,
+  );
+
+  const pixels = details('Gros pixels', 'section-pixels');
+  const sampling = makeSelect(
+    'Échantillonnage',
+    'ctl-sampling',
+    [
+      { value: 'majoritaire', label: 'Couleur majoritaire' },
+      { value: 'moyenne', label: 'Couleur moyenne' },
+    ],
+    design.quantize.sampling,
+    (value) => {
+      if (value !== 'majoritaire' && value !== 'moyenne') return;
+      update({ design: { quantize: { sampling: value } } });
+    },
+  );
+  const maxColors = makeSliderNumber({
+    label: 'Couleurs du motif',
+    testId: 'ctl-max-colors',
+    min: 2,
+    max: 8,
+    step: 1,
+    value: design.quantize.maxColors,
+    onChange: (value) => update({ design: { quantize: { maxColors: Math.round(value) } } }),
+  });
+  const paletteMode = makeSelect(
+    'Palette',
+    'ctl-palette-mode',
+    [
+      { value: 'auto', label: 'Automatique' },
+      { value: 'manuelle', label: 'Manuelle' },
+    ],
+    design.quantize.paletteMode,
+    (value) => {
+      if (value !== 'auto' && value !== 'manuelle') return;
+      const quantizePatch: Partial<QuantizeSettings> = { paletteMode: value };
+      if (value === 'manuelle' && getState().design.quantize.palette.length === 0) {
+        quantizePatch.palette = [...MANUAL_SEED];
+      }
+      update({ design: { quantize: quantizePatch } });
+    },
+  );
+  const despeckle = makeCheckbox('Nettoyer les mailles isolées', 'ctl-despeckle', design.quantize.despeckle, (checked) => {
+    update({ design: { quantize: { despeckle: checked } } });
+  });
+  const manual = document.createElement('div');
+  manual.dataset.testid = 'ctl-palette-manual';
+  swatches = document.createElement('div');
+  swatches.className = 'swatches';
+  swatches.dataset.testid = 'pattern-palette';
+  pixels.append(sampling.root, maxColors.root, paletteMode.root, despeckle.root, manual, swatches);
+
+  const zones = details('Zones', 'section-zones');
+  const cuff = makeCheckbox('Bord-côte', 'ctl-cuff-enabled', design.zones.cuffEnabled, (checked) => {
+    update({ design: { zones: { cuffEnabled: checked } } });
+  });
+  const cuffRows = makeSliderNumber({
+    label: 'Hauteur du bord-côte',
+    testId: 'ctl-cuff-rows',
+    min: 0,
+    max: 80,
+    step: 1,
+    value: design.dimensions.cuffRows,
+    unit: 'rangs',
+    onChange: (value) => update({ design: { dimensions: { cuffRows: Math.max(0, Math.round(value)) } } }),
+  });
+  const cuffColor = makeColor('Couleur du bord-côte', 'ctl-cuff-color', design.zones.cuffColor, (value) => {
+    update({ design: { zones: { cuffColor: value } } });
+  });
+  const heelColor = makeColor('Couleur du talon', 'ctl-heel-color', design.zones.heelColor, (value) => {
+    update({ design: { zones: { heelColor: value } } });
+  });
+  const toeColor = makeColor('Couleur de la pointe', 'ctl-toe-color', design.zones.toeColor, (value) => {
+    update({ design: { zones: { toeColor: value } } });
+  });
+  const patternFoot = makeCheckbox('Motif sur le pied', 'ctl-pattern-foot', design.zones.patternOnFoot, (checked) => {
+    update({ design: { zones: { patternOnFoot: checked } } });
+  });
+  const footColor = makeColor('Couleur du pied', 'ctl-foot-color', design.zones.footColor, (value) => {
+    update({ design: { zones: { footColor: value } } });
+  });
+  zones.append(cuff.root, cuffRows.root, cuffColor.root, heelColor.root, toeColor.root, patternFoot.root, footColor.root);
+
+  const checks = details('Contrôles', 'section-checks');
+  const checksHint = document.createElement('p');
+  checksHint.className = 'hint';
+  checksHint.textContent = 'Les alertes de fabrication seront disponibles ensuite.';
+  checks.appendChild(checksHint);
+
+  const exportsSection = details('Exports', 'section-exports');
+  const exportsHint = document.createElement('p');
+  exportsHint.className = 'hint';
+  exportsHint.textContent = 'Les exports PNG seront disponibles ensuite.';
+  exportsSection.appendChild(exportsHint);
+
+  computeMs = document.createElement('p');
+  computeMs.className = 'hint compute-ms';
+  computeMs.dataset.testid = 'compute-ms';
+  computeMs.textContent = 'Dernier calcul : —';
+
+  host.append(layout, dimensions, pixels, zones, checks, exportsSection, computeMs);
+
+  const syncManual = (current: SockDesign): void => {
+    const isManual = current.quantize.paletteMode === 'manuelle';
+    manual.hidden = !isManual;
+    const key = current.quantize.palette.join(',');
+    if (!isManual || key === paletteKey || manual.contains(document.activeElement)) return;
+    paletteKey = key;
+    manual.replaceChildren();
+    current.quantize.palette.forEach((color, index) => {
+      const picker = makeColor(`Fil ${index + 1}`, `ctl-palette-${index}`, color, (value) => {
+        const next = [...getState().design.quantize.palette];
+        next[index] = value.toLowerCase();
+        paletteKey = '';
+        update({ design: { quantize: { palette: next } } });
+      });
+      manual.appendChild(picker.root);
+    });
+  };
+
+  const sync = (current: SockDesign): void => {
+    kind.input.value = current.layout.kind;
+    tileWidth.setValue(current.layout.tileStitches);
+    tileRows.setValue(current.layout.tileRows);
+    keepBox.input.checked = keepRatio;
+    gapStitches.setValue(current.layout.gapStitches);
+    gapRows.setValue(current.layout.gapRows);
+    if (document.activeElement !== gapColor.input) gapColor.input.value = current.layout.gapColor;
+    rotation.input.value = String(current.layout.rotation);
+    offsetX.setValue(current.layout.offsetStitches);
+    offsetY.setValue(current.layout.offsetRows);
+    seed.setValue(current.layout.seed);
+    size.input.value = current.dimensions.size;
+    leg.setRange(1, SIZE_PRESETS[current.dimensions.size].legRowsMax);
+    leg.input.removeAttribute('max');
+    leg.setValue(current.dimensions.legRows);
+    showLegMessage(current.dimensions.size, legMessage);
+    needles.setValue(current.dimensions.needles);
+    heelRows.setValue(current.dimensions.heelRows);
+    footRows.setValue(current.dimensions.footRows);
+    toeRows.setValue(current.dimensions.toeRows);
+    stitches.setValue(current.dimensions.stitchesPerCm);
+    rowsPerCm.setValue(current.dimensions.rowsPerCm);
+    const tour = current.dimensions.needles / current.dimensions.stitchesPerCm;
+    const height = totalRows(current.dimensions, current.zones.cuffEnabled) / current.dimensions.rowsPerCm;
+    sizeCm.textContent = `Tour ${tour.toFixed(1)} cm · hauteur ${height.toFixed(1)} cm`;
+    sampling.input.value = current.quantize.sampling;
+    maxColors.setValue(current.quantize.maxColors);
+    paletteMode.input.value = current.quantize.paletteMode;
+    despeckle.input.checked = current.quantize.despeckle;
+    syncManual(current);
+    cuff.input.checked = current.zones.cuffEnabled;
+    cuffRows.setValue(current.dimensions.cuffRows);
+    if (document.activeElement !== cuffColor.input) cuffColor.input.value = current.zones.cuffColor;
+    if (document.activeElement !== heelColor.input) heelColor.input.value = current.zones.heelColor;
+    if (document.activeElement !== toeColor.input) toeColor.input.value = current.zones.toeColor;
+    patternFoot.input.checked = current.zones.patternOnFoot;
+    if (document.activeElement !== footColor.input) footColor.input.value = current.zones.footColor;
+  };
+  subscribe((state) => sync(state.design));
+  sync(design);
 }

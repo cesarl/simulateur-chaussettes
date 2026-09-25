@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { composeGrid } from './core/grid';
+import { samplePattern, seamMismatch } from './core/layout';
+import { quantize } from './core/quantize';
 import { defaultDimensions } from './core/sizes';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
@@ -8,7 +10,7 @@ import { createSockMesh } from './render/sockGeometry';
 import { getState, subscribe, update, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
-import { mountPanel } from './ui/panel';
+import { mountPanel, renderStatus } from './ui/panel';
 
 const viewport = document.getElementById('viewport');
 const panel = document.getElementById('panel');
@@ -17,6 +19,8 @@ if (!viewport || !panel) throw new Error('Structure de page introuvable');
 const handle = createScene(viewport);
 
 let grid: StitchGrid = composeGrid(getState().design.dimensions, getState().design.zones, null, []);
+let patternPalette: string[] = [];
+let patternCounts: number[] = [];
 let computeId = 0;
 let lastComputeMs = 0;
 let geometryBuilds = 0;
@@ -123,6 +127,7 @@ function publish(): void {
     lastComputeMs,
     design,
     grid: { width: grid.width, height: grid.height, palette: [...grid.palette] },
+    patternPalette: [...patternPalette],
     geometryBuilds,
     textureUpdates,
     warnings: [...warnings],
@@ -135,12 +140,34 @@ function publish(): void {
 
 function recompute(): void {
   const started = performance.now();
-  const { design } = getState();
-  grid = composeGrid(design.dimensions, design.zones, null, []);
+  const { design, tiles } = getState();
+  let pattern: Uint8Array | null = null;
+  patternPalette = [];
+  patternCounts = [];
+  if (tiles.length > 0 && design.layout.tileIds.length > 0) {
+    const rgb = samplePattern(
+      tiles,
+      design.layout,
+      design.dimensions,
+      design.zones,
+      design.quantize.sampling,
+    );
+    const reduced = quantize(rgb, design.dimensions.needles, design.quantize);
+    pattern = reduced.indices;
+    patternPalette = reduced.palette;
+    patternCounts = reduced.counts;
+  }
+  grid = composeGrid(design.dimensions, design.zones, pattern, patternPalette);
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
   computeId += 1;
   publish();
+  renderStatus({
+    ms: lastComputeMs,
+    patternPalette,
+    patternCounts,
+    mismatch: seamMismatch(design.layout, design.dimensions.needles),
+  });
 }
 
 mountPanel(panel);

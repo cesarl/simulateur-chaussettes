@@ -63,3 +63,24 @@ button:hover { border-color: var(--accent); }
 .tile-name { margin: 0; font-size: 13px; word-break: break-all; }
 .tile-actions { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
 .tile-actions button { padding: 4px 8px; font-size: 12px; }
+details.section { border-top: 1px solid var(--line); padding: 8px 0; }
+details.section summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin: 8px 0;
+}
+.field > span:first-child { flex: 1 1 140px; }
+.slider-number { display: flex; gap: 6px; align-items: center; }
+.field input[type='number'] { width: 72px; }
+.field input[type='range'] { width: 108px; }
+.field select { max-width: 180px; }
+.unit { color: var(--muted); font-size: 12px; }
+.leg-message { color: var(--accent); font-size: 12px; margin: 0 0 8px; }
+.compute-ms { margin-top: 12px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.swatch { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.swatch i { width: 16px; height: 16px; border: 1px solid var(--line); display: inline-block; }

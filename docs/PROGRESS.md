@@ -66,3 +66,10 @@ Fait : `DataTexture` de la grille (NearestFilter, sRGB, `needsUpdate` sans recon
 Vérification : `npm run verify` ✅ (35 tests unitaires, 7 e2e). Contrôle visuel de `test-results/visuel-t07-mailles.png` (vue zoomée) : on ne voit pas des carrés plats. La tige et le pied portent des mailles en V, creusées au centre, répétées. Le bord-côte bleu en haut est en bandes verticales, distinct du jersey. Talon terracotta et pointe sombre restent identifiables. Changer la couleur du talon incrémente `textureUpdates` et laisse `geometryBuilds` inchangé. Aucun avertissement WebGL.
 Décisions : D08 (relief, `vMapUv`, intérieur × 0,38).
 Reste / risques : le motif des carreaux n'est pas encore recalculé depuis le panneau (T08).
+
+## T08 — Panneau de réglages — 2026-09-25 07:08
+Statut : terminée
+Fait : Sections repliables Carreaux, Calepinage, Dimensions, Gros pixels, Zones, Contrôles, Exports. Curseurs couplés aux champs numériques (anti-rebond 120 ms), couleurs, listes, unités en français. Le recalcul enchaîne calepinage, réduction de couleurs et composition de la grille. La tige au-dessus du maximum est ramenée, avec un message. Durée du dernier calcul et raccord circulaire affichés. Palette du motif avec effectifs.
+Vérification : `npm run verify` ✅ (35 tests unitaires, 10 e2e). Les trois scénarios du panneau passent : quinconce + 3 couleurs + femme (palette de motif ≤ 3), bord-côte retiré (`hauteur − cuffRows`), tige trop haute ramenée au maximum.
+Décisions : D09 (sections Contrôles et Exports en attente, fils manuels de départ).
+Reste / risques : Contrôles de fabrication et exports PNG ne sont pas encore branchés (T12, T10). La vue à plat manque (T09).
