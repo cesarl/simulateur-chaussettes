@@ -57,4 +57,18 @@ describe('projet JSON', () => {
     await expect(parseProject('{')).rejects.toBeInstanceOf(ProjectError);
     await expect(parseProject('{"version":2}')).rejects.toThrow(/invalide/i);
   });
+
+  it('complète les réglages de talon manquants (anciens projets)', async () => {
+    const design = defaultDesign();
+    design.layout.tileIds = [];
+    const json = await serializeProject(design, []);
+    const doc = JSON.parse(json) as { design: { zones: Record<string, unknown> } };
+    delete doc.design.zones.heelHeightMm;
+    delete doc.design.zones.heelDepthMm;
+    delete doc.design.zones.heelSpread;
+    const back = await parseProject(JSON.stringify(doc));
+    expect(back.design.zones.heelHeightMm).toBe(55);
+    expect(back.design.zones.heelDepthMm).toBe(72);
+    expect(back.design.zones.heelSpread).toBe(100);
+  });
 });

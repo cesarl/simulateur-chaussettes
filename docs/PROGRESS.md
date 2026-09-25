@@ -208,3 +208,13 @@ Tester en 3 étapes :
 Décisions à relire : D21 (forme v2) ; D18–D20 si pas encore lues.
 
 Blocages : T18 — `config/sizes.json` fabricant.
+
+## T24 — Talon réglable — 2026-09-25 12:42
+Statut : terminée
+Fait : Copie `sockShape.ts` (HEEL_DEFAULTS + heelHeight/Depth/Spread). État `zones.heelHeightMm` / `heelDepthMm` / `heelSpread` (%), migration projets. Curseurs Zones › Talon + aide fabricant. Branchement `shapeFromDesign` / `surfaceKeyOf` → rebuild géométrie. e2e `heel-preview.spec.ts`.
+Vérification : unitaires sock3d + project verts ; e2e talon + T21 IoU ≥ 0,90 verts. Captures ouvertes :
+- T21 trois-quarts / profil / dos : talon rouge **plus bas** qu’en V2 (défaut 55 mm), dessus du pied en pente régulière, semelle plate, motif étoile, relief jersey, pas d’artefact.
+- `visuel-T24-talon-bas.png` (h=40) : poche talon rouge compacte au dos/sous le pied.
+- `visuel-T24-talon-haut.png` (h=95) : même vue, zone rouge nettement plus haute vers la cheville (+30 % pixels talon).
+Décisions : D22.
+Reste / risques : enchaîner T25 (calepinage multi-motifs).

@@ -57,6 +57,13 @@ function needNumber(source: Record<string, unknown>, key: string): number {
   return value;
 }
 
+function optionalNumber(source: Record<string, unknown>, key: string, fallback: number): number {
+  const value = source[key];
+  if (value === undefined) return fallback;
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new ProjectError(`champ « ${key} » illisible.`);
+  return value;
+}
+
 function needBoolean(source: Record<string, unknown>, key: string): boolean {
   const value = source[key];
   if (typeof value !== 'boolean') throw new ProjectError(`champ « ${key} » manquant.`);
@@ -137,6 +144,10 @@ function readDesign(value: unknown): SockDesign {
       toeColor: needHex(zones, 'toeColor'),
       patternOnFoot: needBoolean(zones, 'patternOnFoot'),
       footColor: needHex(zones, 'footColor'),
+      // Anciens projets sans réglages d’aperçu du talon → défauts V3.
+      heelHeightMm: optionalNumber(zones, 'heelHeightMm', 55),
+      heelDepthMm: optionalNumber(zones, 'heelDepthMm', 72),
+      heelSpread: optionalNumber(zones, 'heelSpread', 100),
     },
     quantize: {
       maxColors: needNumber(quantize, 'maxColors'),

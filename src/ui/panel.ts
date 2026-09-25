@@ -815,6 +815,44 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const heelColor = makeColor('Couleur du talon', 'ctl-heel-color', design.zones.heelColor, (value) => {
     update({ design: { zones: { heelColor: value } } });
   });
+  const heelHelp =
+    'Aperçu seulement : la taille réelle du talon dépend du tricotage (rangs de talon), à valider avec le fabricant.';
+  const heelHeight = makeSliderNumber({
+    label: 'Hauteur du talon',
+    testId: 'ctl-heel-height',
+    min: 25,
+    max: 110,
+    step: 1,
+    value: design.zones.heelHeightMm,
+    unit: 'mm',
+    help: heelHelp,
+    onChange: (value) =>
+      update({ design: { zones: { heelHeightMm: Math.min(110, Math.max(25, Math.round(value))) } } }),
+  });
+  const heelDepth = makeSliderNumber({
+    label: 'Profondeur sous le pied',
+    testId: 'ctl-heel-depth',
+    min: 40,
+    max: 130,
+    step: 1,
+    value: design.zones.heelDepthMm,
+    unit: 'mm',
+    help: heelHelp,
+    onChange: (value) =>
+      update({ design: { zones: { heelDepthMm: Math.min(130, Math.max(40, Math.round(value))) } } }),
+  });
+  const heelSpread = makeSliderNumber({
+    label: 'Largeur du talon',
+    testId: 'ctl-heel-spread',
+    min: 50,
+    max: 100,
+    step: 1,
+    value: design.zones.heelSpread,
+    unit: '%',
+    help: heelHelp,
+    onChange: (value) =>
+      update({ design: { zones: { heelSpread: Math.min(100, Math.max(50, Math.round(value))) } } }),
+  });
   const toeColor = makeColor('Couleur de la pointe', 'ctl-toe-color', design.zones.toeColor, (value) => {
     update({ design: { zones: { toeColor: value } } });
   });
@@ -824,7 +862,18 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const footColor = makeColor('Couleur du pied', 'ctl-foot-color', design.zones.footColor, (value) => {
     update({ design: { zones: { footColor: value } } });
   });
-  zones.append(cuff.root, cuffRows.root, cuffColor.root, heelColor.root, toeColor.root, patternFoot.root, footColor.root);
+  zones.append(
+    cuff.root,
+    cuffRows.root,
+    cuffColor.root,
+    heelColor.root,
+    heelHeight.root,
+    heelDepth.root,
+    heelSpread.root,
+    toeColor.root,
+    patternFoot.root,
+    footColor.root,
+  );
 
   const fidelity = makeSelect(
     'Rendu des mailles',
@@ -938,6 +987,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     cuffRows.setValue(current.dimensions.cuffRows);
     if (document.activeElement !== cuffColor.input) cuffColor.input.value = current.zones.cuffColor;
     if (document.activeElement !== heelColor.input) heelColor.input.value = current.zones.heelColor;
+    heelHeight.setValue(current.zones.heelHeightMm);
+    heelDepth.setValue(current.zones.heelDepthMm);
+    heelSpread.setValue(current.zones.heelSpread);
     if (document.activeElement !== toeColor.input) toeColor.input.value = current.zones.toeColor;
     patternFoot.input.checked = current.zones.patternOnFoot;
     if (document.activeElement !== footColor.input) footColor.input.value = current.zones.footColor;

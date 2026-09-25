@@ -45,6 +45,9 @@ function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings, side: string): 
     dims.toeRows,
     dims.rowsPerCm,
     zones.cuffEnabled ? 1 : 0,
+    zones.heelHeightMm,
+    zones.heelDepthMm,
+    zones.heelSpread,
     side,
   ].join('|');
 }
@@ -60,6 +63,9 @@ function shapeFromDesign(dims: SockDimensions, zones: ZoneSettings, side: 'droit
     rowsPerCm: dims.rowsPerCm,
     size: dims.size,
     side,
+    heelHeight: zones.heelHeightMm,
+    heelDepth: zones.heelDepthMm,
+    heelSpread: zones.heelSpread / 100,
   };
 }
 

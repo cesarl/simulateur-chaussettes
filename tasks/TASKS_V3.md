@@ -11,7 +11,7 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Traiter dans l'ordre. T18 r
 
 ---
 
-### [ ] T24 — Talon réglable
+### [x] T24 — Talon réglable
 - Reporter `reference/sock3d/sockShape.ts` (nouveaux paramètres `heelHeight`, `heelDepth`, `heelSpread`, constantes `HEEL_DEFAULTS`) dans `src/render/sock3d/`, ainsi que `demo.ts` et `sock-demo.html` s'ils ont été gardés.
 - État : ajouter à la zone Talon `heelHeightMm` (25–110, défaut 55), `heelDepthMm` (40–130, défaut 72), `heelSpread` (50–100 %, défaut 100 %). Anciens projets sans ces champs → valeurs par défaut.
 - Panneau, section Zones › Talon : trois curseurs « Hauteur du talon (mm) », « Profondeur sous le pied (mm) », « Largeur du talon (%) », avec une bulle d'aide : « Aperçu seulement : la taille réelle du talon dépend du tricotage (rangs de talon), à valider avec le fabricant. »
@@ -19,9 +19,9 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Traiter dans l'ordre. T18 r
 - Régénérer les captures du test T21 : elles sont fournies dans `reference/sock3d/captures/` (talon par défaut plus bas).
 
 **Critères**
-- [ ] `tests/unit/sock3d.test.ts` fourni (14 tests, dont les réglages du talon) vert.
-- [ ] e2e : hauteur du talon 40 puis 95 → sur l'export profil extérieur, la proportion de pixels « couleur du talon » augmente nettement (au moins +30 %).
-- [ ] T21 (silhouettes) vert avec les nouvelles captures ; captures ouvertes et décrites dans `PROGRESS.md`.
+- [x] `tests/unit/sock3d.test.ts` fourni (14 tests, dont les réglages du talon) vert.
+- [x] e2e : hauteur du talon 40 puis 95 → sur l'export profil extérieur, la proportion de pixels « couleur du talon » augmente nettement (au moins +30 %).
+- [x] T21 (silhouettes) vert avec les nouvelles captures ; captures ouvertes et décrites dans `PROGRESS.md`.
 
 ### [ ] T25 — Moteur de calepinage multi-motifs
 - Copier `reference/calepinage/calepinage.ts` dans `src/core/calepinage.ts` et `calepinages.json` dans `config/calepinages.json` (importé au build). Déplacer `tests/unit/calepinage.test.ts` (seuls les imports changent ; il doit passer tel quel).

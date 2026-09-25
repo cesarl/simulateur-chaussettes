@@ -75,6 +75,15 @@ export interface ZoneSettings {
   patternOnFoot: boolean;
   /** Couleur de fond du pied si patternOnFoot = false. */
   footColor: Hex;
+  /**
+   * Aperçu 3D seulement : hauteur du talon au dos (mm, taille homme ; 25–110).
+   * N’affecte pas le nombre de rangs de talon de la grille.
+   */
+  heelHeightMm: number;
+  /** Aperçu 3D : profondeur du talon sous le pied (mm ; 40–130). */
+  heelDepthMm: number;
+  /** Aperçu 3D : largeur du talon autour de la cheville (50–100 %). */
+  heelSpread: number;
 }
 
 export interface QuantizeSettings {

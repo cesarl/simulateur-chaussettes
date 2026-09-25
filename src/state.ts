@@ -71,6 +71,9 @@ export function defaultDesign(): SockDesign {
       toeColor: '#1d1d1b',
       patternOnFoot: true,
       footColor: '#f4f1ea',
+      heelHeightMm: 55,
+      heelDepthMm: 72,
+      heelSpread: 100,
     },
     quantize: {
       maxColors: 4,

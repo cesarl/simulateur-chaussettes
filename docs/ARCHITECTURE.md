@@ -89,6 +89,8 @@ La colonne 0 est sur le **côté intérieur** de la jambe. Colonnes `[0, needles
 ### Maillage 3D anatomique (module `sock3d`)
 Le maillage n’est plus « 1 quad par maille » : la géométrie suit une forme portée par **loft** (profils arrière/avant ANSUR II + largeurs asymétriques), semelle à plat, talon arrondi, pointe fermée. La correspondance motif ↔ surface passe par `fabricAt` + atlas (`sockAtlas.ts`) : chaque texel d’atlas lit la maille de la `StitchGrid`. Le relief jersey et le chevron sont dans `sockObject.ts`. Référence visuelle : `reference/sock3d/captures/`.
 
+Réglages d’**aperçu du talon** (V3) : `zones.heelHeightMm` / `heelDepthMm` / `heelSpread` (mm et %) sont passés à `SockShapeInput` ; ils reconstruisent atlas + UV (compteur `geometryBuilds`) sans changer la grille de tricot.
+
 ### Performances
 - Budget : recalcul complet < 300 ms pour 200 aiguilles × 600 rangs ; rendu 3D fluide (60 i/s) pendant la rotation.
 - Recalcul déclenché avec un anti-rebond (~120 ms) pendant qu'on déplace un curseur.
