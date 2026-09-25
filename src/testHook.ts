@@ -35,6 +35,8 @@ export interface SimHook {
   flatCenter: (col: number, row: number) => { x: number; y: number } | null;
   /** Capture PNG studio (data URL), pour les contrôles visuels. */
   captureView: (view: ViewName, size: number, background?: string | null) => Promise<string>;
+  /** Export paire (data URL). */
+  capturePair: (size: number, background?: string | null) => Promise<string>;
 }
 
 declare global {

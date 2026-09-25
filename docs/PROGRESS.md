@@ -175,20 +175,27 @@ Vérification : `npm run verify` ✅ (48 unitaires, 21 e2e). Captures ouvertes :
 Décisions : aucune (comportement = module référence).
 Reste / risques : T22 bonus pied gauche + export paire.
 
+## T22 — Pied gauche et export paire — 2026-09-25 09:08
+Statut : terminée
+Fait : Sélecteur `ctl-foot-side` (droit/gauche → `side` du module). Export « Paire » : deux `SockObject` temporaires, gauche en retrait + yaw 15°, ombre sol masquée pour séparer les silhouettes. e2e via `__SIM__.capturePair`.
+Vérification : `npm run verify` ✅ (48 unitaires, 22 e2e). Capture `visuel-T22-paire.png` ouverte : deux chaussettes anatomiques côte à côte (bord-côte marine, corps crème, talon terracotta, pointe sombre), cadrage trois-quarts commun, fond `#ecebe8`, deux composantes connexes confirmées.
+Décisions : D20.
+Reste / risques : T18 toujours bloquée.
+
 ## Point pour César
 
-Ce qui marche : chaussette 3D anatomique alignée sur `reference/sock3d/captures/` (IoU ≥ 0,90), exports studio, vue à plat et exports plats inchangés, reste V1.
+Ce qui marche : **rendu 3D sock3d** (T19–T22) — forme anatomique alignée sur `reference/sock3d/captures/` (IoU ≥ 0,90), exports studio (transparent, paire), pied droit/gauche. Vue à plat, réglages et exports plats inchangés (bons en V1).
 
-Captures à regarder (aussi sous store `media/`) :
-- `test-results/visuel-T21-trois-quarts.png`
-- `test-results/visuel-T21-profil-exterieur.png`
-- `test-results/visuel-T21-dos.png`
+Captures (repo `test-results/` + store `media/`) :
+- T21 : `visuel-T21-trois-quarts.png`, `visuel-T21-profil-exterieur.png`, `visuel-T21-dos.png`
+- T22 : `visuel-T22-paire.png`
+- Réf. : `reference/sock3d/captures/homme-etoile-*.png`
 
 Tester en 3 étapes :
-1. `npm install` puis `npm run dev`.
-2. Charger exemple étoile, quinconce H, 6 carreaux/tour (largeur 28), 3 couleurs, talon/pointe `#c0392b`.
-3. Exporter trois-quarts / profil / dos — comparer à `reference/sock3d/captures/homme-etoile-*`.
+1. `npm install` puis `npm run dev` (démo réf. optionnelle : `/sock-demo.html`).
+2. Charger exemple étoile ; exporter Trois-quarts / Paire 2048.
+3. Basculer Pied → Gauche ; touches R / F / T / E / D / I.
 
-Décisions à relire : D03–D19.
+Décisions à relire : D18–D20 (sock3d, studio, paire).
 
-Blocages : T18 tailles fabricant.
+Blocages : T18 — `config/sizes.json` fabricant.

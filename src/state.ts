@@ -9,6 +9,8 @@ import type {
   ZoneSettings,
 } from './core/types';
 
+export type FootSide = 'droite' | 'gauche';
+
 /** Réglage partiel : chaque sous-objet est fusionné, pas remplacé. */
 export interface DesignPatch {
   name?: string;
@@ -26,6 +28,8 @@ export interface AppState {
   error: string | null;
   /** Rendu 3D des frontières de mailles (hors sérialisation projet). */
   knitFidelity: KnitFidelity;
+  /** Pied droit ou gauche (miroir X du maillage). Hors sérialisation projet. */
+  footSide: FootSide;
 }
 
 export interface StatePatch {
@@ -33,6 +37,7 @@ export interface StatePatch {
   tiles?: TileAsset[];
   error?: string | null;
   knitFidelity?: KnitFidelity;
+  footSide?: FootSide;
 }
 
 type Listener = (state: AppState) => void;
@@ -79,7 +84,7 @@ export function defaultDesign(): SockDesign {
 }
 
 function createInitial(): AppState {
-  return { design: defaultDesign(), tiles: [], error: null, knitFidelity: 'fidele' };
+  return { design: defaultDesign(), tiles: [], error: null, knitFidelity: 'fidele', footSide: 'droite' };
 }
 
 let state: AppState = createInitial();
@@ -120,6 +125,7 @@ export function update(patch: StatePatch): void {
     tiles,
     error: patch.error === undefined ? state.error : patch.error,
     knitFidelity: patch.knitFidelity ?? state.knitFidelity,
+    footSide: patch.footSide ?? state.footSide,
   };
   for (const listener of listeners) listener(state);
 }

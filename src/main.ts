@@ -4,7 +4,7 @@ import { composeGrid, gridFingerprint } from './core/grid';
 import { samplePattern, seamMismatch } from './core/layout';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
-import { runExports } from './io/exportPng';
+import { runExports, renderPair } from './io/exportPng';
 import { loadLastProject, parseProject, saveLastProject, serializeProject } from './io/project';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
@@ -34,7 +34,7 @@ let surfaceKey = '';
 let sock: SockObject | null = null;
 const warnings: string[] = [];
 
-function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings): string {
+function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings, side: string): string {
   return [
     dims.size,
     dims.needles,
@@ -45,10 +45,11 @@ function surfaceKeyOf(dims: SockDimensions, zones: ZoneSettings): string {
     dims.toeRows,
     dims.rowsPerCm,
     zones.cuffEnabled ? 1 : 0,
+    side,
   ].join('|');
 }
 
-function shapeFromDesign(dims: SockDimensions, zones: ZoneSettings): SockShapeInput {
+function shapeFromDesign(dims: SockDimensions, zones: ZoneSettings, side: 'droite' | 'gauche'): SockShapeInput {
   return {
     needles: dims.needles,
     cuffRows: zones.cuffEnabled ? dims.cuffRows : 0,
@@ -58,12 +59,14 @@ function shapeFromDesign(dims: SockDimensions, zones: ZoneSettings): SockShapeIn
     toeRows: dims.toeRows,
     rowsPerCm: dims.rowsPerCm,
     size: dims.size,
+    side,
   };
 }
 
 function frameCamera(view: ViewName = 'trois-quarts'): void {
   if (!sock) return;
-  const center = frameView(handle.camera, sock.mesh, view);
+  const mirror = getState().footSide === 'gauche';
+  const center = frameView(handle.camera, sock.mesh, view, 0.85, mirror);
   const box = new THREE.Box3().setFromObject(sock.mesh);
   const sphere = box.getBoundingSphere(new THREE.Sphere());
   handle.controls.target.copy(center);
@@ -80,9 +83,9 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 function syncMesh(next: StitchGrid): void {
-  const { design, knitFidelity } = getState();
-  const key = surfaceKeyOf(design.dimensions, design.zones);
-  const shape = shapeFromDesign(design.dimensions, design.zones);
+  const { design, knitFidelity, footSide } = getState();
+  const key = surfaceKeyOf(design.dimensions, design.zones, footSide);
+  const shape = shapeFromDesign(design.dimensions, design.zones, footSide);
   const zones = {
     heel: design.zones.heelColor,
     toe: design.zones.toeColor,
@@ -143,9 +146,42 @@ function setDesign(partial: DesignPatch): void {
 
 async function captureView(view: ViewName, size: number, background: string | null = '#ecebe8'): Promise<string> {
   if (!sock) throw new Error('La chaussette n’est pas prête.');
-  const blob = await capturePng(handle.renderer, handle.scene, sock.mesh, view, size, background);
+  const mirror = getState().footSide === 'gauche';
+  const blob = await capturePng(handle.renderer, handle.scene, sock.mesh, view, size, background, mirror);
   handle.requestRender();
-  return await new Promise((resolve, reject) => {
+  return blobToDataUrl(blob);
+}
+
+async function capturePair(size: number, background: string | null = '#ecebe8'): Promise<string> {
+  const { design, footSide } = getState();
+  const shape = shapeFromDesign(design.dimensions, design.zones, footSide);
+  const blob = await renderPair(
+    {
+      renderer: handle.renderer,
+      scene: handle.scene,
+      mesh: sock?.mesh ?? null,
+      grid,
+      aspect: stitchAspect(design.dimensions),
+      modelName: design.name,
+      sizeId: design.dimensions.size,
+      redraw: () => handle.requestRender(),
+      pairShape: { ...shape, side: 'droite' },
+      pairZones: {
+        heel: design.zones.heelColor,
+        toe: design.zones.toeColor,
+        rim: design.zones.cuffEnabled ? design.zones.cuffColor : undefined,
+      },
+      mirrorView: false,
+    },
+    size,
+    background ?? '#ecebe8',
+    background === null,
+  );
+  return blobToDataUrl(blob);
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(reader.error ?? new Error('Lecture capture impossible.'));
@@ -182,6 +218,7 @@ function publish(): void {
     getStitch: readStitch,
     flatCenter: flat.centerOf,
     captureView,
+    capturePair,
   };
   window.__SIM__ = hook;
 }
@@ -250,7 +287,8 @@ async function boot(): Promise<void> {
   }
   mountPanel(panel, {
     exportImages: (request) => {
-      const { design } = getState();
+      const { design, footSide } = getState();
+      const shape = shapeFromDesign(design.dimensions, design.zones, footSide);
       return runExports(
         {
           renderer: handle.renderer,
@@ -261,6 +299,13 @@ async function boot(): Promise<void> {
           modelName: design.name,
           sizeId: design.dimensions.size,
           redraw: () => handle.requestRender(),
+          pairShape: { ...shape, side: 'droite' },
+          pairZones: {
+            heel: design.zones.heelColor,
+            toe: design.zones.toeColor,
+            rim: design.zones.cuffEnabled ? design.zones.cuffColor : undefined,
+          },
+          mirrorView: footSide === 'gauche',
         },
         request,
       );

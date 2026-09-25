@@ -4,6 +4,9 @@ import type { StitchGrid } from '../core/types';
 import { Zone } from '../core/types';
 import { viewById, type ViewId } from '../render/views';
 import { capturePng } from '../render/sock3d/studio';
+import { createSockObject } from '../render/sock3d/sockObject';
+import type { SockShapeInput } from '../render/sock3d/sockShape';
+import type { ZoneColorsLike } from '../render/sock3d/sockAtlas';
 import { encodeIndexedBmp } from './exportBmp';
 
 /** Échelle du plat lisible : au moins 8 px de large par maille, hauteur au rapport réel. */
@@ -31,6 +34,8 @@ export interface ExportRequest {
   bmp: boolean;
   /** Planche : 4 vues + grille + palette. */
   board: boolean;
+  /** Deux chaussettes (droite + gauche) côte à côte. */
+  pair: boolean;
 }
 
 export interface ExportSource {
@@ -42,6 +47,11 @@ export interface ExportSource {
   modelName: string;
   sizeId: string;
   redraw: () => void;
+  /** Dimensions/forme sans `side` (la paire force droite + gauche). */
+  pairShape: SockShapeInput;
+  pairZones: ZoneColorsLike;
+  /** Inverser l’azimut de cadrage (chaussette gauche seule). */
+  mirrorView: boolean;
 }
 
 function slug(value: string): string {
@@ -107,6 +117,53 @@ export function exactFlatPixels(grid: StitchGrid): Uint8ClampedArray {
   return pixels;
 }
 
+export async function renderPair(
+  source: ExportSource,
+  size: number,
+  background: string,
+  transparent: boolean,
+): Promise<Blob> {
+  const right = createSockObject({ ...source.pairShape, side: 'droite' }, source.grid, source.pairZones);
+  const left = createSockObject({ ...source.pairShape, side: 'gauche' }, source.grid, source.pairZones);
+  // Gauche légèrement en retrait et tournée de 15° ; écart pour deux silhouettes séparées.
+  right.mesh.position.set(0.12, 0, 0.02);
+  left.mesh.position.set(-0.12, 0, -0.05);
+  left.mesh.rotation.y = THREE.MathUtils.degToRad(15);
+  const group = new THREE.Group();
+  group.add(right.mesh, left.mesh);
+  const wasVisible = source.mesh?.visible ?? true;
+  if (source.mesh) source.mesh.visible = false;
+  // Masquer l’ombre de contact : elle relierait sinon les deux silhouettes.
+  const grounds: THREE.Object3D[] = [];
+  source.scene.traverse((obj) => {
+    if (obj instanceof THREE.Mesh && obj.material instanceof THREE.ShadowMaterial) {
+      grounds.push(obj);
+    }
+  });
+  const groundVis = grounds.map((g) => g.visible);
+  for (const g of grounds) g.visible = false;
+  source.scene.add(group);
+  try {
+    return await capturePng(
+      source.renderer,
+      source.scene,
+      group,
+      'trois-quarts',
+      size,
+      transparent ? null : background,
+    );
+  } finally {
+    source.scene.remove(group);
+    right.dispose();
+    left.dispose();
+    if (source.mesh) source.mesh.visible = wasVisible;
+    grounds.forEach((g, i) => {
+      g.visible = groundVis[i] ?? true;
+    });
+    source.redraw();
+  }
+}
+
 async function renderView(
   source: ExportSource,
   viewId: ViewId,
@@ -123,6 +180,7 @@ async function renderView(
       viewId,
       size,
       transparent ? null : background,
+      source.mirrorView,
     );
   } finally {
     source.redraw();
@@ -355,6 +413,12 @@ export async function runExports(source: ExportSource, request: ExportRequest): 
       render: () => renderView(source, viewId, request.size, request.background, request.transparent),
     });
   }
+  if (request.pair) {
+    jobs.push({
+      filename: exportFileName(source.modelName, source.sizeId, 'paire'),
+      render: () => renderPair(source, request.size, request.background, request.transparent),
+    });
+  }
   if (request.flats.includes('exact')) {
     jobs.push({
       filename: exportFileName(source.modelName, source.sizeId, 'plat-exact'),
@@ -384,7 +448,7 @@ export async function runExports(source: ExportSource, request: ExportRequest): 
       render: () => renderBoard(source, request.transparent ? '#ecebe8' : request.background),
     });
   }
-  if (jobs.length === 0) throw new Error('Cochez au moins une vue.');
+  if (jobs.length === 0) throw new Error('Cochez au moins une vue ou la paire.');
   for (let index = 0; index < jobs.length; index++) {
     const job = jobs[index];
     if (!job) continue;

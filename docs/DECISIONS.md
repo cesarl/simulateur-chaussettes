@@ -107,10 +107,11 @@ Options : toujours 256 entrées de palette / seulement les couleurs utilisées ;
 Choix : palette = couleurs de la grille (`biClrUsed` = longueur), lignes bas → haut, padding 4 octets. Planche = face, trois-quarts, profil extérieur, dos (512²) + grille agrandie ×4 + légende, titre = nom du modèle.
 Conséquence : à valider avec le fabricant pour le BMP. Fichiers `src/io/exportBmp.ts` et `renderBoard` dans `exportPng.ts`.
 
-## D19 — Exports 3D via studio.capturePng (T20)
-Contexte : T20 impose `frameView` / `capturePng` du module référence, fond `#ecebe8`, vue `trois-quarts-dos` ajoutée, zoom borné.
-Options : garder le RenderTarget custom / basculer entièrement sur `capturePng`.
-Choix : `capturePng` pour toutes les vues 3D et la planche (décodage PNG → pixels). Fond export par défaut `#ecebe8`. OrbitControls : `minDistance` / `maxDistance` dérivés du rayon de la sphère englobante après chaque `frameView`.
-Conséquence : le tone mapping Neutral et l’espace couleur écran sont identiques à l’export. `dessous` n’est pas proposé dans le panneau.
+## D20 — Pied gauche et export paire (T22)
+Contexte : le module référence expose `side: 'droite' | 'gauche'`. L’export paire demande deux chaussettes côte à côte.
+Options : champ dans `SockDesign` / état d’affichage ; cloner le mesh interactif / créer deux `SockObject` temporaires.
+Choix : `footSide` dans l’état d’application (comme `knitFidelity`), hors JSON projet. Export paire : deux objets temporaires (droite + gauche), gauche en retrait Z et yaw +15°, cadrage commun `trois-quarts` via `capturePng` sur un `Group`.
+Conséquence : changer Pied reconstruit la géométrie (`setShape`). L’export paire ne modifie pas la vue interactive.
+
 
 

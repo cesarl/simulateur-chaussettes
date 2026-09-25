@@ -41,10 +41,10 @@ Même boucle de travail que d'habitude (`.cursor/rules/10-workflow.mdc`) : tests
 - [x] Recouvrement ≥ 0,90 pour les 3 vues.
 - [x] Description visuelle écrite ; tout défaut constaté est corrigé avant de cocher.
 
-### [~] T22 — Chaussette gauche et vue « paire » (bonus, si tout le reste est vert)
+### [x] T22 — Chaussette gauche et vue « paire » (bonus, si tout le reste est vert)
 - Option « pied » : droit / gauche (`side` du module).
 - Export « paire » : deux chaussettes côte à côte (gauche légèrement en retrait et tournée de 15°), même studio, cadrage commun.
 
 **Critères**
-- [ ] e2e : export paire 2048 → PNG valide, deux silhouettes distinctes (deux composantes connexes de pixels non-fond).
-- [ ] Capture ouverte et décrite dans `PROGRESS.md`.
+- [x] e2e : export paire 2048 → PNG valide, deux silhouettes distinctes (deux composantes connexes de pixels non-fond).
+- [x] Capture ouverte et décrite dans `PROGRESS.md`.

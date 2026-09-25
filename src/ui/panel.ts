@@ -308,6 +308,7 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
   const readable = makeCheckbox('Plat lisible', 'export-plat-lisible', false, () => {});
   const bmp = makeCheckbox('BMP indexé (1 px = 1 maille)', 'export-bmp', false, () => {});
   const board = makeCheckbox('Planche (4 vues + grille)', 'export-board', false, () => {});
+  const pair = makeCheckbox('Paire (droite + gauche)', 'export-paire', false, () => {});
   const size = makeSelect(
     'Taille des vues 3D',
     'export-size',
@@ -348,6 +349,7 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
         transparent: transparent.input.checked,
         bmp: bmp.input.checked,
         board: board.input.checked,
+        pair: pair.input.checked,
       })
       .then(() => {
         status.textContent = 'Export terminé.';
@@ -397,6 +399,7 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
     readable.root,
     bmp.root,
     board.root,
+    pair.root,
     size.root,
     background.root,
     transparent.root,
@@ -836,7 +839,21 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     },
     'Fidèle : les frontières de couleur suivent le V du jersey. Simple : pixels droits (plus net pour contrôler le motif).',
   );
+  const footSide = makeSelect(
+    'Pied',
+    'ctl-foot-side',
+    [
+      { value: 'droite', label: 'Droit' },
+      { value: 'gauche', label: 'Gauche' },
+    ],
+    getState().footSide,
+    (value) => {
+      if (value === 'droite' || value === 'gauche') update({ footSide: value });
+    },
+    'Chaussette droite ou gauche (miroir de la forme 3D).',
+  );
   zones.appendChild(fidelity.root);
+  zones.appendChild(footSide.root);
 
   const checks = details('Contrôles', 'section-checks');
   checks.append(
@@ -928,7 +945,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   subscribe((state) => {
     sync(state.design);
     if (document.activeElement !== fidelity.input) fidelity.input.value = state.knitFidelity;
+    if (document.activeElement !== footSide.input) footSide.input.value = state.footSide;
   });
   sync(design);
   fidelity.input.value = getState().knitFidelity;
+  footSide.input.value = getState().footSide;
 }
