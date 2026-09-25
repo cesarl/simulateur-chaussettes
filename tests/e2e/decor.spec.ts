@@ -16,6 +16,13 @@ async function waitDecorReady(page: Page, mode = 'coin'): Promise<void> {
   await page.waitForFunction((b) => (window.__SIM__?.decorBuildId ?? 0) > b, before, {
     timeout: 90_000,
   });
+  // Laisse un frame de rendu après le build (SwiftShader CI).
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
 }
 
 async function captureView(page: Page, view: 'trois-quarts' | 'dos', size: number, path: string): Promise<Buffer> {
@@ -34,7 +41,9 @@ async function captureView(page: Page, view: 'trois-quarts' | 'dos', size: numbe
 }
 
 test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', async ({ page }) => {
+  // CI SwiftShader : build texture décor + captureView peuvent dépasser 60 s.
   test.setTimeout(180_000);
+  page.setDefaultTimeout(120_000);
   const errors = trackErrors(page);
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
