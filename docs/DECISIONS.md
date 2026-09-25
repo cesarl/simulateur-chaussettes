@@ -40,3 +40,15 @@ Contexte : le cahier décrit les familles de calepinage sans fixer le sens des d
 Options : pavage infini / motif recadré sur un seul tour ; joint centré / joint en bas à droite ; transparence ignorée / remplacée.
 Choix : pavage infini, maille `(col, rang)` = coordonnée `(col − décalage, rang − décalage)` ; joint à droite et en bas ; quinconce horizontal vers la droite et vertical vers le bas, d’une demi-taille de carreau ; pixels d’alpha inférieur à 128 remplacés par le premier pixel opaque (coin haut-gauche, parcours ligne à ligne), sinon `#f4f1ea` ; sortie RVB (3 octets). Période = pas du carreau, ×2 pour rotation-4, miroir-4 et damier. À distance égale, `nearestFittingWidth` choisit la largeur la plus grande. Rotation aléatoire : un pas de mulberry32 mélangé à la position du carreau.
 Conséquence : le raccord (`seamMismatch`) ne dépend pas du décalage. Le détail est en tête de `src/core/layout.ts`.
+
+## D06 — K-means et nettoyage (T05)
+Contexte : il faut une palette automatique reproductible, et une règle précise pour les mailles isolées.
+Options : k-means++ / médiane-coupe ; plusieurs passages de nettoyage / un seul.
+Choix : k-means++ à graine fixe `0x51ec0517`, distance euclidienne au carré, au plus 16 itérations. N est borné de 2 à 8. Si l'image a déjà au plus N couleurs, on les garde telles quelles. Le mode manuel utilise la distance redmean. Le nettoyage se fait en un seul passage sur la grille d'origine (une ligne de deux mailles n'est pas mangée). Les couleurs sans maille après nettoyage sortent de la palette.
+Conséquence : le résultat est identique à chaque appel. Le détail est en tête de `src/core/quantize.ts`.
+
+## D07 — Forme 3D de la chaussette (T06)
+Contexte : l'architecture décrit la chaussette portée sans donner les courbes exactes.
+Options : tube coudé à rayon constant / poche de talon par Bézier avec avant immobile / modèle sculpté.
+Choix : cylindre de jambe légèrement évasé au mollet ; pendant le talon, la moitié avant reste immobile et la moitié arrière suit une Bézier qui descend et recule (semelle plate) ; le pied s'extrude vers l'avant ; la pointe rejoint un seul point. Les quads d'aire nulle (avant du talon) ne sont pas émis, pour éviter des normales NaN. Échelle : `0,01 / jauge` mètre par maille ou par rang.
+Conséquence : la forme est entièrement dans `src/render/sockGeometry.ts`. Le côté de la pointe reste celui de la grille (moitié arrière active).

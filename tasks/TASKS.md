@@ -65,7 +65,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T05 — Réduction des couleurs (`src/core/quantize.ts`)
+### [~] T05 — Réduction des couleurs (`src/core/quantize.ts`)
 **Objectif** : passer en « gros pixels » avec N couleurs.
 - Mode auto : k-means déterministe (initialisation k-means++ avec graine fixe, ou médiane-coupe), N entre 2 et 8.
 - Mode manuel : chaque maille prend la couleur de palette la plus proche.
@@ -77,7 +77,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T06 — Maillage 3D de la chaussette (`src/render/sockGeometry.ts`)
+### [x] T06 — Maillage 3D de la chaussette (`src/render/sockGeometry.ts`)
 **Objectif** : une chaussette portée, 1 quad par maille, UV exactes. Suivre la section « Maillage 3D procédural » de `ARCHITECTURE.md`.
 - Séparer la fonction pure de positions (`sockPositions(dims, zones) → Float32Array`, testable) de la création de `BufferGeometry`.
 - Échelle réelle (en mètres : 1 maille = `0,01 / stitchesPerCm` m de large). Forme : tige presque cylindrique (tour = aiguilles / mailles-par-cm), talon en poche arrière, pied horizontal un peu aplati (semelle plate), pointe arrondie fermée.
@@ -85,9 +85,9 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 - Remplacer le cylindre provisoire de `main.ts`.
 
 **Critères**
-- [ ] Tests (Vitest, sans WebGL) : nombre de sommets = `(needles+1)·(rows+1)` ; UV dans [0,1] ; la colonne `needles` a la même position que la colonne 0 (fermeture) ; les rangs du talon côté avant ont une hauteur quasi nulle ; aucune coordonnée NaN.
-- [ ] e2e : la vue 3D affiche la chaussette (canvas non uniforme) pour homme et femme ; capture d'écran enregistrée dans `test-results/` pour contrôle visuel par l'agent.
-- [ ] L'agent a regardé cette capture (outil de lecture d'image) et décrit le résultat dans `PROGRESS.md` (forme reconnaissable : tige, talon, pied, pointe).
+- [x] Tests (Vitest, sans WebGL) : nombre de sommets = `(needles+1)·(rows+1)` ; UV dans [0,1] ; la colonne `needles` a la même position que la colonne 0 (fermeture) ; les rangs du talon côté avant ont une hauteur quasi nulle ; aucune coordonnée NaN.
+- [x] e2e : la vue 3D affiche la chaussette (canvas non uniforme) pour homme et femme ; capture d'écran enregistrée dans `test-results/` pour contrôle visuel par l'agent.
+- [x] L'agent a regardé cette capture (outil de lecture d'image) et décrit le résultat dans `PROGRESS.md` (forme reconnaissable : tige, talon, pied, pointe).
 
 ---
 

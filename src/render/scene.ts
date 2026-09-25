@@ -24,10 +24,13 @@ export function createScene(container: HTMLElement): SceneHandle {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
   camera.position.set(0, 0.1, 1.4);
 
-  scene.add(new THREE.HemisphereLight('#ffffff', '#bdb6aa', 1.6));
-  const key = new THREE.DirectionalLight('#ffffff', 1.4);
-  key.position.set(1.5, 2, 2);
+  scene.add(new THREE.HemisphereLight('#ffffff', '#c8c0b4', 1.35));
+  const key = new THREE.DirectionalLight('#ffffff', 1.7);
+  key.position.set(1.4, 2.2, 1.6);
   scene.add(key);
+  const fill = new THREE.DirectionalLight('#fff4ea', 0.7);
+  fill.position.set(-1.6, 0.6, 1.2);
+  scene.add(fill);
 
   const root = new THREE.Group();
   scene.add(root);

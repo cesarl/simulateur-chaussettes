@@ -45,3 +45,10 @@ Fait : `samplePattern` (tous les `LayoutKind`, joint, décalage, rotation global
 Vérification : `npm run verify` ✅ (28 tests unitaires, 5 e2e). Le test 200×600 tient dans la marge ×2 (la suite unitaire entière fait ~300 ms).
 Décisions : D05 (sens des décalages, joint, transparence, période ×2).
 Reste / risques : le panneau n’appelle pas encore le calepinage (branché au recalcul en T08).
+
+## T06 — Maillage 3D de la chaussette — 2026-09-25 06:56
+Statut : terminée
+Fait : `sockPositions` / `sockUvs` purs, maillage (aiguilles+1)×(rangs+1), UV exactes, échelle en mètres, talon avant d'épaisseur nulle, poche arrière, pied horizontal à semelle plate, pointe fermée. Le cylindre provisoire est remplacé. Couleurs de zones en sommets. Caméra recadrée sur la boîte englobante.
+Vérification : `npm run verify` ✅ (35 tests unitaires, 6 e2e). Contrôle visuel de `test-results/visuel-t06-homme.png` et `visuel-t06-femme.png` : fond gris-beige ; ouverture sombre en haut ; bord-côte bleu marine ; tige crème quasi cylindrique ; renflement terracotta à l'arrière (talon) ; pied horizontal crème, plus bas que la tige ; pointe sombre et arrondie qui ferme le volume. La femme a la même silhouette, un peu plus petite dans le cadre. Tige, talon, pied et pointe sont reconnaissables.
+Décisions : D07 (courbe de talon, semelle, pointe).
+Reste / risques : les mailles sont encore des aplats de couleur (texture tricot en T07). Le motif des carreaux n'est pas encore projeté.
