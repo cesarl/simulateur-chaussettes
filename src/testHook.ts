@@ -32,6 +32,8 @@ export interface SimHook {
   /** Catalogue synchronisé, ou null si absent. */
   catalogue: Catalogue | null;
   catalogueMissing: boolean;
+  /** Collection active, ou null. */
+  activeCollectionId: string | null;
   loadFixture: (name: string) => Promise<void>;
   setDesign: (partial: DesignPatch) => void;
   getStitch: (col: number, row: number) => StitchRead | null;

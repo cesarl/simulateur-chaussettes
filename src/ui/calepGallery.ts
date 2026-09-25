@@ -442,6 +442,47 @@ export function mountCalepGallery(host: HTMLElement): {
     }
 
     presetsHost.replaceChildren();
+
+    // Groupe « Calepinages de la collection » en tête (T30).
+    const activeId = state.activeCollectionId;
+    const activeColl =
+      activeId && state.catalogue
+        ? state.catalogue.collections.find((c) => c.id === activeId) ?? null
+        : null;
+    if (activeColl && activeColl.calepinages.length > 0) {
+      const collPresets = activeColl.calepinages
+        .map((id) => presets.find((p) => p.id === id))
+        .filter((p): p is Preset => !!p)
+        .filter((p) => matchesFilter(Math.max(1, p.tilesUsed || 1), tileCount, filter));
+      if (collPresets.length > 0) {
+        const title = document.createElement('h3');
+        title.className = 'calep-group-title';
+        title.dataset.testid = 'calep-group-collection';
+        title.textContent = 'Calepinages de la collection';
+        const row = document.createElement('div');
+        row.className = 'calep-thumbs';
+        row.dataset.testid = 'calep-collection-presets';
+        for (const p of collPresets) {
+          const needed = Math.max(1, p.tilesUsed || 1);
+          const pSpec = specFromPreset(p, spec);
+          row.appendChild(
+            makeThumb(
+              p.id,
+              p.nom,
+              needed,
+              tileCount,
+              pSpec,
+              p,
+              tiles,
+              currentId === p.id,
+              () => update({ design: { layout: { calepinage: pSpec } } }),
+            ),
+          );
+        }
+        presetsHost.append(title, row);
+      }
+    }
+
     const byFamille = new Map<string, Preset[]>();
     for (const p of presets) {
       if (!matchesFilter(Math.max(1, p.tilesUsed || 1), tileCount, filter)) continue;

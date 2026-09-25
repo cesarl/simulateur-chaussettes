@@ -1,6 +1,6 @@
 import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
 import type { CalepinageSpec } from './core/calepinage';
-import type { Catalogue } from './core/collections';
+import type { Catalogue, ZoneColors } from './core/collections';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import type {
   KnitFidelity,
@@ -50,6 +50,12 @@ export interface AppState {
   catalogue: Catalogue | null;
   /** Message discret si `public/carreaux/` est absent. */
   catalogueMissing: boolean;
+  /** Collection active (null = mode carreaux importés). */
+  activeCollectionId: string | null;
+  /** Couleurs de zones (codes nuancier) quand une collection est active. */
+  zoneColors: ZoneColors | null;
+  /** Option de palette courante (`defaut`, `reco-1`…). */
+  paletteOptionId: string | null;
 }
 
 export interface StatePatch {
@@ -62,6 +68,9 @@ export interface StatePatch {
   calepWarnings?: string[];
   catalogue?: Catalogue | null;
   catalogueMissing?: boolean;
+  activeCollectionId?: string | null;
+  zoneColors?: ZoneColors | null;
+  paletteOptionId?: string | null;
 }
 
 export interface UpdateOptions {
@@ -80,6 +89,9 @@ interface HistoryEntry {
   tiles: TileAsset[];
   knitFidelity: KnitFidelity;
   footSide: FootSide;
+  activeCollectionId: string | null;
+  zoneColors: ZoneColors | null;
+  paletteOptionId: string | null;
   coalesce: boolean;
 }
 
@@ -140,6 +152,9 @@ function createInitial(): AppState {
     calepWarnings: [...BUILTIN_PRESET_WARNINGS],
     catalogue: null,
     catalogueMissing: false,
+    activeCollectionId: null,
+    zoneColors: null,
+    paletteOptionId: null,
   };
 }
 
@@ -153,6 +168,9 @@ function snapshot(coalesce: boolean): HistoryEntry {
     tiles: state.tiles,
     knitFidelity: state.knitFidelity,
     footSide: state.footSide,
+    activeCollectionId: state.activeCollectionId,
+    zoneColors: state.zoneColors ? { ...state.zoneColors } : null,
+    paletteOptionId: state.paletteOptionId,
     coalesce,
   };
 }
@@ -164,6 +182,9 @@ function restore(entry: HistoryEntry): void {
     tiles: entry.tiles,
     knitFidelity: entry.knitFidelity,
     footSide: entry.footSide,
+    activeCollectionId: entry.activeCollectionId,
+    zoneColors: entry.zoneColors,
+    paletteOptionId: entry.paletteOptionId,
   };
 }
 
@@ -279,7 +300,10 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
     (patch.design !== undefined ||
       patch.tiles !== undefined ||
       patch.knitFidelity !== undefined ||
-      patch.footSide !== undefined);
+      patch.footSide !== undefined ||
+      patch.activeCollectionId !== undefined ||
+      patch.zoneColors !== undefined ||
+      patch.paletteOptionId !== undefined);
   if (records) pushHistory(options.coalesce === true);
 
   let design = patch.design ? applyDesign(state.design, patch.design) : state.design;
@@ -301,6 +325,11 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
     catalogue: patch.catalogue === undefined ? state.catalogue : patch.catalogue,
     catalogueMissing:
       patch.catalogueMissing === undefined ? state.catalogueMissing : patch.catalogueMissing,
+    activeCollectionId:
+      patch.activeCollectionId === undefined ? state.activeCollectionId : patch.activeCollectionId,
+    zoneColors: patch.zoneColors === undefined ? state.zoneColors : patch.zoneColors,
+    paletteOptionId:
+      patch.paletteOptionId === undefined ? state.paletteOptionId : patch.paletteOptionId,
   };
   notify();
 }

@@ -108,6 +108,20 @@ export async function loadTileFromUrl(url: string): Promise<TileAsset> {
   return rasterize(url, name, source);
 }
 
+/**
+ * Rasterise un SVG déjà en mémoire (après recoloration).
+ * Même règle de taille minimale que les imports SVG.
+ */
+export async function loadTileFromSvgText(svgText: string, name: string): Promise<TileAsset> {
+  const blob = new Blob([svgText], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  try {
+    return await rasterize(url, name, 'svg');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 /** Résout le nom passé à `loadFixture` vers l'URL d'une fixture. */
 export function fixtureUrl(name: string): string {
   const trimmed = name.trim().replace(/^\/+/, '');

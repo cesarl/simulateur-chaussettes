@@ -223,6 +223,7 @@ function publish(): void {
     warnings: [...warnings],
     catalogue: getState().catalogue,
     catalogueMissing: getState().catalogueMissing,
+    activeCollectionId: getState().activeCollectionId,
     loadFixture,
     setDesign,
     getStitch: readStitch,

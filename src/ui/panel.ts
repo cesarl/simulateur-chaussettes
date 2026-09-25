@@ -22,6 +22,7 @@ import {
 } from '../state';
 import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
 import { mountCalepGallery } from './calepGallery';
+import { mountCollectionPicker } from './collectionPicker';
 import {
   details,
   makeCheckbox,
@@ -67,7 +68,13 @@ async function importFiles(files: readonly File[]): Promise<void> {
     }
   }
   if (loaded.length > 0) {
-    update({ tiles: [...getState().tiles, ...loaded], error: messages[0] ?? null });
+    update({
+      tiles: [...getState().tiles, ...loaded],
+      error: messages[0] ?? null,
+      activeCollectionId: null,
+      zoneColors: null,
+      paletteOptionId: null,
+    });
     return;
   }
   if (messages[0]) update({ error: messages[0] });
@@ -154,7 +161,9 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   catalogueHint.textContent = CATALOGUE_MISSING_MESSAGE;
   host.appendChild(catalogueHint);
 
-  const section = details('Carreaux', 'section-tiles');
+  const collectionPicker = mountCollectionPicker(host);
+
+  const section = details('Mes carreaux', 'section-tiles');
 
   const drop = document.createElement('div');
   drop.className = 'drop';
@@ -183,7 +192,15 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   const importButton = actionButton('Importer', 'tile-import', () => file.click());
   const exampleButton = actionButton('Charger un exemple', 'tile-fixture', () => {
     void loadTileFromUrl(fixtureUrl('carreau-test-etoile'))
-      .then((tile) => update({ tiles: [...getState().tiles, tile], error: null }))
+      .then((tile) =>
+        update({
+          tiles: [...getState().tiles, tile],
+          error: null,
+          activeCollectionId: null,
+          zoneColors: null,
+          paletteOptionId: null,
+        }),
+      )
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : 'Impossible de charger l’exemple.';
         update({ error: message });
@@ -222,6 +239,10 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   };
   subscribe(render);
   render();
+
+  // Keep collection picker in sync when catalogue / selection change.
+  subscribe(() => collectionPicker.sync());
+  collectionPicker.sync();
 
   panel.addEventListener('dragover', (event) => {
     event.preventDefault();
