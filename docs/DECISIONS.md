@@ -76,3 +76,9 @@ Contexte : le cahier demande un cadrage automatique (~85 %), un fond uni ou tran
 Options : réutiliser la caméra de l'utilisateur / caméra dédiée ; une archive ZIP / un téléchargement par fichier.
 Choix : caméra dédiée (champ 35°, la caméra de l'utilisateur ne bouge pas). La distance est ajustée pour que la boîte englobante tienne dans 85 % du cadre. Fond par défaut `#eeeae4`, ou transparent. Pas de ZIP : un PNG toutes les 250 ms. Noms `<modele>_<taille>_<vue>.png` avec vue parmi `face`, `trois-quarts`, `profil-exterieur`, `dos`, `profil-interieur`, `plat-exact`, `plat-lisible`. Le plat lisible agrandit chaque maille à 8 px de large, hauteur au rapport réel.
 Conséquence : les angles sont dans `src/render/views.ts`, le rendu dans `src/io/exportPng.ts`.
+
+## D12 — Fichier projet et IndexedDB (T11)
+Contexte : le cahier demande un JSON avec les réglages et les carreaux, et une sauvegarde du dernier état, sans fixer le schéma ni le comportement au rechargement.
+Options : pixels bruts en base64 / PNG ; restauration silencieuse au démarrage / bouton « reprendre ».
+Choix : document `{ version: 1, design, tiles: [{ id, name, source, pngBase64 }] }`. PNG RGBA filtre 0, encodé avec `CompressionStream` en lisant le flux pendant l’écriture (sinon les gros carreaux bloquent). IndexedDB `cesar-bazaar` / magasin `project` / clé `last`, relu avant que `__SIM__.ready` passe à vrai. Si IndexedDB manque ou si le document est illisible, le modèle par défaut reste affiché.
+Conséquence : l’import rejette toute autre version avec « Fichier de projet invalide : … ». Le code est dans `src/io/project.ts` et `src/io/pngCodec.ts`.

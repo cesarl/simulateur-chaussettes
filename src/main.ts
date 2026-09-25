@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { composeGrid } from './core/grid';
+import { composeGrid, gridFingerprint } from './core/grid';
 import { samplePattern, seamMismatch } from './core/layout';
 import { quantize } from './core/quantize';
 import { defaultDimensions, stitchAspect } from './core/sizes';
 import { runExports } from './io/exportPng';
+import { loadLastProject, parseProject, saveLastProject, serializeProject } from './io/project';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
 import { createKnitMaterial, type KnitMaterial } from './render/knitTexture';
@@ -130,6 +131,7 @@ function publish(): void {
     lastComputeMs,
     design,
     grid: { width: grid.width, height: grid.height, palette: [...grid.palette] },
+    gridHash: gridFingerprint(grid),
     patternPalette: [...patternPalette],
     geometryBuilds,
     textureUpdates,
@@ -175,23 +177,64 @@ function recompute(): void {
   });
 }
 
-mountPanel(panel, {
-  exportImages: (request) => {
-    const { design } = getState();
-    return runExports(
-      {
-        renderer: handle.renderer,
-        scene: handle.scene,
-        mesh,
-        grid,
-        aspect: stitchAspect(design.dimensions),
-        modelName: design.name,
-        sizeId: design.dimensions.size,
-        redraw: () => handle.requestRender(),
-      },
-      request,
-    );
-  },
-});
-subscribe(recompute);
-recompute();
+let saveTimer = 0;
+
+function scheduleSave(): void {
+  window.clearTimeout(saveTimer);
+  saveTimer = window.setTimeout(() => {
+    const { design, tiles } = getState();
+    void serializeProject(design, tiles)
+      .then((json) => saveLastProject(json))
+      .catch(() => undefined);
+  }, 200);
+}
+
+async function boot(): Promise<void> {
+  if (!panel) throw new Error('Structure de page introuvable');
+  try {
+    const saved = await loadLastProject();
+    if (saved) update({ design: saved.design, tiles: saved.tiles, error: null });
+  } catch {
+    // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
+  }
+  mountPanel(panel, {
+    exportImages: (request) => {
+      const { design } = getState();
+      return runExports(
+        {
+          renderer: handle.renderer,
+          scene: handle.scene,
+          mesh,
+          grid,
+          aspect: stitchAspect(design.dimensions),
+          modelName: design.name,
+          sizeId: design.dimensions.size,
+          redraw: () => handle.requestRender(),
+        },
+        request,
+      );
+    },
+    saveProject: async () => {
+      const { design, tiles } = getState();
+      const json = await serializeProject(design, tiles);
+      const blob = new Blob([json], { type: 'application/json' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `${design.name || 'modele'}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+    },
+    openProject: async (text) => {
+      const project = await parseProject(text);
+      update({ design: project.design, tiles: project.tiles, error: null });
+    },
+  });
+  subscribe(recompute);
+  subscribe(scheduleSave);
+  recompute();
+}
+
+void boot();

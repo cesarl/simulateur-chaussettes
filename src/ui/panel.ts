@@ -106,6 +106,8 @@ function actionButton(label: string, testId: string, onClick: () => void): HTMLB
 
 export interface PanelActions {
   exportImages: (request: ExportRequest) => Promise<void>;
+  saveProject: () => Promise<void>;
+  openProject: (text: string) => Promise<void>;
 }
 
 /** Section Carreaux : import, vignettes, ordre, exemple. */
@@ -308,7 +310,55 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
         status.textContent = error instanceof Error ? error.message : 'Export impossible.';
       });
   });
-  section.append(exact.root, readable.root, size.root, background.root, transparent.root, button, status);
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.dataset.testid = 'project-save';
+  save.textContent = 'Enregistrer le projet';
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.dataset.testid = 'project-open';
+  open.textContent = 'Ouvrir un projet';
+  const file = document.createElement('input');
+  file.type = 'file';
+  file.accept = 'application/json,.json';
+  file.className = 'file-input';
+  file.dataset.testid = 'project-file';
+  const projectError = document.createElement('p');
+  projectError.className = 'tile-error';
+  projectError.dataset.testid = 'project-error';
+  projectError.hidden = true;
+  save.addEventListener('click', () => {
+    projectError.hidden = true;
+    void actions.saveProject().catch((error: unknown) => {
+      projectError.hidden = false;
+      projectError.textContent = error instanceof Error ? error.message : 'Enregistrement impossible.';
+    });
+  });
+  open.addEventListener('click', () => file.click());
+  file.addEventListener('change', () => {
+    const chosen = file.files?.[0];
+    file.value = '';
+    if (!chosen) return;
+    void chosen.text().then((text) => actions.openProject(text)).then(() => {
+      projectError.hidden = true;
+    }).catch((error: unknown) => {
+      projectError.hidden = false;
+      projectError.textContent = error instanceof Error ? error.message : 'Ouverture impossible.';
+    });
+  });
+  section.append(
+    exact.root,
+    readable.root,
+    size.root,
+    background.root,
+    transparent.root,
+    button,
+    status,
+    save,
+    open,
+    file,
+    projectError,
+  );
 }
 
 function isLayoutKind(value: string): value is LayoutKind {

@@ -15,6 +15,8 @@ export interface SimHook {
   lastComputeMs: number;
   design: SockDesign;
   grid: { width: number; height: number; palette: string[] };
+  /** Empreinte de la grille de mailles, pour comparer deux projets. */
+  gridHash: string;
   /** Couleurs du motif seul, après réduction (hors couleurs de zones). */
   patternPalette: string[];
   geometryBuilds: number;

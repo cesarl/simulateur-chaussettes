@@ -147,7 +147,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ## Jalon 2 — outil de travail
 
-### [ ] T11 — Enregistrer / ouvrir un projet (`src/io/project.ts`)
+### [x] T11 — Enregistrer / ouvrir un projet (`src/io/project.ts`)
 - Export `.json` : `SockDesign` + carreaux (PNG en base64). Import avec validation (version, champs) et message clair si le fichier est invalide.
 - Sauvegarde automatique du dernier état dans IndexedDB (try/catch : si indisponible, l'application fonctionne quand même).
 

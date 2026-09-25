@@ -94,3 +94,10 @@ Fait : T01 à T10. Depuis un carreau (exemple ou import PNG/SVG), on obtient le 
 Vérification : `npm run verify` ✅ (35 tests unitaires, 12 e2e).
 Décisions à relire : D03 à D11.
 Reste / risques : valeurs de tailles encore provisoires ; contrôles de fabrication, projets et shader chevron sont le jalon 2.
+
+## T11 — Enregistrer / ouvrir un projet — 2026-09-25 07:21
+Statut : terminée
+Fait : Export JSON du modèle et des carreaux en PNG base64. Import avec validation (version, champs, couleurs, carreaux référencés) et message « Fichier de projet invalide ». Sauvegarde automatique dans IndexedDB, restaurée avant l’affichage. Boutons Enregistrer / Ouvrir dans Exports.
+Vérification : `npm run verify` ✅ (38 tests unitaires, 13 e2e). Aller-retour y compris un carreau 180×180. e2e : exemple + taille femme, enregistrement, retour en homme, rechargement, ouverture du fichier, même empreinte de grille.
+Décisions : D12 (schéma JSON, restauration avant `ready`).
+Reste / risques : un PNG de projet avec un filtre autre que 0 est refusé. Pas encore de contrôles de fabrication (T12).

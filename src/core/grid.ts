@@ -161,3 +161,19 @@ export function composeGrid(
 
   return { width, height, palette, colorIndex, zone };
 }
+
+/** Empreinte stable de la grille (largeur, hauteur, indices, palette). */
+export function gridFingerprint(grid: StitchGrid): string {
+  let hash = 2166136261;
+  const mix = (value: number): void => {
+    hash ^= value;
+    hash = Math.imul(hash, 16777619);
+  };
+  mix(grid.width);
+  mix(grid.height);
+  for (const byte of grid.colorIndex) mix(byte);
+  for (const color of grid.palette) {
+    for (let index = 0; index < color.length; index++) mix(color.charCodeAt(index));
+  }
+  return (hash >>> 0).toString(16);
+}
