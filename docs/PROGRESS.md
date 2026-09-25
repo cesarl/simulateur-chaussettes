@@ -80,3 +80,17 @@ Fait : Bascule « 3D / À plat » au-dessus de la vue. Canvas 2D, mailles en rec
 Vérification : `npm run verify` ✅ (35 tests unitaires, 11 e2e). Contrôle visuel de `test-results/visuel-t09-plat.png` : fond beige ; bande bleu marine en haut (bord-côte) puis plage crème (tige) ; pastilles et libellés « Bord-côte » et « Tige » à gauche ; numéros de mailles et de rangs (0, 10, 20…) ; bouton « À plat » actif à droite ; mention « Survolez une maille. » en bas à gauche. Les pixels des mailles (4, 4) et (4, 40), hors quadrillage, coïncident avec la grille. Retour en 3D sans erreur console.
 Décisions : D10 (taille entière des mailles, seuil du quadrillage).
 Reste / risques : le survol et le zoom ne sont pas couverts par un test e2e dédié. Exports PNG ensuite (T10).
+
+## T10 — Exports PNG — 2026-09-25 07:16
+Statut : terminée
+Fait : Vues 3D hors écran (face, trois-quarts, profil extérieur, dos, profil intérieur) en 1024, 2048 ou 4096, fond uni ou transparent, cadrage à 85 % sans bouger la caméra de l'utilisateur. Plat exact 1 px = 1 maille. Plat lisible ×8, rapport de maille, quadrillage, zones, légende avec effectifs. Un téléchargement par fichier, espacés de 250 ms. Noms `modele_homme_face.png`, etc.
+Vérification : `npm run verify` ✅ (35 tests unitaires, 12 e2e). Contrôle visuel de `test-results/visuel-t10-face.png` : fond beige uni `#eeeae4` ; la chaussette est entière dans le cadre, ouverte en haut, bord-côte bleu marine, tige crème, pied horizontal crème qui vient vers l'avant, pointe sombre. Elle occupe la plus grande partie de l'image carrée, avec une marge régulière. `visuel-t10-plat-exact.png` fait 168×516 px (aiguilles × rangs homme) : bande bleu marine puis plage crème, sans marge ajoutée. Le nombre de couleurs du plat exact ne dépasse pas la palette.
+Décisions : D11 (caméra dédiée, pas de ZIP, échelle du plat lisible).
+Reste / risques : le plat lisible et le fond transparent ne sont pas couverts par l'e2e (seulement face 1024 et plat exact).
+
+## Jalon 1 — démo fabricant — 2026-09-25 07:16
+Statut : atteint
+Fait : T01 à T10. Depuis un carreau (exemple ou import PNG/SVG), on obtient le calepinage, la réduction de couleurs, la chaussette 3D texturée, la vue à plat et les PNG (5 angles, plat exact, plat lisible).
+Vérification : `npm run verify` ✅ (35 tests unitaires, 12 e2e).
+Décisions à relire : D03 à D11.
+Reste / risques : valeurs de tailles encore provisoires ; contrôles de fabrication, projets et shader chevron sont le jalon 2.

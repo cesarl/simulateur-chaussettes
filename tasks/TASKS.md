@@ -131,7 +131,7 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 
 ---
 
-### [ ] T10 — Exports PNG (`src/io/exportPng.ts`, `src/render/views.ts`)
+### [x] T10 — Exports PNG (`src/io/exportPng.ts`, `src/render/views.ts`)
 **Objectif** : produire les fichiers pour le fabricant et l'IA d'image.
 - Vues : face, trois-quarts, profil extérieur, dos, profil intérieur. Cases à cocher, taille (1024/2048/4096), fond (couleur ou transparent).
 - Rendu hors écran à la taille demandée, cadrage automatique, sans modifier la vue de l'utilisateur.
@@ -139,9 +139,9 @@ Chaque tâche est terminée seulement quand **tous** ses critères sont cochés 
 - Un téléchargement par fichier (délai court entre les fichiers), noms `<modele>_<taille>_<vue>.png`.
 
 **Critères**
-- [ ] e2e (événement `download` de Playwright) : export « face » 1024 → fichier PNG 1024×1024 ; export plat exact → PNG de `needles × rows` pixels ; l'image plat exact ne contient pas plus de couleurs que la palette.
-- [ ] L'agent ouvre les PNG exportés (outil de lecture d'image) et confirme dans `PROGRESS.md` que le cadrage et le fond sont corrects.
-- [ ] **Jalon 1 atteint** : entrée récapitulative dans `PROGRESS.md` + mise à jour du `README.md` (section « Utilisation »).
+- [x] e2e (événement `download` de Playwright) : export « face » 1024 → fichier PNG 1024×1024 ; export plat exact → PNG de `needles × rows` pixels ; l'image plat exact ne contient pas plus de couleurs que la palette.
+- [x] L'agent ouvre les PNG exportés (outil de lecture d'image) et confirme dans `PROGRESS.md` que le cadrage et le fond sont corrects.
+- [x] **Jalon 1 atteint** : entrée récapitulative dans `PROGRESS.md` + mise à jour du `README.md` (section « Utilisation »).
 
 ---
 

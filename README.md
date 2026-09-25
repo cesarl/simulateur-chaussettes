@@ -34,4 +34,6 @@ Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites 
 
 ## Utilisation
 
-_Section complétée par l'agent à la fin du jalon 1 (tâche T10)._
+1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).
+2. Dans **Carreaux**, cliquer « Exemple » ou déposer un PNG/SVG. Régler le calepinage, la taille (homme / femme), les couleurs et les zones : l'aperçu 3D se met à jour.
+3. Basculer sur **À plat** pour contrôler la grille (zoom à la molette, déplacement en glissant). Dans **Exports**, cocher les vues, choisir 1024, 2048 ou 4096, puis **Exporter**. Chaque fichier se télécharge sous le nom `<modele>_<taille>_<vue>.png` (face, trois-quarts, profil extérieur, dos, profil intérieur, plat exact, plat lisible).

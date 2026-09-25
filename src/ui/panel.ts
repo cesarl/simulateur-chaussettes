@@ -1,6 +1,8 @@
 import { nearestFittingWidth, tileRowsForWidth } from '../core/layout';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, stitchAspect, totalRows } from '../core/sizes';
+import type { ExportRequest, FlatKind } from '../io/exportPng';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
+import { VIEW_ANGLES, type ViewId } from '../render/views';
 import { getState, subscribe, update } from '../state';
 import type { Hex, LayoutKind, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
 import {
@@ -102,8 +104,12 @@ function actionButton(label: string, testId: string, onClick: () => void): HTMLB
   return button;
 }
 
+export interface PanelActions {
+  exportImages: (request: ExportRequest) => Promise<void>;
+}
+
 /** Section Carreaux : import, vignettes, ordre, exemple. */
-export function mountPanel(panel: HTMLElement): void {
+export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   const body = panel.querySelector('#panel-body');
   const host = body instanceof HTMLElement ? body : panel;
 
@@ -186,7 +192,7 @@ export function mountPanel(panel: HTMLElement): void {
     if (files.length > 0) void importFiles(files);
   });
 
-  mountSettings(host);
+  mountSettings(host, actions);
 }
 
 const LAYOUT_OPTIONS: { value: LayoutKind; label: string }[] = [
@@ -239,6 +245,72 @@ export function renderStatus(info: {
   });
 }
 
+function isViewId(value: string): value is ViewId {
+  return VIEW_ANGLES.some((view) => view.id === value);
+}
+
+function isExportSize(value: string): value is '1024' | '2048' | '4096' {
+  return value === '1024' || value === '2048' || value === '4096';
+}
+
+function mountExportControls(section: HTMLElement, actions: PanelActions): void {
+  const selected = new Map<ViewId, HTMLInputElement>();
+  for (const view of VIEW_ANGLES) {
+    const box = makeCheckbox(view.label, view.testId, view.id === 'face', () => {});
+    selected.set(view.id, box.input);
+    section.appendChild(box.root);
+  }
+  const exact = makeCheckbox('Plat exact', 'export-plat-exact', false, () => {});
+  const readable = makeCheckbox('Plat lisible', 'export-plat-lisible', false, () => {});
+  const size = makeSelect(
+    'Taille des vues 3D',
+    'export-size',
+    [
+      { value: '1024', label: '1024 px' },
+      { value: '2048', label: '2048 px' },
+      { value: '4096', label: '4096 px' },
+    ],
+    '2048',
+    () => {},
+  );
+  const background = makeColor('Fond', 'export-bg', '#eeeae4', () => {});
+  const transparent = makeCheckbox('Fond transparent', 'export-transparent', false, () => {});
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.testid = 'export-run';
+  button.textContent = 'Exporter';
+  const status = document.createElement('p');
+  status.className = 'hint';
+  status.dataset.testid = 'export-status';
+  button.addEventListener('click', () => {
+    const views: ViewId[] = [];
+    for (const [id, input] of selected) {
+      if (input.checked && isViewId(id)) views.push(id);
+    }
+    const flats: FlatKind[] = [];
+    if (exact.input.checked) flats.push('exact');
+    if (readable.input.checked) flats.push('lisible');
+    const pixelSize = isExportSize(size.input.value) ? size.input.value : '2048';
+    const sizes = { '1024': 1024, '2048': 2048, '4096': 4096 } as const;
+    status.textContent = 'Export en cours…';
+    void actions
+      .exportImages({
+        views,
+        flats,
+        size: sizes[pixelSize],
+        background: background.input.value,
+        transparent: transparent.input.checked,
+      })
+      .then(() => {
+        status.textContent = 'Export terminé.';
+      })
+      .catch((error: unknown) => {
+        status.textContent = error instanceof Error ? error.message : 'Export impossible.';
+      });
+  });
+  section.append(exact.root, readable.root, size.root, background.root, transparent.root, button, status);
+}
+
 function isLayoutKind(value: string): value is LayoutKind {
   return LAYOUT_OPTIONS.some((option) => option.value === value);
 }
@@ -253,7 +325,7 @@ function showLegMessage(size: SizeId, message: HTMLElement): void {
   message.textContent = legWarned ? `La tige ne peut pas dépasser ${max} rangs.` : '';
 }
 
-function mountSettings(host: HTMLElement): void {
+function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const design = getState().design;
   let keepRatio = true;
   let paletteKey = '';
@@ -620,10 +692,7 @@ function mountSettings(host: HTMLElement): void {
   checks.appendChild(checksHint);
 
   const exportsSection = details('Exports', 'section-exports');
-  const exportsHint = document.createElement('p');
-  exportsHint.className = 'hint';
-  exportsHint.textContent = 'Les exports PNG seront disponibles ensuite.';
-  exportsSection.appendChild(exportsHint);
+  mountExportControls(exportsSection, actions);
 
   computeMs = document.createElement('p');
   computeMs.className = 'hint compute-ms';

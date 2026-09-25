@@ -70,3 +70,9 @@ Contexte : le rapport réel des mailles et une couleur de pixel exacte (sans lis
 Options : mailles fractionnaires lissées / rectangles entiers zoomés / image 1 px rééchantillonnée.
 Choix : rectangle de base 4 px de large sur `round(4 × rapport)` px de haut, zoom entier de 1 à 8 (molette), déplacement au glisser. Le quadrillage n'est dessiné qu'à partir de 12 px de large. Les noms de zones sont à gauche, les numéros tous les 10 mailles et rangs dans les marges.
 Conséquence : au zoom 1, une maille fait 4×3 px avec la jauge actuelle. Le détail est dans `src/ui/flatView.ts`.
+
+## D11 — Cadrage et noms des exports PNG (T10)
+Contexte : le cahier demande un cadrage automatique (~85 %), un fond uni ou transparent, et un fichier par vue, sans préciser les identifiants de fichier ni la caméra d'export.
+Options : réutiliser la caméra de l'utilisateur / caméra dédiée ; une archive ZIP / un téléchargement par fichier.
+Choix : caméra dédiée (champ 35°, la caméra de l'utilisateur ne bouge pas). La distance est ajustée pour que la boîte englobante tienne dans 85 % du cadre. Fond par défaut `#eeeae4`, ou transparent. Pas de ZIP : un PNG toutes les 250 ms. Noms `<modele>_<taille>_<vue>.png` avec vue parmi `face`, `trois-quarts`, `profil-exterieur`, `dos`, `profil-interieur`, `plat-exact`, `plat-lisible`. Le plat lisible agrandit chaque maille à 8 px de large, hauteur au rapport réel.
+Conséquence : les angles sont dans `src/render/views.ts`, le rendu dans `src/io/exportPng.ts`.

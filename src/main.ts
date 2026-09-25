@@ -3,6 +3,7 @@ import { composeGrid } from './core/grid';
 import { samplePattern, seamMismatch } from './core/layout';
 import { quantize } from './core/quantize';
 import { defaultDimensions, stitchAspect } from './core/sizes';
+import { runExports } from './io/exportPng';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
 import { createKnitMaterial, type KnitMaterial } from './render/knitTexture';
@@ -174,6 +175,23 @@ function recompute(): void {
   });
 }
 
-mountPanel(panel);
+mountPanel(panel, {
+  exportImages: (request) => {
+    const { design } = getState();
+    return runExports(
+      {
+        renderer: handle.renderer,
+        scene: handle.scene,
+        mesh,
+        grid,
+        aspect: stitchAspect(design.dimensions),
+        modelName: design.name,
+        sizeId: design.dimensions.size,
+        redraw: () => handle.requestRender(),
+      },
+      request,
+    );
+  },
+});
 subscribe(recompute);
 recompute();
