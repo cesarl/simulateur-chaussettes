@@ -34,6 +34,7 @@ describe('projet JSON', () => {
     expect(back.tiles[0]?.width).toBe(2);
     expect(back.tiles[0]?.height).toBe(2);
     expect(back.tiles[0]?.rgba).toEqual(tile().rgba);
+    expect(back.collection).toBeNull();
   });
 
   it('encode un carreau assez grand pour remplir le tampon de compression', async () => {
@@ -106,5 +107,27 @@ describe('projet JSON', () => {
     doc.design.layout.kind = 'rotation-aleatoire';
     const r = await parseProject(JSON.stringify(doc));
     expect(r.design.layout.calepinage.genere.rotation).toBe('aleatoire-90');
+  });
+
+  it('aller-retour projet avec collection (id, zones, commit sync)', async () => {
+    const design = defaultDesign();
+    design.name = 'Medina test';
+    design.layout.tileIds = ['carreau-a'];
+    const collection = {
+      id: 'medina',
+      zoneColors: {
+        'zone-1': 'BW002',
+        'zone-2': 'OR008',
+        'zone-3': 'WT001',
+        'zone-4': 'BL017',
+      },
+      paletteOptionId: 'defaut',
+      syncCommit: 'f513e1fb8c7c',
+    };
+    const json = await serializeProject(design, [tile()], { collection });
+    const back = await parseProject(json);
+    expect(back.collection).toEqual(collection);
+    expect(back.design.name).toBe('Medina test');
+    expect(back.tiles).toHaveLength(1);
   });
 });

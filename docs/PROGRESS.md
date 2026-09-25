@@ -290,3 +290,45 @@ Contrôle visuel :
 - `visuel-T30-ophis.png` : fond bleu clair, figures serpentines olive/crème à œil rouge, petits blocs bruns ; bord-côte marine ; talon rouille ; pointe noire.
 Décisions : D27.
 Reste / risques : T31 palettes / nuancier.
+
+## T31 — Palettes et couleurs de fil — 2026-09-25 15:25
+Statut : terminée
+Fait : section Couleurs (bandes paletteOptions, pastilles zones, nuancier, match-zones) ; mode collection force quantize manuelle sur les hex de zones ; légende export « CODE · Nom ».
+Vérification : unitaire medina 4 hex ; e2e lianes reco/nuancier/match verts ; captures ouvertes.
+Contrôle visuel :
+- `visuel-T31-lianes-defaut-3d.png` : lianes vert foncé + volutes crème, bord-côte marine, talon rouge, pointe noire.
+- `visuel-T31-lianes-reco1-3d.png` : même collection, fond crème / traits verts plus clairs (suggestion artiste 1) — palette nettement différente.
+- `visuel-T31-lianes-defaut-plat.png` / `…-reco1-plat.png` : vue à plat confirmant le même contraste de palette (fond vert vs fond crème).
+Décisions : D28.
+Reste / risques : T32 projets + bilan.
+
+## T32 — Projets, synchronisation et bilan — 2026-09-25 15:30
+Statut : terminée
+Fait : projet JSON avec `collection` (id, zoneColors, paletteOptionId, syncCommit) ; réouverture recharge les SVG depuis le catalogue ; message si collection absente ; README Collections ; 4 captures bilan.
+Vérification : `npm run verify` ✅ (unitaires + 35 e2e).
+Décisions : D29.
+Reste / risques : T18 toujours bloquée.
+
+## Point pour César
+
+### Ce qui marche (V4)
+- **Collections** synchronisées (`npm run sync:carreaux` → `public/carreaux/`) : chercher, choisir Medina / Lianes / Ophis / Amour…
+- **Palettes** : couleurs d’origine + suggestions artiste ; nuancier par zone ; assortir bord-côte/talon/pointe ; palette motif = fils exacts (pas de k-means).
+- **Projet** : enregistre collection + codes zones + commit sync ; se recharge après une nouvelle sync.
+
+### Tester en 3 étapes
+1. `npm install` puis `npm run dev` (données déjà dans `public/carreaux/`).
+2. Section **Collection** → Medina (4 motifs) ; basculer une **Suggestion de l’artiste** ; **Assortir** talon/pointe.
+3. **Enregistrer** le projet, changer de collection, **Ouvrir** le fichier → Medina revient avec ses couleurs.
+
+### Captures bilan (`test-results/` + store `media/`)
+- `visuel-T32-medina.png` : mosaïque géométrique marine / terracotta / pêche ; bord-côte marine ; talon rouille ; pointe noire.
+- `visuel-T32-lianes.png` : volutes crème sur vert ; même structure zones.
+- `visuel-T32-ophis.png` : motifs serpentins olive sur bleu clair.
+- `visuel-T32-amour.png` : fond blanc, lettre « amour » et cœurs rouges pixelisés ; bloc cœur sur le cou-de-pied.
+
+### Décisions à relire
+D26 (catalogue optionnel), D27 (mode collection), D28 (palette forcée), D29 (projet + syncCommit).
+
+### Blocages
+T18 — `config/sizes.json` en attente fabricant.

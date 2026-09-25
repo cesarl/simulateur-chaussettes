@@ -43,11 +43,11 @@ Boucle habituelle (`.cursor/rules/10-workflow.mdc`). Si des tâches de `tasks/TA
 - [x] e2e : choisir « Suggestion de l'artiste 1 » de `lianes` change la palette de la grille ; changer zone-1 via le nuancier aussi ; `match-zones` change bord-côte/talon/pointe.
 - [x] Captures (vue à plat + 3D) avec deux palettes différentes de la même collection, décrites dans `PROGRESS.md`.
 
-### [ ] T32 — Projets, synchronisation et bilan
+### [x] T32 — Projets, synchronisation et bilan
 - Le fichier projet enregistre : collection (id), couleurs par zone (codes), calepinage, et le commit de synchronisation (`catalogue.source.commit`). À la réouverture après une nouvelle synchronisation, tout se recharge ; si la collection n'existe plus, les carreaux enregistrés dans le projet sont utilisés et un message l'indique.
 - `README.md` : section « Collections du simulateur de carreaux » (synchroniser, choisir, palettes).
 - « Point pour César » dans `PROGRESS.md` avec 4 captures de vraies collections.
 
 **Critères**
-- [ ] Test unitaire aller-retour projet avec collection.
-- [ ] `npm run verify` vert.
+- [x] Test unitaire aller-retour projet avec collection.
+- [x] `npm run verify` vert.

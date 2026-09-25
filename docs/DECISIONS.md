@@ -161,4 +161,10 @@ Options : laisser quantize auto / forcer manuelle sur les hex de zones.
 Choix : en mode collection, `recompute` impose `paletteMode: 'manuelle'` avec `yarnColors(...)`. Changer une suggestion ou une pastille recolore les SVG puis re-rasterise. Légende plat/planche : `CODE · Nom` via `paletteLabels`.
 Conséquence : sans collection, le comportement V1/V3 (auto ou manuel utilisateur) est inchangé.
 
+## D29 — Projet avec métadonnées collection (T32)
+Contexte : rouvrir un projet après `sync:carreaux` doit recharger les SVG à jour.
+Options : ne stocker que les PNG rasterisés / stocker id + codes zones + commit.
+Choix : champ optionnel `collection: { id, zoneColors, paletteOptionId, syncCommit }` dans le JSON projet. À l’ouverture, si la collection existe encore → `tilesFromCollection` ; sinon → carreaux PNG du fichier + message. Catalogue chargé avant la restauration IndexedDB.
+Conséquence : les anciens projets sans `collection` restent valides.
+
 

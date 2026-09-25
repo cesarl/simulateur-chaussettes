@@ -8,7 +8,15 @@ import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import { runExports, renderPair } from './io/exportPng';
 import { loadCatalogue } from './io/catalogue';
-import { loadLastProject, parseProject, saveLastProject, serializeProject } from './io/project';
+import { tilesFromCollection, nuancierMap } from './io/collectionTiles';
+import {
+  loadLastProject,
+  parseProject,
+  saveLastProject,
+  serializeProject,
+  type ParsedProject,
+  type ProjectCollectionMeta,
+} from './io/project';
 import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
 import { createSockObject, type SockObject } from './render/sock3d/sockObject';
@@ -300,11 +308,83 @@ function recompute(): void {
 
 let saveTimer = 0;
 
+function currentCollectionMeta(): ProjectCollectionMeta | null {
+  const { activeCollectionId, zoneColors, paletteOptionId, catalogue } = getState();
+  if (!activeCollectionId || !zoneColors) return null;
+  return {
+    id: activeCollectionId,
+    zoneColors: { ...zoneColors },
+    paletteOptionId,
+    syncCommit: catalogue?.source.commit ?? null,
+  };
+}
+
+async function applyParsedProject(project: ParsedProject): Promise<void> {
+  const catalogue = getState().catalogue;
+  const meta = project.collection;
+  if (meta && catalogue) {
+    const collection = catalogue.collections.find((c) => c.id === meta.id);
+    if (collection) {
+      try {
+        const nuancier = nuancierMap(catalogue);
+        const tiles = await tilesFromCollection(collection, meta.zoneColors, nuancier);
+        const yarns = yarnColors(collection, meta.zoneColors, nuancier);
+        update({
+          design: {
+            ...project.design,
+            layout: { ...project.design.layout, tileIds: tiles.map((t) => t.id) },
+            quantize: {
+              ...project.design.quantize,
+              paletteMode: 'manuelle',
+              palette: yarns.map((y) => y.hex),
+              maxColors: Math.max(2, Math.min(8, yarns.length)),
+            },
+          },
+          tiles,
+          activeCollectionId: meta.id,
+          zoneColors: { ...meta.zoneColors },
+          paletteOptionId: meta.paletteOptionId,
+          error: null,
+        });
+        return;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Rechargement collection impossible.';
+        update({
+          design: project.design,
+          tiles: project.tiles,
+          activeCollectionId: null,
+          zoneColors: null,
+          paletteOptionId: null,
+          error: `${message} Carreaux du projet utilisés.`,
+        });
+        return;
+      }
+    }
+    update({
+      design: project.design,
+      tiles: project.tiles,
+      activeCollectionId: null,
+      zoneColors: null,
+      paletteOptionId: null,
+      error: `Collection « ${meta.id} » absente après synchronisation : carreaux du projet utilisés.`,
+    });
+    return;
+  }
+  update({
+    design: project.design,
+    tiles: project.tiles,
+    activeCollectionId: null,
+    zoneColors: null,
+    paletteOptionId: null,
+    error: null,
+  });
+}
+
 function scheduleSave(): void {
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     const { design, tiles } = getState();
-    void serializeProject(design, tiles)
+    void serializeProject(design, tiles, { collection: currentCollectionMeta() })
       .then((json) => saveLastProject(json))
       .catch(() => undefined);
   }, 200);
@@ -312,12 +392,6 @@ function scheduleSave(): void {
 
 async function boot(): Promise<void> {
   if (!panel) throw new Error('Structure de page introuvable');
-  try {
-    const saved = await loadLastProject();
-    if (saved) update({ design: saved.design, tiles: saved.tiles, error: null });
-  } catch {
-    // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
-  }
 
   const bundle = await loadCatalogue();
   if (bundle.missing) {
@@ -332,6 +406,13 @@ async function boot(): Promise<void> {
       patch.calepWarnings = bundle.warnings;
     }
     update(patch, { skipHistory: true });
+  }
+
+  try {
+    const saved = await loadLastProject();
+    if (saved) await applyParsedProject(saved);
+  } catch {
+    // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
   }
 
   mountPanel(panel, {
@@ -362,7 +443,7 @@ async function boot(): Promise<void> {
     },
     saveProject: async () => {
       const { design, tiles } = getState();
-      const json = await serializeProject(design, tiles);
+      const json = await serializeProject(design, tiles, { collection: currentCollectionMeta() });
       const blob = new Blob([json], { type: 'application/json' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
@@ -375,7 +456,7 @@ async function boot(): Promise<void> {
     },
     openProject: async (text) => {
       const project = await parseProject(text);
-      update({ design: project.design, tiles: project.tiles, error: null });
+      await applyParsedProject(project);
     },
   });
   subscribe(recompute);

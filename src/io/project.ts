@@ -7,6 +7,7 @@ import {
   type Ordre,
   type Rot,
 } from '../core/calepinage';
+import type { ZoneColors } from '../core/collections';
 import { isLegacyLayoutKind, migrateLegacyKind } from '../core/presets';
 import type { SockDesign, TileAsset } from '../core/types';
 import { base64ToBytes, bytesToBase64, decodePng, encodePng } from './pngCodec';
@@ -46,10 +47,29 @@ interface StoredTile {
   pngBase64: string;
 }
 
+/** Métadonnées collection (V4) : id, couleurs de zones, commit de sync. */
+export interface ProjectCollectionMeta {
+  id: string;
+  zoneColors: ZoneColors;
+  paletteOptionId: string | null;
+  syncCommit: string | null;
+}
+
 interface ProjectDocument {
   version: 1;
   design: SockDesign;
   tiles: StoredTile[];
+  collection?: ProjectCollectionMeta | null;
+}
+
+export interface ParsedProject {
+  design: SockDesign;
+  tiles: TileAsset[];
+  collection: ProjectCollectionMeta | null;
+}
+
+export interface SerializeProjectOptions {
+  collection?: ProjectCollectionMeta | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -217,7 +237,39 @@ function readDesign(value: unknown): SockDesign {
   };
 }
 
-export async function serializeProject(design: SockDesign, tiles: readonly TileAsset[]): Promise<string> {
+function readZoneColors(value: unknown): ZoneColors {
+  if (!isRecord(value)) throw new ProjectError('couleurs de zones illisibles.');
+  const out: ZoneColors = {};
+  for (const [key, code] of Object.entries(value)) {
+    if (!/^zone-\d+$/.test(key) || typeof code !== 'string' || !code) {
+      throw new ProjectError('couleurs de zones illisibles.');
+    }
+    out[key] = code;
+  }
+  return out;
+}
+
+function readCollectionMeta(value: unknown): ProjectCollectionMeta | null {
+  if (value === undefined || value === null) return null;
+  if (!isRecord(value)) throw new ProjectError('collection illisible.');
+  const id = needString(value, 'id');
+  const zoneColors = readZoneColors(value.zoneColors);
+  const paletteOptionId =
+    value.paletteOptionId === null || value.paletteOptionId === undefined
+      ? null
+      : needString(value, 'paletteOptionId');
+  const syncCommit =
+    value.syncCommit === null || value.syncCommit === undefined
+      ? null
+      : needString(value, 'syncCommit');
+  return { id, zoneColors, paletteOptionId, syncCommit };
+}
+
+export async function serializeProject(
+  design: SockDesign,
+  tiles: readonly TileAsset[],
+  options: SerializeProjectOptions = {},
+): Promise<string> {
   const stored: StoredTile[] = [];
   for (const tile of tiles) {
     const png = await encodePng(tile.rgba, tile.width, tile.height);
@@ -232,11 +284,12 @@ export async function serializeProject(design: SockDesign, tiles: readonly TileA
     version: 1,
     design,
     tiles: stored,
+    collection: options.collection ?? null,
   };
   return JSON.stringify(document);
 }
 
-export async function parseProject(text: string): Promise<{ design: SockDesign; tiles: TileAsset[] }> {
+export async function parseProject(text: string): Promise<ParsedProject> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -272,7 +325,8 @@ export async function parseProject(text: string): Promise<{ design: SockDesign; 
   if (design.layout.tileIds.some((id) => !known.has(id))) {
     throw new ProjectError('un carreau référencé est absent.');
   }
-  return { design, tiles };
+  const collection = readCollectionMeta(parsed.collection);
+  return { design, tiles, collection };
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -301,7 +355,7 @@ export async function saveLastProject(json: string): Promise<void> {
   }
 }
 
-export async function loadLastProject(): Promise<{ design: SockDesign; tiles: TileAsset[] } | null> {
+export async function loadLastProject(): Promise<ParsedProject | null> {
   if (typeof indexedDB === 'undefined') return null;
   const db = await openDb();
   try {
