@@ -32,16 +32,16 @@ Même boucle de travail que d'habitude (`.cursor/rules/10-workflow.mdc`) : tests
 - [x] e2e : export trois-quarts 2048 → PNG 2048×2048 ; export transparent → coin de l'image avec alpha = 0.
 - [x] Après un export, la vue de l'utilisateur est inchangée (taille du canvas et position de caméra identiques).
 
-### [~] T21 — Contrôle visuel par rapport aux captures de référence
+### [x] T21 — Contrôle visuel par rapport aux captures de référence
 - Test e2e `tests/e2e/rendu-reference.spec.ts` : configurer l'application comme les captures `homme-etoile-*` (taille homme, valeurs par défaut de `config/sizes.json`, bord-côte présent, carreau `carreau-test-etoile.svg`, 6 carreaux sur le tour, quinconce horizontal, palette auto 3 couleurs, bord-côte `#1f3a5f`, talon et pointe `#c0392b`), exporter trois-quarts, profil extérieur et dos en 1200 px.
 - Comparer la **silhouette** (pixels différents du fond `#ecebe8` à ±6 près) avec celle de la capture de référence de même nom : indice de recouvrement (intersection / union) ≥ 0,90. Le décodage des PNG se fait dans la page (`createImageBitmap` + canvas).
 - Enregistrer les captures produites dans `test-results/visuel-T21-*.png`, les **ouvrir** avec l'outil de lecture d'image, les comparer à `reference/sock3d/captures/` et décrire dans `PROGRESS.md` : forme (mollet, cheville, talon en poche, semelle à plat, pointe arrondie), relief de maille visible, frontières en chevron, couleurs fidèles, pas d'artefact (trou, cratère à la pointe, couture visible, facettes).
 
 **Critères**
-- [ ] Recouvrement ≥ 0,90 pour les 3 vues.
-- [ ] Description visuelle écrite ; tout défaut constaté est corrigé avant de cocher.
+- [x] Recouvrement ≥ 0,90 pour les 3 vues.
+- [x] Description visuelle écrite ; tout défaut constaté est corrigé avant de cocher.
 
-### [ ] T22 — Chaussette gauche et vue « paire » (bonus, si tout le reste est vert)
+### [~] T22 — Chaussette gauche et vue « paire » (bonus, si tout le reste est vert)
 - Option « pied » : droit / gauche (`side` du module).
 - Export « paire » : deux chaussettes côte à côte (gauche légèrement en retrait et tournée de 15°), même studio, cadrage commun.
 

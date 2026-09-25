@@ -10,7 +10,7 @@ import { fixtureUrl, loadTileFromUrl } from './io/tiles';
 import { createScene } from './render/scene';
 import { createSockObject, type SockObject } from './render/sock3d/sockObject';
 import type { SockShapeInput } from './render/sock3d/sockShape';
-import { frameView, type ViewName } from './render/sock3d/studio';
+import { capturePng, frameView, type ViewName } from './render/sock3d/studio';
 import { getState, subscribe, update, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
@@ -141,6 +141,18 @@ function setDesign(partial: DesignPatch): void {
   update({ design: partial });
 }
 
+async function captureView(view: ViewName, size: number, background: string | null = '#ecebe8'): Promise<string> {
+  if (!sock) throw new Error('La chaussette n’est pas prête.');
+  const blob = await capturePng(handle.renderer, handle.scene, sock.mesh, view, size, background);
+  handle.requestRender();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error('Lecture capture impossible.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function publish(): void {
   const design = structuredClone(getState().design);
   const hook: SimHook = {
@@ -169,6 +181,7 @@ function publish(): void {
     setDesign,
     getStitch: readStitch,
     flatCenter: flat.centerOf,
+    captureView,
   };
   window.__SIM__ = hook;
 }

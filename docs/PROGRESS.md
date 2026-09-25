@@ -165,15 +165,30 @@ Vérification : `npm run verify` ✅ (48 unitaires, 20 e2e). Capture `visuel-t20
 Décisions : D19.
 Reste / risques : T21 comparaison silhouette vs captures référence.
 
+## T21 — Contrôle visuel vs référence — 2026-09-25 08:58
+Statut : terminée
+Fait : e2e `rendu-reference.spec.ts` (config homme-étoile, IoU silhouette ≥ 0,90 sur trois-quarts / profil ext. / dos à 1200 px). Crochet `__SIM__.captureView`.
+Vérification : `npm run verify` ✅ (48 unitaires, 21 e2e). Captures ouvertes :
+- `visuel-T21-trois-quarts.png` : mollet, cheville, talon poche rouge, semelle à plat, pointe arrondie rouge ; motif étoile crème/marine/rouge ; relief jersey ; bord-côte côtes verticales marine ; ombre de contact ; pas de trou, pas de cratère pointe, pas de couture visible, pas de facettes.
+- `visuel-T21-profil-exterieur.png` : profil L anatomique, même fidélité motif/matériau, aligné avec la référence.
+- `visuel-T21-dos.png` : dos avec talon rouge centré, motif qui remonte la tige, comparable à `homme-etoile-dos.png`.
+Décisions : aucune (comportement = module référence).
+Reste / risques : T22 bonus pied gauche + export paire.
+
 ## Point pour César
 
-Ce qui marche : import PNG/SVG et exemple, calepinage, réduction de couleurs, **chaussette 3D anatomique** (module sock3d), exports 3D studio (dont transparent), vue à plat, BMP/planche, projet JSON + IndexedDB, contrôles de fabrication, raccourcis, CI.
+Ce qui marche : chaussette 3D anatomique alignée sur `reference/sock3d/captures/` (IoU ≥ 0,90), exports studio, vue à plat et exports plats inchangés, reste V1.
+
+Captures à regarder (aussi sous store `media/`) :
+- `test-results/visuel-T21-trois-quarts.png`
+- `test-results/visuel-T21-profil-exterieur.png`
+- `test-results/visuel-T21-dos.png`
 
 Tester en 3 étapes :
 1. `npm install` puis `npm run dev`.
-2. « Charger un exemple », exporter Trois-quarts 2048 (fond `#ecebe8` ou transparent).
-3. Touches R (cadrage ¾) et F/T/E/D/I — le zoom molette ne traverse pas la chaussette.
+2. Charger exemple étoile, quinconce H, 6 carreaux/tour (largeur 28), 3 couleurs, talon/pointe `#c0392b`.
+3. Exporter trois-quarts / profil / dos — comparer à `reference/sock3d/captures/homme-etoile-*`.
 
-Décisions à relire : D03 à D19.
+Décisions à relire : D03–D19.
 
-Blocages : T18 en attente de `config/sizes.json` confirmé.
+Blocages : T18 tailles fabricant.

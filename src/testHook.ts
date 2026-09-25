@@ -1,5 +1,6 @@
 import type { DesignPatch } from './state';
 import type { KnitFidelity, SockDesign } from './core/types';
+import type { ViewName } from './render/sock3d/studio';
 
 export interface StitchRead {
   col: number;
@@ -32,6 +33,8 @@ export interface SimHook {
   getStitch: (col: number, row: number) => StitchRead | null;
   /** Centre bitmap d'une maille dans la vue à plat, ou null si elle est hors cadre. */
   flatCenter: (col: number, row: number) => { x: number; y: number } | null;
+  /** Capture PNG studio (data URL), pour les contrôles visuels. */
+  captureView: (view: ViewName, size: number, background?: string | null) => Promise<string>;
 }
 
 declare global {
