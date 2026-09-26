@@ -236,7 +236,7 @@ L'onglet « Calque » montre les options **du type** de calque sélectionné. On
   - régler la bande par sa poignée basse.
 - [x] Capture 2D avec une image tournée sélectionnée et un Motif en bande sélectionné, décrite (on doit voir le vrai dessin, pas un rectangle).
 
-### [~] T57 — Bibliothèque
+### [x] T57 — Bibliothèque
 
 Bouton « Bibliothèque » dans la barre du projet, et boutons « + Motif » / « + Image » du dock. Il ouvre un **panneau par-dessus l'écran** (dialogue modal, Échap pour fermer) avec deux onglets :
 
@@ -251,12 +251,12 @@ Bouton « Bibliothèque » dans la barre du projet, et boutons « + Motif » / �
 - Tout ce qui est ajouté est placé au-dessus et sélectionné, puis le dialogue se ferme.
 
 **Critères**
-- [ ] e2e `bibliotheque.spec.ts`, à la souris :
+- [x] e2e `bibliotheque.spec.ts`, à la souris :
   - ouvrir → le dialogue est visible et au premier plan (`elementFromPoint` au centre = dialogue) ;
   - filtrer « medina » ;
   - cliquer → un calque Motif « Medina » apparaît dans le dock ;
   - importer un PNG de test → un calque Image, dont la vue 2D montre les couleurs.
-- [ ] Capture du dialogue, décrite.
+- [x] Capture du dialogue, décrite.
 
 ### [ ] T58 — Garde-fous jacquard avec plusieurs calques
 

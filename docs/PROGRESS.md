@@ -679,3 +679,18 @@ Contrôle visuel — `docs/captures/v7/poignees-2d.png` (copie aussi dans `media
 - (Calque Image tourné sélectionné juste avant la capture : cadre terracotta + poignées visibles pendant le test ; sur la capture finale le Motif bande domine avec ses poignées.)
 Décisions : aucune nouvelle.
 Reste / risques : bibliothèque complète → T57 ; e2e legacy V6 (9 rouges) ; optimiser recalcul à la seule sélection (noté T54).
+
+## T57 — Bibliothèque — 2026-09-26 23:49
+Statut : terminée
+Fait :
+- `src/ui/library.ts` : dialogue modal (Échap natif, `showModal`) ; onglets Collections / Images ; collections groupées (Mes collections, Signature, Classiques, Nouveautés, Autres), vignettes VAR1, recherche, clic → calque Motif (nom catalogue, calepinage défaut) ; menu ▾ « Ajouter une variation comme image » ; images du projet avec vignettes ; import PNG/SVG + glisser-déposer ; case « Importer comme carreau (Motif) » ; calque ajouté sélectionné, dialogue fermé.
+- Branchements existants conservés : barre projet `project-library`, dock `dock-add-motif` / `dock-add-image`.
+- `tests/e2e/bibliotheque.spec.ts` : premier plan (`elementFromPoint`), filtre medina, Motif Medina, import damier PNG + couleurs 2D.
+- `tests/e2e/ui.spec.ts` : aide calepinage lue via `toBeAttached` (curseur masqué tant que « taille libre » est décochée en V7).
+Vérification : `npm run verify` ✅ (156 tests unitaires, 64 e2e).
+Contrôle visuel — `docs/captures/v7/visuel-T57-bibliotheque-dialogue.png` (copie `media/v7/`) :
+- Modal centré au-dessus de l’app, fond assombri ; onglet **Collections** actif, bouton **Fermer** à droite.
+- Ligne d’aide « 70 collections · un clic ajoute un calque Motif », champ de recherche vide.
+- Section **SIGNATURE** : grille de vignettes (Medina terracotta/bleu, Fleurs, Continuum, etc.) avec libellés tronqués et petit bouton ▾ pour les variations en calque Image.
+Décisions : aucune nouvelle.
+Reste / risques : garde-fous multi-calques → T58.

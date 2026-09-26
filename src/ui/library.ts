@@ -185,7 +185,6 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   let activeTab: LibraryTab = 'collections';
   let busy = false;
   let variationAnchor: HTMLElement | null = null;
-  let variationCollection: Collection | null = null;
   const thumbs = new Map<string, string>();
 
   function setStatus(message: string): void {
@@ -205,7 +204,6 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   function closeVariationMenu(): void {
     variationMenu.hidden = true;
     variationAnchor = null;
-    variationCollection = null;
     variationMenu.replaceChildren();
   }
 
@@ -317,13 +315,12 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     }
   }
 
-  function openVariationMenu(c: Collection, cat: Catalogue, anchor: HTMLElement): void {
+  function openVariationMenu(c: Collection, anchor: HTMLElement): void {
     if (variationAnchor === anchor && !variationMenu.hidden) {
       closeVariationMenu();
       return;
     }
     variationAnchor = anchor;
-    variationCollection = c;
     variationMenu.replaceChildren();
     const title = document.createElement('p');
     title.className = 'library-variation-title';
@@ -379,7 +376,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     more.textContent = '▾';
     more.addEventListener('click', (event) => {
       event.stopPropagation();
-      openVariationMenu(c, cat, more);
+      openVariationMenu(c, more);
     });
 
     wrap.append(button, more);

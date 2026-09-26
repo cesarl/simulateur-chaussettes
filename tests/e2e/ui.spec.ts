@@ -20,7 +20,7 @@ test('état vide, raccourcis, aides et largeur 1280', async ({ page }) => {
   await expect(empty).toContainText(/bienvenue|exemple|importez/i);
 
   const help = page.getByTestId('help-ctl-tile-width');
-  await expect(help).toBeVisible();
+  await expect(help).toBeAttached();
   const tip = await help.getAttribute('title');
   expect(tip?.length ?? 0).toBeGreaterThan(10);
 
