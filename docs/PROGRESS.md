@@ -507,3 +507,11 @@ Statut : terminée
 Fait : `compositionPalette`, cache `compositionImages`, `recompute` charge les rasters (SVG recolorés / PNG / embarqués) puis `renderComposition`. Perf 5 calques 168×380 < 300 ms. Golden inchangé.
 Vérification : typecheck ✅ ; vitest golden + composition-engine ✅.
 Décisions : D43.
+
+## T46 — Éditeur 2D + 3D — 2026-09-26 13:18
+Statut : terminée
+Fait : bascule Carreaux/Composition ; éditeur canvas (zones grisées, repères, raccord, sélection, poignées échelle/rotation, aimantation, clavier) + panneau calques/inspecteur ; poignée de split ; bibliothèque collections. Import fichier reporté à T47 (assets embarqués).
+Contrôle visuel `visuel-t46-composition.png` : mode Composition actif (onglet terracotta) ; à gauche éditeur à plat + liste 2 calques medina/VAR1 + inspecteur (rotation 35°, largeur 42 mailles ≈ 5,6 cm) ; au centre chaussette 3D (bord-côte marine, tige crème avec motif tan, talon terracotta, pointe noire) et bascule 3D/À plat ; à droite panneau collections.
+Vérification : typecheck ✅ ; e2e `composition-editor.spec.ts` ✅ ; unitaires 123 ✅.
+Décisions : D44.
+Reste / risques : import PNG/SVG + assets projet en T47.
