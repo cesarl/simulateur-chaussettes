@@ -11,7 +11,7 @@ import {
   type ZoneColors,
 } from '../core/collections';
 import { MACHINE_LIMITS } from '../core/sizes';
-import { getState, update } from '../state';
+import { editingCollection, getState, setMotifCollection, update } from '../state';
 import { nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 
 function familyOf(id: string): string {
@@ -19,15 +19,19 @@ function familyOf(id: string): string {
   return m?.[1] ?? 'AUTRE';
 }
 
-async function reloadTiles(collection: Collection, colors: ZoneColors): Promise<void> {
+async function reloadTiles(
+  collection: Collection,
+  colors: ZoneColors,
+  paletteId: string | null,
+): Promise<void> {
   const cat = getState().catalogue;
   if (!cat) return;
   const nuancier = nuancierMap(cat);
   const tiles = await tilesFromCollection(collection, colors, nuancier);
   const yarns = yarnColors(collection, colors, nuancier);
+  setMotifCollection(collection.id, { ...colors }, paletteId);
   update({
     tiles,
-    zoneColors: { ...colors },
     design: {
       quantize: {
         paletteMode: 'manuelle',
@@ -133,7 +137,8 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
   let busy = false;
 
   function activeCollection(): Collection | null {
-    const { catalogue, activeCollectionId } = getState();
+    const { catalogue } = getState();
+    const activeCollectionId = editingCollection()?.id ?? null;
     if (!catalogue || !activeCollectionId) return null;
     return catalogue.collections.find((c) => c.id === activeCollectionId) ?? null;
   }
@@ -203,17 +208,16 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
   async function pickColor(c: NuancierColor): Promise<void> {
     if (busy) return;
     const collection = activeCollection();
-    const state = getState();
-    if (!collection || !state.zoneColors) {
+    const coll = editingCollection();
+    if (!collection || !coll) {
       closePicker();
       return;
     }
     busy = true;
     try {
       if (targetKind === 'zone' && targetZone) {
-        const next = { ...state.zoneColors, [targetZone]: c.id };
-        update({ paletteOptionId: 'custom' }, { skipHistory: true });
-        await reloadTiles(collection, next);
+        const next = { ...coll.colors, [targetZone]: c.id };
+        await reloadTiles(collection, next, 'custom');
       } else if (targetKind === 'cuff') {
         update({ design: { zones: { cuffColor: c.hex } } });
       } else if (targetKind === 'heel') {
@@ -229,10 +233,10 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
 
   matchBtn.addEventListener('click', () => {
     const collection = activeCollection();
-    const state = getState();
-    const cat = state.catalogue;
-    if (!collection || !state.zoneColors || !cat) return;
-    const yarns = yarnColors(collection, state.zoneColors, nuancierMap(cat));
+    const coll = editingCollection();
+    const cat = getState().catalogue;
+    if (!collection || !coll || !cat) return;
+    const yarns = yarnColors(collection, coll.colors, nuancierMap(cat));
     const suggested = suggestZoneColors(yarns);
     update({
       design: {
@@ -254,10 +258,11 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
   function render(): void {
     const state = getState();
     const collection = activeCollection();
+    const coll = editingCollection();
     const cat = state.catalogue;
     const png = collection ? isPngCollection(collection) : false;
-    section.hidden = !collection || !cat || (!png && !state.zoneColors);
-    if (!collection || !cat || (!png && !state.zoneColors)) {
+    section.hidden = !collection || !cat || (!png && !coll);
+    if (!collection || !cat || (!png && !coll)) {
       closePicker();
       return;
     }
@@ -274,8 +279,10 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
       return;
     }
 
+    const zoneColors = coll!.colors;
+    const paletteOptionId = coll!.paletteId;
     const nuancier = nuancierMap(cat);
-    const yarns = yarnColors(collection, state.zoneColors!, nuancier);
+    const yarns = yarnColors(collection, zoneColors, nuancier);
     countLine.textContent = `${yarns.length} couleur${yarns.length > 1 ? 's' : ''} de fil`;
     const over = yarns.length > MACHINE_LIMITS.maxColorsTotal;
     alert.hidden = !over;
@@ -288,8 +295,7 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
     for (const opt of opts) {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className =
-        state.paletteOptionId === opt.id ? 'pal-band selected' : 'pal-band';
+      btn.className = paletteOptionId === opt.id ? 'pal-band selected' : 'pal-band';
       btn.dataset.testid = `pal-option-${opt.id}`;
       const strip = document.createElement('span');
       strip.className = 'pal-strip';
@@ -308,8 +314,7 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
         void (async () => {
           busy = true;
           try {
-            update({ paletteOptionId: opt.id }, { skipHistory: true });
-            await reloadTiles(collection, { ...opt.colors });
+            await reloadTiles(collection, { ...opt.colors }, opt.id);
           } finally {
             busy = false;
           }
@@ -320,7 +325,7 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
 
     swatches.replaceChildren();
     for (const z of collection.zones) {
-      const code = state.zoneColors![z];
+      const code = zoneColors[z];
       const col = code ? nuancier.get(code) : undefined;
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -343,13 +348,12 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
 export function yarnLegendLabels(): Map<string, string> {
   const state = getState();
   const cat = state.catalogue;
+  const coll = editingCollection();
   const collection =
-    cat && state.activeCollectionId
-      ? cat.collections.find((c) => c.id === state.activeCollectionId)
-      : null;
+    cat && coll ? cat.collections.find((c) => c.id === coll.id) : null;
   const map = new Map<string, string>();
-  if (!collection || !state.zoneColors || !cat) return map;
-  const yarns = yarnColors(collection, state.zoneColors, nuancierMap(cat));
+  if (!collection || !coll || !cat) return map;
+  const yarns = yarnColors(collection, coll.colors, nuancierMap(cat));
   for (const y of yarns) map.set(y.hex.toLowerCase(), `${y.id} · ${y.nom}`);
   return map;
 }

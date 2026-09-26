@@ -1,7 +1,7 @@
 import type { DecorMode } from '../core/types';
 import { tileCmFromFormat } from '../render/decorController';
 import type { ViewName } from '../render/sock3d/studio';
-import { getState, subscribe, update } from '../state';
+import { editingCollection, getState, subscribe, update } from '../state';
 
 const VIEWER_VIEWS: Array<{ id: ViewName; label: string; testId: string }> = [
   { id: 'trois-quarts', label: '¾', testId: 'viewer-view-trois-quarts' },
@@ -59,7 +59,8 @@ export function mountViewerBar(
   decorText.textContent = 'Décor';
   decorLabel.append(decorCheck, decorText);
   decorCheck.addEventListener('change', () => {
-    const { design, catalogue, activeCollectionId } = getState();
+    const { design, catalogue } = getState();
+    const activeCollectionId = editingCollection()?.id ?? null;
     const current = design.decor.mode;
     if (decorCheck.checked) {
       const mode = lastActiveDecorMode === 'aucun' ? 'coin' : lastActiveDecorMode;
@@ -99,7 +100,8 @@ export function mountViewerBar(
   viewport.appendChild(bar);
 
   function refresh(): void {
-    const { design, catalogue, activeCollectionId } = getState();
+    const { design, catalogue } = getState();
+    const activeCollectionId = editingCollection()?.id ?? null;
     const coll = activeCollectionId
       ? catalogue?.collections.find((c) => c.id === activeCollectionId)
       : undefined;

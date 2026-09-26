@@ -1,7 +1,7 @@
 import type { StitchGrid } from '../core/types';
 import { Zone } from '../core/types';
 import { seamColumn } from '../core/calepinage';
-import { getState } from '../state';
+import { editingLayoutSettings } from '../state';
 
 /**
  * Vue à plat : une maille = un rectangle au rapport réel.
@@ -169,7 +169,7 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
     }
 
     // Trait du raccord (colonne où le tour se referme)
-    const col = Math.round(seamColumn(getState().design.layout.seam, grid.width));
+    const col = Math.round(seamColumn(editingLayoutSettings().seam, grid.width));
     const sx = originX + col * w + 0.5;
     context.save();
     context.setLineDash([4, 4]);

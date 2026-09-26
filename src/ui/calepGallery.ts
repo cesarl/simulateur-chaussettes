@@ -14,7 +14,7 @@ import {
 } from '../core/calepinage';
 import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS } from '../core/presets';
 import type { TileAsset } from '../core/types';
-import { getState, update } from '../state';
+import { editingCollection, editingLayoutSettings, getState, update } from '../state';
 import { makeSelect } from './controls';
 
 export type CalepFilter = 'tous' | 'le' | 'exact';
@@ -197,7 +197,7 @@ export function mountCalepGallery(host: HTMLElement): {
   reroll.textContent = 'Nouveau tirage';
   reroll.hidden = true;
   reroll.addEventListener('click', () => {
-    const current = getState().design.layout.calepinage;
+    const current = editingLayoutSettings().calepinage;
     update({ design: { layout: { calepinage: { graine: current.graine + 1 } } } });
   });
 
@@ -269,7 +269,7 @@ export function mountCalepGallery(host: HTMLElement): {
     ],
     'droit',
     (value) => {
-      const current = getState().design.layout.calepinage;
+      const current = editingLayoutSettings().calepinage;
       update({
         design: {
           layout: {
@@ -297,7 +297,7 @@ export function mountCalepGallery(host: HTMLElement): {
     ],
     '0',
     (value) => {
-      const current = getState().design.layout.calepinage;
+      const current = editingLayoutSettings().calepinage;
       update({
         design: {
           layout: {
@@ -367,7 +367,7 @@ export function mountCalepGallery(host: HTMLElement): {
   host.appendChild(root);
 
   function patchGenere(partial: Partial<GeneratedSpec>): void {
-    const current = getState().design.layout.calepinage;
+    const current = editingLayoutSettings().calepinage;
     update({
       design: {
         layout: {
@@ -416,7 +416,7 @@ export function mountCalepGallery(host: HTMLElement): {
   function render(): void {
     const state = getState();
     const tiles = state.tiles;
-    const spec = state.design.layout.calepinage;
+    const spec = editingLayoutSettings().calepinage;
     const tileCount = tiles.length;
     const currentId = selectedId(spec);
     const preset = spec.source === 'prereglage' ? presets.find((p) => p.id === spec.presetId) ?? null : null;
@@ -444,7 +444,7 @@ export function mountCalepGallery(host: HTMLElement): {
     presetsHost.replaceChildren();
 
     // Groupe « Calepinages de la collection » en tête (T30).
-    const activeId = state.activeCollectionId;
+    const activeId = editingCollection()?.id ?? null;
     const activeColl =
       activeId && state.catalogue
         ? state.catalogue.collections.find((c) => c.id === activeId) ?? null

@@ -1,6 +1,6 @@
-import type { DesignPatch } from './state';
+import type { DesignPatch, SockDesignV2 } from './state';
 import type { Catalogue } from './core/collections';
-import type { KnitFidelity, SockDesign } from './core/types';
+import type { KnitFidelity } from './core/types';
 import type { ViewName } from './render/sock3d/studio';
 
 export interface StitchRead {
@@ -15,7 +15,7 @@ export interface SimHook {
   ready: boolean;
   computeId: number;
   lastComputeMs: number;
-  design: SockDesign;
+  design: SockDesignV2;
   grid: { width: number; height: number; palette: string[] };
   /** Empreinte de la grille de mailles, pour comparer deux projets. */
   gridHash: string;

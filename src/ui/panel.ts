@@ -9,21 +9,26 @@ import { VIEW_ANGLES, type ViewId } from '../render/views';
 import {
   canRedo,
   canUndo,
+  editingCollection,
+  editingLayoutSettings,
   getState,
+  isMotifLayoutDirty,
   isSectionDirty,
   layoutFromTilesAround,
   redo,
   resetAllDesign,
   resetSection,
+  resetSelectedLayer,
+  setMotifImportes,
   subscribe,
   undo,
   update as updateState,
+  type SockDesignV2,
   type StatePatch,
   type UpdateOptions,
 } from '../state';
-import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
+import type { Hex, LayoutSettings, QuantizeSettings, SizeId, TileAsset } from '../core/types';
 import { visibleCollections } from '../core/collections';
-import { isLinkShareable } from '../core/composition';
 import { tileCmFromFormat } from '../render/decorController';
 import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
@@ -74,13 +79,12 @@ async function importFiles(files: readonly File[]): Promise<void> {
     }
   }
   if (loaded.length > 0) {
+    const tiles = [...getState().tiles, ...loaded];
     update({
-      tiles: [...getState().tiles, ...loaded],
+      tiles,
       error: messages[0] ?? null,
-      activeCollectionId: null,
-      zoneColors: null,
-      paletteOptionId: null,
     });
+    setMotifImportes(tiles.map((t) => t.id));
     return;
   }
   if (messages[0]) update({ error: messages[0] });
@@ -222,13 +226,11 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   const exampleButton = actionButton('Charger un exemple', 'tile-fixture', () => {
     void loadTileFromUrl(fixtureUrl('carreau-test-etoile'))
       .then((tile) =>
-        update({
-          tiles: [...getState().tiles, tile],
-          error: null,
-          activeCollectionId: null,
-          zoneColors: null,
-          paletteOptionId: null,
-        }),
+        (() => {
+          const tiles = [...getState().tiles, tile];
+          update({ tiles, error: null });
+          setMotifImportes(tiles.map((t) => t.id));
+        })(),
       )
       .catch((error: unknown) => {
         const message = error instanceof Error ? error.message : 'Impossible de charger l’exemple.';
@@ -273,22 +275,14 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
     collectionPicker.sync();
     palettePanel.sync();
     patternMode.sync();
-    const pattern = getState().design.pattern;
-    const blocked =
-      pattern?.kind === 'composition' && !isLinkShareable(pattern.composition);
-    copyLink.disabled = blocked;
-    shareDisabledHint.hidden = !blocked;
+    copyLink.disabled = false;
+    shareDisabledHint.hidden = true;
   });
   collectionPicker.sync();
   palettePanel.sync();
   patternMode.sync();
-  {
-    const pattern = getState().design.pattern;
-    const blocked =
-      pattern?.kind === 'composition' && !isLinkShareable(pattern.composition);
-    copyLink.disabled = blocked;
-    shareDisabledHint.hidden = !blocked;
-  }
+  copyLink.disabled = false;
+  shareDisabledHint.hidden = true;
 
   panel.addEventListener('dragover', (event) => {
     event.preventDefault();
@@ -334,7 +328,7 @@ export function renderStatus(info: {
   }
   const fitBtn = document.querySelector<HTMLButtonElement>('[data-testid="ctl-fit-width"]');
   if (fitBtn) {
-    const free = getState().design.layout.tileSizeMode === 'free';
+    const free = editingLayoutSettings().tileSizeMode === 'free';
     fitBtn.hidden = !(free && info.mismatch > 0);
   }
   if (!swatches) return;
@@ -548,6 +542,7 @@ function showLegMessage(size: SizeId, message: HTMLElement): void {
 
 function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const design = getState().design;
+  const initialLayout = editingLayoutSettings();
   let keepRatio = true;
   let paletteKey = '';
   let resetAllArmed: ReturnType<typeof setTimeout> | undefined;
@@ -566,7 +561,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const layout = details('Calepinage', 'section-layout', {
     resetId: 'reset-calepinage',
     dirtyId: 'dirty-calepinage',
-    onReset: () => resetSection('layout'),
+    onReset: () => resetSelectedLayer(),
   });
   const gallery = mountCalepGallery(layout);
 
@@ -576,7 +571,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 2,
     max: 12,
     step: 1,
-    value: design.layout.tilesAround,
+    value: initialLayout.tilesAround,
     unit: 'carreaux',
     help: 'Nombre de motifs qui font le tour de la jambe. Le motif tombe toujours juste au raccord.',
     onChange: (value) => {
@@ -584,11 +579,11 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       const sized = layoutFromTilesAround(
         current.dimensions.needles,
         value,
-        current.layout.gapStitches,
+        editingLayoutSettings().gapStitches,
         current.dimensions.stitchesPerCm,
         current.dimensions.rowsPerCm,
         keepRatio,
-        current.layout.tileRows,
+        editingLayoutSettings().tileRows,
       );
       update({ design: { layout: sized } });
     },
@@ -597,7 +592,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const freeSizeBox = makeCheckbox(
     'Taille libre en mailles',
     'ctl-free-tile-size',
-    design.layout.tileSizeMode === 'free',
+    initialLayout.tileSizeMode === 'free',
     (checked) => {
       const current = getState().design;
       if (checked) {
@@ -608,12 +603,12 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       }
       const sized = layoutFromTilesAround(
         current.dimensions.needles,
-        current.layout.tilesAround,
-        current.layout.gapStitches,
+        editingLayoutSettings().tilesAround,
+        editingLayoutSettings().gapStitches,
         current.dimensions.stitchesPerCm,
         current.dimensions.rowsPerCm,
         keepRatio,
-        current.layout.tileRows,
+        editingLayoutSettings().tileRows,
       );
       update({ design: { layout: sized } });
       tileWidth.root.hidden = true;
@@ -628,7 +623,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 4,
     max: 200,
     step: 0.1,
-    value: design.layout.tileStitches,
+    value: initialLayout.tileStitches,
     unit: 'mailles',
     help: 'Nombre de mailles (aiguilles) que fait un motif sur le tour de jambe.',
     onChange: (value) => {
@@ -650,7 +645,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 4,
     max: 300,
     step: 0.1,
-    value: design.layout.tileRows,
+    value: initialLayout.tileRows,
     unit: 'rangs',
     help: 'Nombre de rangs (lignes tricotées) d’un motif. Un rang = un tour de cylindre.',
     onChange: (value) => {
@@ -659,8 +654,8 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       update({ design: { layout: { tileRows: Math.max(1, value), tileSizeMode: 'free' } } });
     },
   });
-  tileWidth.root.hidden = design.layout.tileSizeMode !== 'free';
-  tileRows.root.hidden = design.layout.tileSizeMode !== 'free';
+  tileWidth.root.hidden = initialLayout.tileSizeMode !== 'free';
+  tileRows.root.hidden = initialLayout.tileSizeMode !== 'free';
 
   const keepBox = makeCheckbox(
     'Garder les proportions',
@@ -670,15 +665,15 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       keepRatio = checked;
       if (!checked) return;
       const current = getState().design;
-      if (current.layout.tileSizeMode === 'around') {
+      if (editingLayoutSettings().tileSizeMode === 'around') {
         const sized = layoutFromTilesAround(
           current.dimensions.needles,
-          current.layout.tilesAround,
-          current.layout.gapStitches,
+          editingLayoutSettings().tilesAround,
+          editingLayoutSettings().gapStitches,
           current.dimensions.stitchesPerCm,
           current.dimensions.rowsPerCm,
           true,
-          current.layout.tileRows,
+          editingLayoutSettings().tileRows,
         );
         update({ design: { layout: sized } });
         return;
@@ -690,7 +685,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
               1,
               Math.round(
                 tileRowsFor(
-                  current.layout.tileStitches,
+                  editingLayoutSettings().tileStitches,
                   current.dimensions.stitchesPerCm,
                   current.dimensions.rowsPerCm,
                 ),
@@ -707,8 +702,11 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   gaugeReadout.className = 'gauge-readout';
   gaugeReadout.dataset.testid = 'gauge-readout';
 
-  function refreshGaugeReadout(current: SockDesign = getState().design): void {
-    const { layout: L, dimensions: D } = current;
+  function refreshGaugeReadout(
+    current: SockDesignV2 = getState().design,
+    L: LayoutSettings = editingLayoutSettings(),
+  ): void {
+    const D = current.dimensions;
     const wMm = D.stitchesPerCm > 0 ? (L.tileStitches / D.stitchesPerCm) * 10 : 0;
     const hMm = D.rowsPerCm > 0 ? (L.tileRows / D.rowsPerCm) * 10 : 0;
     const wCm = wMm / 10;
@@ -737,21 +735,21 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 0,
     max: 32,
     step: 1,
-    value: design.layout.gapStitches,
+    value: initialLayout.gapStitches,
     unit: 'mailles',
     help: 'Bande unie entre deux carreaux sur le tour (0 = carreaux collés).',
     onChange: (value) => {
       const gapStitches = Math.max(0, Math.round(value));
       const current = getState().design;
-      if (current.layout.tileSizeMode === 'around') {
+      if (editingLayoutSettings().tileSizeMode === 'around') {
         const sized = layoutFromTilesAround(
           current.dimensions.needles,
-          current.layout.tilesAround,
+          editingLayoutSettings().tilesAround,
           gapStitches,
           current.dimensions.stitchesPerCm,
           current.dimensions.rowsPerCm,
           keepRatio,
-          current.layout.tileRows,
+          editingLayoutSettings().tileRows,
         );
         slide({ design: { layout: { ...sized, gapStitches } } });
         return;
@@ -765,7 +763,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 0,
     max: 32,
     step: 1,
-    value: design.layout.gapRows,
+    value: initialLayout.gapRows,
     unit: 'rangs',
     help: 'Bande unie entre deux rangées de carreaux.',
     onChange: (value) => slide({ design: { layout: { gapRows: Math.max(0, Math.round(value)) } } }),
@@ -773,7 +771,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   const gapColor = makeColor(
     'Couleur du joint',
     'ctl-gap-color',
-    design.layout.gapColor,
+    initialLayout.gapColor,
     (value) => {
       slide({ design: { layout: { gapColor: value } } });
     },
@@ -788,7 +786,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       { value: '180', label: '180°' },
       { value: '270', label: '270°' },
     ],
-    String(design.layout.calepinage.rotationGlobale),
+    String(initialLayout.calepinage.rotationGlobale),
     (value) => {
       const angle = (value === '90' || value === '180' || value === '270' ? Number(value) : 0) as Rot;
       update({ design: { layout: { calepinage: { rotationGlobale: angle } } } });
@@ -800,7 +798,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: -200,
     max: 200,
     step: 1,
-    value: design.layout.offsetStitches,
+    value: initialLayout.offsetStitches,
     unit: 'mailles',
     onChange: (value) => slide({ design: { layout: { offsetStitches: Math.round(value) } } }),
   });
@@ -810,7 +808,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: -200,
     max: 200,
     step: 1,
-    value: design.layout.offsetRows,
+    value: initialLayout.offsetRows,
     unit: 'rangs',
     onChange: (value) => slide({ design: { layout: { offsetRows: Math.round(value) } } }),
   });
@@ -820,7 +818,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     min: 1,
     max: 9999,
     step: 1,
-    value: design.layout.calepinage.graine,
+    value: initialLayout.calepinage.graine,
     onChange: (value) =>
       update({ design: { layout: { calepinage: { graine: Math.max(1, Math.round(value)) } } } }),
   });
@@ -834,7 +832,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       { value: 'exterieur', label: 'Extérieur' },
       { value: 'devant', label: 'Devant' },
     ],
-    design.layout.seam,
+    initialLayout.seam,
     (value) => {
       if (value !== 'dos' && value !== 'interieur' && value !== 'exterieur' && value !== 'devant') return;
       update({ design: { layout: { seam: value } } });
@@ -853,16 +851,16 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   fit.addEventListener('click', () => {
     const current = getState().design;
     // Passe en « carreaux sur le tour » avec le nombre le plus proche.
-    const pitch = current.layout.tileStitches + current.layout.gapStitches;
-    const approx = pitch > 0 ? Math.round(current.dimensions.needles / pitch) : current.layout.tilesAround;
+    const pitch = editingLayoutSettings().tileStitches + editingLayoutSettings().gapStitches;
+    const approx = pitch > 0 ? Math.round(current.dimensions.needles / pitch) : editingLayoutSettings().tilesAround;
     const sized = layoutFromTilesAround(
       current.dimensions.needles,
       approx,
-      current.layout.gapStitches,
+      editingLayoutSettings().gapStitches,
       current.dimensions.stitchesPerCm,
       current.dimensions.rowsPerCm,
       keepRatio,
-      current.layout.tileRows,
+      editingLayoutSettings().tileRows,
     );
     update({ design: { layout: sized } });
     freeSizeBox.input.checked = false;
@@ -944,15 +942,15 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     onChange: (value) => {
       const needlesN = Math.max(1, Math.round(value));
       const current = getState().design;
-      if (current.layout.tileSizeMode === 'around') {
+      if (editingLayoutSettings().tileSizeMode === 'around') {
         const sized = layoutFromTilesAround(
           needlesN,
-          current.layout.tilesAround,
-          current.layout.gapStitches,
+          editingLayoutSettings().tilesAround,
+          editingLayoutSettings().gapStitches,
           current.dimensions.stitchesPerCm,
           current.dimensions.rowsPerCm,
           keepRatio,
-          current.layout.tileRows,
+          editingLayoutSettings().tileRows,
         );
         slide({ design: { dimensions: { needles: needlesN }, layout: sized } });
         return;
@@ -1002,15 +1000,15 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     onChange: (value) => {
       const stitchesPerCm = Math.max(0.1, value);
       const current = getState().design;
-      if (current.layout.tileSizeMode === 'around') {
+      if (editingLayoutSettings().tileSizeMode === 'around') {
         const sized = layoutFromTilesAround(
           current.dimensions.needles,
-          current.layout.tilesAround,
-          current.layout.gapStitches,
+          editingLayoutSettings().tilesAround,
+          editingLayoutSettings().gapStitches,
           stitchesPerCm,
           current.dimensions.rowsPerCm,
           keepRatio,
-          current.layout.tileRows,
+          editingLayoutSettings().tileRows,
         );
         // Ne change pas le nombre de carreaux sur le tour.
         update({ design: { dimensions: { stitchesPerCm }, layout: sized } });
@@ -1020,7 +1018,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
         ? {
             tileRows: Math.max(
               1,
-              Math.round(tileRowsFor(current.layout.tileStitches, stitchesPerCm, current.dimensions.rowsPerCm)),
+              Math.round(tileRowsFor(editingLayoutSettings().tileStitches, stitchesPerCm, current.dimensions.rowsPerCm)),
             ),
           }
         : {};
@@ -1039,15 +1037,15 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     onChange: (value) => {
       const nextRows = Math.max(0.1, value);
       const current = getState().design;
-      if (current.layout.tileSizeMode === 'around') {
+      if (editingLayoutSettings().tileSizeMode === 'around') {
         const sized = layoutFromTilesAround(
           current.dimensions.needles,
-          current.layout.tilesAround,
-          current.layout.gapStitches,
+          editingLayoutSettings().tilesAround,
+          editingLayoutSettings().gapStitches,
           current.dimensions.stitchesPerCm,
           nextRows,
           keepRatio,
-          current.layout.tileRows,
+          editingLayoutSettings().tileRows,
         );
         update({ design: { dimensions: { rowsPerCm: nextRows }, layout: sized } });
         return;
@@ -1056,7 +1054,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
         ? {
             tileRows: Math.max(
               1,
-              Math.round(tileRowsFor(current.layout.tileStitches, current.dimensions.stitchesPerCm, nextRows)),
+              Math.round(tileRowsFor(editingLayoutSettings().tileStitches, current.dimensions.stitchesPerCm, nextRows)),
             ),
           }
         : {};
@@ -1307,7 +1305,8 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
       if (value !== 'aucun' && value !== 'sol' && value !== 'mur' && value !== 'coin') return;
       const patch: { mode: typeof value; tileCm?: number } = { mode: value };
       if (value !== 'aucun') {
-        const { catalogue, activeCollectionId } = getState();
+        const { catalogue } = getState();
+        const activeCollectionId = editingCollection()?.id ?? null;
         const coll = catalogue?.collections.find((c) => c.id === activeCollectionId);
         if (coll) patch.tileCm = tileCmFromFormat(coll.format);
       }
@@ -1448,16 +1447,16 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   fitSeam.textContent = 'Ajuster la largeur pour que le motif tombe juste';
   fitSeam.addEventListener('click', () => {
     const current = getState().design;
-    const pitch = current.layout.tileStitches + current.layout.gapStitches;
-    const approx = pitch > 0 ? Math.round(current.dimensions.needles / pitch) : current.layout.tilesAround;
+    const pitch = editingLayoutSettings().tileStitches + editingLayoutSettings().gapStitches;
+    const approx = pitch > 0 ? Math.round(current.dimensions.needles / pitch) : editingLayoutSettings().tilesAround;
     const sized = layoutFromTilesAround(
       current.dimensions.needles,
       approx,
-      current.layout.gapStitches,
+      editingLayoutSettings().gapStitches,
       current.dimensions.stitchesPerCm,
       current.dimensions.rowsPerCm,
       keepRatio,
-      current.layout.tileRows,
+      editingLayoutSettings().tileRows,
     );
     update({ design: { layout: sized } });
   });
@@ -1492,7 +1491,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
 
   host.append(layout, dimensions, pixels, zones, decorSection, checks, exportsSection, resetAll, computeMs);
 
-  const syncManual = (current: SockDesign): void => {
+  const syncManual = (current: SockDesignV2): void => {
     const isManual = current.quantize.paletteMode === 'manuelle';
     manual.hidden = !isManual;
     const key = current.quantize.palette.join(',');
@@ -1510,24 +1509,25 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     });
   };
 
-  const sync = (current: SockDesign): void => {
-    gallery.sync(getState().tiles, current.layout.calepinage, getState().calepPresets);
-    tilesAround.setValue(current.layout.tilesAround);
-    freeSizeBox.input.checked = current.layout.tileSizeMode === 'free';
-    tileWidth.root.hidden = current.layout.tileSizeMode !== 'free';
-    tileRows.root.hidden = current.layout.tileSizeMode !== 'free';
-    tileWidth.setValue(current.layout.tileStitches);
-    tileRows.setValue(current.layout.tileRows);
+  const sync = (current: SockDesignV2): void => {
+    const layout = editingLayoutSettings();
+    gallery.sync(getState().tiles, layout.calepinage, getState().calepPresets);
+    tilesAround.setValue(layout.tilesAround);
+    freeSizeBox.input.checked = layout.tileSizeMode === 'free';
+    tileWidth.root.hidden = layout.tileSizeMode !== 'free';
+    tileRows.root.hidden = layout.tileSizeMode !== 'free';
+    tileWidth.setValue(layout.tileStitches);
+    tileRows.setValue(layout.tileRows);
     keepBox.input.checked = keepRatio;
-    refreshGaugeReadout(current);
-    gapStitches.setValue(current.layout.gapStitches);
-    gapRows.setValue(current.layout.gapRows);
-    if (document.activeElement !== gapColor.input) gapColor.input.value = current.layout.gapColor;
-    rotation.input.value = String(current.layout.calepinage.rotationGlobale);
-    offsetX.setValue(current.layout.offsetStitches);
-    offsetY.setValue(current.layout.offsetRows);
-    seed.setValue(current.layout.calepinage.graine);
-    if (document.activeElement !== seamSelect.input) seamSelect.input.value = current.layout.seam;
+    refreshGaugeReadout(current, layout);
+    gapStitches.setValue(layout.gapStitches);
+    gapRows.setValue(layout.gapRows);
+    if (document.activeElement !== gapColor.input) gapColor.input.value = layout.gapColor;
+    rotation.input.value = String(layout.calepinage.rotationGlobale);
+    offsetX.setValue(layout.offsetStitches);
+    offsetY.setValue(layout.offsetRows);
+    seed.setValue(layout.calepinage.graine);
+    if (document.activeElement !== seamSelect.input) seamSelect.input.value = layout.seam;
     size.input.value = current.dimensions.size;
     leg.setRange(1, SIZE_PRESETS[current.dimensions.size].legRowsMax);
     leg.input.removeAttribute('max');
@@ -1583,8 +1583,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     sync(state.design);
     if (document.activeElement !== fidelity.input) fidelity.input.value = state.knitFidelity;
     if (document.activeElement !== footSide.input) footSide.input.value = state.footSide;
-    const dirtyMap: Array<[string, 'layout' | 'dimensions' | 'quantize' | 'zones' | 'decor']> = [
-      ['dirty-calepinage', 'layout'],
+    const dirtyCalep = host.querySelector('[data-testid="dirty-calepinage"]');
+    if (dirtyCalep instanceof HTMLElement) dirtyCalep.hidden = !isMotifLayoutDirty(state.design);
+    const dirtyMap: Array<[string, 'dimensions' | 'quantize' | 'zones' | 'decor']> = [
       ['dirty-dimensions', 'dimensions'],
       ['dirty-pixels', 'quantize'],
       ['dirty-zones', 'zones'],
