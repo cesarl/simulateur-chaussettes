@@ -5,7 +5,14 @@ import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import { createMotifRgbCache, computeStackRgb, stackPaletteIfEnabled } from './core/stackCompute';
-import { primaryMotifLayer, renderStack, stackGauge, type SockDesignV2, type StackLayer } from './core/layers';
+import {
+  layerKeyColors,
+  primaryMotifLayer,
+  renderStack,
+  stackGauge,
+  type SockDesignV2,
+  type StackLayer,
+} from './core/layers';
 import { assetKey } from './core/composition';
 import { yarnColors, isPngCollection } from './core/collections';
 import { runExports, renderPair } from './io/exportPng';
@@ -43,7 +50,7 @@ import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
 import { mountCompositionEditor } from './ui/compositionEditor';
-import { mountPanel, renderChecks, renderStatus } from './ui/panel';
+import { mountPanel, renderChecks, renderStatus, type PanelApi } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
 import { mountSplitters } from './ui/splitters';
@@ -310,6 +317,43 @@ function drawLayerThumb(layerId: string, canvas: HTMLCanvasElement): void {
   context.imageSmoothingEnabled = true;
   context.drawImage(source, cropX, 0, cropW, cropH, 0, 0, canvas.width, canvas.height);
   canvas.dataset.thumbKey = key;
+}
+
+/** Couleurs principales d’un calque : pastilles « rendre transparent » du panneau. */
+function layerColorsOf(layerId: string): string[] {
+  const layer = getState().design.layers.find((l) => l.id === layerId);
+  if (!layer) return [];
+  return layerKeyColors(layer, {
+    motifRgb: lastMotifRgb,
+    images: compositionImages,
+    keyColors: lastKeyColors,
+  });
+}
+
+/** Aperçu de l’image d’un calque Image, contenue dans le cadre (proportions gardées). */
+function drawAssetPreview(layerId: string, canvas: HTMLCanvasElement): void {
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  const layer = getState().design.layers.find((l) => l.id === layerId);
+  if (layer?.kind !== 'image') return;
+  const image = compositionImages.get(assetKey(layer.asset));
+  if (!image) return;
+  const source = document.createElement('canvas');
+  source.width = image.width;
+  source.height = image.height;
+  const sourceContext = source.getContext('2d');
+  if (!sourceContext) return;
+  sourceContext.putImageData(
+    new ImageData(new Uint8ClampedArray(image.rgba), image.width, image.height),
+    0,
+    0,
+  );
+  const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  context.imageSmoothingEnabled = true;
+  context.drawImage(source, Math.round((canvas.width - width) / 2), Math.round((canvas.height - height) / 2), width, height);
 }
 
 const optionsTabsEl = document.querySelector('[data-testid="options-tabs"]');
@@ -649,8 +693,9 @@ function recompute(): void {
   lastComputeMs = performance.now() - started;
   computeId += 1;
   compositionEditor.sync();
-  // Les vignettes du dock utilisent les pixels qui viennent d’être calculés.
+  // Vignettes du dock et pastilles du panneau : les pixels viennent d’être calculés.
   dock.sync();
+  panelApi?.sync();
   publish();
 
   const tileCount = Math.max(1, layout.tileIds.length || tiles.length);
@@ -722,6 +767,7 @@ function recompute(): void {
   }
 }
 
+let panelApi: PanelApi | null = null;
 let saveTimer = 0;
 
 function currentCollectionMeta(): ProjectCollectionMeta | null {
@@ -1042,7 +1088,10 @@ async function boot(): Promise<void> {
     }
   }
 
-  mountPanel(panel, {
+  panelApi = mountPanel(panel, {
+    tabs: optionsTabs,
+    layerKeyColors: layerColorsOf,
+    drawAssetPreview,
     exportImages: (request) => {
       const { design, footSide } = getState();
       const shape = shapeFromDesign(design.dimensions, design.zones, footSide);

@@ -26,7 +26,8 @@ function matches(c: Collection, query: string): boolean {
   return `${c.nom} ${c.id} ${c.description}`.toLowerCase().includes(query.toLowerCase());
 }
 
-async function assetFromTile(
+/** Carreau rasterisé (PNG ou SVG) → image embarquée dans le projet (aucun envoi réseau). */
+export async function embeddedAssetFromTile(
   name: string,
   tile: { width: number; height: number; rgba: Uint8ClampedArray; svgText?: string },
 ): Promise<EmbeddedAsset> {
@@ -201,7 +202,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
         return;
       }
       const tile = await loadTileFromUrl(fixtureUrl(EXAMPLE_IMAGE));
-      const asset = await assetFromTile(EXAMPLE_IMAGE, tile);
+      const asset = await embeddedAssetFromTile(EXAMPLE_IMAGE, tile);
       addAssetLayer(asset, [...getState().embeddedAssets, asset]);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Image d’exemple illisible.';
@@ -221,7 +222,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
           break;
         }
         const tile = await loadTileFromFile(file);
-        const asset = await assetFromTile(file.name, tile);
+        const asset = await embeddedAssetFromTile(file.name, tile);
         addAssetLayer(asset, [...getState().embeddedAssets, asset]);
       }
     } catch (error) {

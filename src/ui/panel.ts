@@ -32,8 +32,9 @@ import { visibleCollections } from '../core/collections';
 import { tileCmFromFormat } from '../render/decorController';
 import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
+import { mountLayerOptions, type LayerOptionsDeps } from './layerOptions';
 import { mountPalettePanel } from './palettePanel';
-import { mountPatternModeToggle } from './compositionEditor';
+import { OPTIONS_TABS, type OptionsTab, type OptionsTabsApi } from './optionsTabs';
 import {
   details,
   makeCheckbox,
@@ -153,16 +154,40 @@ function actionButton(label: string, testId: string, onClick: () => void): HTMLB
   return button;
 }
 
-export interface PanelActions {
+export interface PanelActions extends LayerOptionsDeps {
   exportImages: (request: ExportRequest) => Promise<void>;
   saveProject: () => Promise<void>;
   openProject: (text: string) => Promise<void>;
   leaveDev: () => void;
   copyShareLink: () => void | Promise<void>;
+  /** Onglets du panneau : le volet affiché suit l’onglet actif. */
+  tabs: OptionsTabsApi;
 }
 
-/** Section Carreaux : import, vignettes, ordre, exemple. */
-export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
+/** Un volet par onglet ; `motif` regroupe les réglages du calque Motif sélectionné. */
+interface Panes extends Record<OptionsTab, HTMLElement> {
+  /** Bandeau commun en haut du panneau (annuler / rétablir, lien). */
+  top: HTMLElement;
+  motif: HTMLElement;
+  /** Bas du panneau, visible dans tous les onglets. */
+  footer: HTMLElement;
+}
+
+function makePane(host: HTMLElement, tab: OptionsTab): HTMLElement {
+  const pane = document.createElement('div');
+  pane.className = 'options-pane';
+  pane.dataset.testid = `pane-${tab}`;
+  host.appendChild(pane);
+  return pane;
+}
+
+export interface PanelApi {
+  /** Rafraîchit le volet « Calque » (pastilles de couleurs, aperçu d’image). */
+  sync: () => void;
+}
+
+/** Panneau d’options : volets Calque / Chaussette / Décor / Export. */
+export function mountPanel(panel: HTMLElement, actions: PanelActions): PanelApi {
   const body = panel.querySelector('#panel-body');
   const host = body instanceof HTMLElement ? body : panel;
 
@@ -172,8 +197,6 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   catalogueHint.hidden = !getState().catalogueMissing;
   catalogueHint.textContent = CATALOGUE_MISSING_MESSAGE;
   host.appendChild(catalogueHint);
-
-  const patternMode = mountPatternModeToggle(host);
 
   const shareRow = document.createElement('div');
   shareRow.className = 'row share-row';
@@ -190,11 +213,32 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   shareDisabledHint.hidden = true;
   shareDisabledHint.textContent =
     'Cette composition contient des images importées : envoyez le fichier projet (.json)';
+  const top = document.createElement('div');
+  top.className = 'options-top';
   shareRow.append(copyLink, shareDisabledHint);
-  host.appendChild(shareRow);
+  top.appendChild(shareRow);
+  host.appendChild(top);
 
-  const collectionPicker = mountCollectionPicker(host);
-  const palettePanel = mountPalettePanel(host);
+  const panes: Panes = {
+    top,
+    calque: makePane(host, 'calque'),
+    chaussette: makePane(host, 'chaussette'),
+    decor: makePane(host, 'decor'),
+    export: makePane(host, 'export'),
+    motif: document.createElement('div'),
+    footer: document.createElement('div'),
+  };
+  panes.motif.dataset.testid = 'motif-options';
+  panes.footer.className = 'options-footer';
+  actions.tabs.onChange((tab) => {
+    for (const name of OPTIONS_TABS) panes[name].hidden = name !== tab;
+  });
+
+  const layerOptions = mountLayerOptions(actions);
+  panes.calque.append(layerOptions.header, layerOptions.source, layerOptions.fond, panes.motif);
+
+  const collectionPicker = mountCollectionPicker(panes.motif);
+  const palettePanel = mountPalettePanel(panes.motif);
 
   const section = details('Mes carreaux', 'section-tiles');
 
@@ -259,7 +303,7 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   list.className = 'tile-list';
   list.dataset.testid = 'tile-list';
   section.appendChild(list);
-  host.appendChild(section);
+  panes.motif.appendChild(section);
 
   const render = (): void => {
     const message = getState().error;
@@ -271,16 +315,23 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   subscribe(render);
   render();
 
+  /** Le volet « Calque » ne montre que les réglages du type de calque sélectionné. */
+  const syncLayerPane = (): void => {
+    const { design, selectedLayerId } = getState();
+    const layer = design.layers.find((l) => l.id === selectedLayerId) ?? null;
+    panes.motif.hidden = layer?.kind !== 'motif';
+    layerOptions.sync();
+  };
+
   subscribe(() => {
     collectionPicker.sync();
     palettePanel.sync();
-    patternMode.sync();
+    syncLayerPane();
     copyLink.disabled = false;
     shareDisabledHint.hidden = true;
   });
   collectionPicker.sync();
   palettePanel.sync();
-  patternMode.sync();
   copyLink.disabled = false;
   shareDisabledHint.hidden = true;
 
@@ -296,7 +347,14 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
     if (files.length > 0) void importFiles(files);
   });
 
-  mountSettings(host, actions);
+  mountSettings(panes, actions);
+  // Étendue du Motif après le calepinage ; transparence et image en fin de volet.
+  panes.motif.appendChild(layerOptions.extent);
+  panes.calque.append(layerOptions.image, layerOptions.transparency);
+  host.appendChild(panes.footer);
+  syncLayerPane();
+
+  return { sync: syncLayerPane };
 }
 
 const MANUAL_SEED: Hex[] = ['#1f3a5f', '#b5462f', '#f4f1ea', '#1d1d1b'];
@@ -540,12 +598,13 @@ function showLegMessage(size: SizeId, message: HTMLElement): void {
   message.textContent = legWarned ? `La tige ne peut pas dépasser ${max} rangs.` : '';
 }
 
-function mountSettings(host: HTMLElement, actions: PanelActions): void {
+function mountSettings(panes: Panes, actions: PanelActions): void {
   const design = getState().design;
   const initialLayout = editingLayoutSettings();
   let keepRatio = true;
   let paletteKey = '';
   let resetAllArmed: ReturnType<typeof setTimeout> | undefined;
+  const host = panes.footer;
 
   const history = document.createElement('div');
   history.className = 'row history-bar';
@@ -556,9 +615,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     redo();
   });
   history.append(undoBtn, redoBtn);
-  host.appendChild(history);
+  panes.top.prepend(history);
 
-  const layout = details('Calepinage', 'section-layout', {
+  const layout = details('Calepinage du motif', 'section-layout', {
     resetId: 'reset-calepinage',
     dirtyId: 'dirty-calepinage',
     onReset: () => resetSelectedLayer(),
@@ -1137,19 +1196,24 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     'Palette',
     'ctl-palette-mode',
     [
-      { value: 'auto', label: 'Automatique' },
+      { value: 'calques', label: 'Automatique d’après les calques' },
+      { value: 'auto', label: 'Automatique (réduction des couleurs)' },
       { value: 'manuelle', label: 'Manuelle' },
     ],
-    design.quantize.paletteMode,
+    design.quantize.paletteFromLayers ? 'calques' : design.quantize.paletteMode,
     (value) => {
+      if (value === 'calques') {
+        update({ design: { quantize: { paletteFromLayers: true } } });
+        return;
+      }
       if (value !== 'auto' && value !== 'manuelle') return;
-      const quantizePatch: Partial<QuantizeSettings> = { paletteMode: value };
+      const quantizePatch: Partial<QuantizeSettings> = { paletteMode: value, paletteFromLayers: false };
       if (value === 'manuelle' && getState().design.quantize.palette.length === 0) {
         quantizePatch.palette = [...MANUAL_SEED];
       }
       update({ design: { quantize: quantizePatch } });
     },
-    'Automatique : l’outil choisit les fils. Manuelle : vous imposez les couleurs du fabricant.',
+    'D’après les calques : les couleurs de fil des calques visibles. Automatique : l’outil réduit les couleurs. Manuelle : vous imposez les fils du fabricant.',
   );
   const despeckle = makeCheckbox(
     'Nettoyer les mailles isolées',
@@ -1489,10 +1553,14 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     }, 4000);
   });
 
-  host.append(layout, dimensions, pixels, zones, decorSection, checks, exportsSection, resetAll, computeMs);
+  panes.motif.appendChild(layout);
+  panes.chaussette.append(dimensions, zones, pixels, checks);
+  panes.decor.appendChild(decorSection);
+  panes.export.appendChild(exportsSection);
+  host.append(resetAll, computeMs);
 
   const syncManual = (current: SockDesignV2): void => {
-    const isManual = current.quantize.paletteMode === 'manuelle';
+    const isManual = current.quantize.paletteMode === 'manuelle' && !current.quantize.paletteFromLayers;
     manual.hidden = !isManual;
     const key = current.quantize.palette.join(',');
     if (!isManual || key === paletteKey || manual.contains(document.activeElement)) return;
@@ -1544,7 +1612,9 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     sizeCm.textContent = `Tour ${tour.toFixed(1)} cm · hauteur ${height.toFixed(1)} cm`;
     sampling.input.value = current.quantize.sampling;
     maxColors.setValue(current.quantize.maxColors);
-    paletteMode.input.value = current.quantize.paletteMode;
+    if (document.activeElement !== paletteMode.input) {
+      paletteMode.input.value = current.quantize.paletteFromLayers ? 'calques' : current.quantize.paletteMode;
+    }
     despeckle.input.checked = current.quantize.despeckle;
     syncManual(current);
     cuff.input.checked = current.zones.cuffEnabled;

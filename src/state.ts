@@ -18,7 +18,9 @@ import {
   normalizeStack,
   primaryMotifLayer,
   removeStackLayer,
+  type FondLayer,
   type ImageLayer,
+  type MotifBounds,
   type MotifLayout,
   type MotifLayer,
   type MotifSource,
@@ -31,6 +33,7 @@ import { collectionTiles } from './core/stackCompute';
 import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
 import type {
   DecorSettings,
+  Hex,
   KnitFidelity,
   LayoutSettings,
   QuantizeSettings,
@@ -627,6 +630,64 @@ export function patchLayer(id: string, patch: Partial<StackLayer>): void {
 
 export function patchLayerCoalesced(id: string, patch: Partial<StackLayer>): void {
   update({ design: { layers: updateStackLayer(state.design.layers, id, patch) } }, { coalesce: true });
+}
+
+/** Couleur du calque Fond. */
+export function setFondColor(color: Hex, coalesce = false): void {
+  update(
+    { design: { layers: updateStackLayer<FondLayer>(state.design.layers, 'fond', { color }) } },
+    { coalesce },
+  );
+}
+
+/** Étendue d’un calque Motif : toute la surface ou une bande de rangs. */
+export function setMotifBounds(id: string, bounds: MotifBounds, coalesce = false): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (layer?.kind !== 'motif') return;
+  update(
+    { design: { layers: updateStackLayer<MotifLayer>(state.design.layers, id, { bounds }) } },
+    { coalesce },
+  );
+}
+
+/** Rend une couleur du calque transparente, ou la rétablit. */
+export function toggleLayerTransparentColor(id: string, color: Hex): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (!layer || layer.kind === 'fond') return;
+  const hex = color.toLowerCase() as Hex;
+  const current = layer.transparentColors.map((c) => c.toLowerCase() as Hex);
+  const transparentColors = current.includes(hex)
+    ? current.filter((c) => c !== hex)
+    : [...current, hex];
+  update({ design: { layers: updateStackLayer(state.design.layers, id, { transparentColors }) } });
+}
+
+/** Réglages d’un calque Image (position, taille, rotation, miroirs, frise). */
+export function patchImageLayer(id: string, patch: Partial<ImageLayer>, coalesce = false): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (layer?.kind !== 'image') return;
+  update(
+    { design: { layers: updateStackLayer<ImageLayer>(state.design.layers, id, patch) } },
+    { coalesce },
+  );
+}
+
+/** Remplace l’image d’un calque Image par une image embarquée (une seule étape d’annulation). */
+export function replaceImageAsset(id: string, asset: EmbeddedAsset): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (layer?.kind !== 'image') return;
+  const assets = state.embeddedAssets.some((a) => a.id === asset.id)
+    ? state.embeddedAssets
+    : [...state.embeddedAssets, asset];
+  update({
+    design: {
+      layers: updateStackLayer<ImageLayer>(state.design.layers, id, {
+        asset: { kind: 'embarquee', assetId: asset.id },
+      }),
+    },
+    embeddedAssets: assets,
+    error: null,
+  });
 }
 
 /** Remplace la source collection d’un Motif (ou du Motif en cours). */
