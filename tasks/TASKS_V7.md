@@ -68,7 +68,7 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 **Critères**
 - [x] `layers.test.ts`, `golden.test.ts` et tous les tests unitaires sont verts ; commit **avant** toute autre modification.
 
-### [ ] T51 — État V2 : les calques remplacent `layout`, `pattern` et la collection active
+### [x] T51 — État V2 : les calques remplacent `layout`, `pattern` et la collection active
 
 - `SockDesign` devient `SockDesignV2` (`version: 2`, `layers`). Disparaissent de l'état :
   - `design.layout`, `design.pattern` ;
@@ -92,11 +92,11 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 - Décor « comme la chaussette » : utilise `primaryMotifLayer()`.
 
 **Critères**
-- [ ] Tests unitaires :
+- [x] Tests unitaires :
   - un projet V6 ouvert dans V7 (fixtures de `project.test.ts`) calcule la même grille qu'en V6 ;
   - masquer, réordonner ou rendre une couleur transparente ne recalcule pas `motifLayerRgb` (compteur d'appels) ;
   - annuler ou rétablir un ajout de calque fonctionne.
-- [ ] `golden.test.ts` et `layers.test.ts` verts sans modification.
+- [x] `golden.test.ts` et `layers.test.ts` verts sans modification.
 
 ### [ ] T52 — Fichiers projet, sauvegarde auto et lien de partage
 

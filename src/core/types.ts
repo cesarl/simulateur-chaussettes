@@ -129,9 +129,18 @@ export interface QuantizeSettings {
   despeckle: boolean;
   /** Longueur de flotté max tolérée (mailles consécutives de même couleur sur un rang) pour l'alerte. */
   maxFloat: number;
+  /**
+   * Si vrai, la palette vient des couleurs de fil des calques Motif (`suggestStackPalette`).
+   * Absent / false = comportement V1–V6 (auto k-means ou manuelle). Défaut vrai pour un nouveau
+   * design ; false pour tout design migré (garde sa palette exacte).
+   */
+  paletteFromLayers?: boolean;
 }
 
-/** Réglages complets d'un modèle : c'est l'état de l'application (sérialisable en JSON). */
+/**
+ * Modèle V1 (projets / liens `#p=1.`). La migration vers V2 est dans `layers.migrateDesignV1`.
+ * L’état runtime de l’application est `SockDesignV2` (`src/core/layers.ts`).
+ */
 export interface SockDesign {
   version: 1;
   name: string;

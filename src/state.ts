@@ -1,26 +1,50 @@
-import { EMPTY_COMPOSITION, type EmbeddedAsset } from './core/composition';
+/**
+ * État de l'application (V7) : SockDesignV2 en calques.
+ * Les anciens champs layout / pattern / collection active vivent dans chaque calque Motif.
+ */
+import type { EmbeddedAsset } from './core/composition';
 import type { Preset } from './core/calepinage';
+import type { CalepinageSpec } from './core/calepinage';
+import { tileRowsFor, tileWidthForCount } from './core/calepinage';
+import type { Catalogue, ZoneColors } from './core/collections';
+import {
+  addStackLayer,
+  duplicateStackLayer,
+  moveStackLayer,
+  newFondLayer,
+  newImageLayer,
+  newMotifLayer,
+  normalizeStack,
+  primaryMotifLayer,
+  removeStackLayer,
+  type ImageLayer,
+  type MotifLayout,
+  type MotifLayer,
+  type MotifSource,
+  type SockDesignV2,
+  type StackLayer,
+  updateStackLayer,
+} from './core/layers';
+import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
+import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
 import type {
+  DecorSettings,
   KnitFidelity,
   LayoutSettings,
-  PatternSource,
   QuantizeSettings,
   SockDesign,
   SockDimensions,
   TileAsset,
   ZoneSettings,
-  DecorSettings,
 } from './core/types';
-import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
-import type { CalepinageSpec } from './core/calepinage';
-import { tileRowsFor, tileWidthForCount } from './core/calepinage';
-import type { Catalogue, ZoneColors } from './core/collections';
-import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
+import type { AssetRef } from './core/composition';
+import { V1_SHARE_DEFAULTS } from './core/layers';
 
 export type FootSide = 'droite' | 'gauche';
+export type { SockDesignV2 };
 
-/** Sections réinitialisables (hors carreaux importés). */
-export type DesignSection = 'layout' | 'dimensions' | 'quantize' | 'zones' | 'decor';
+/** Sections projet réinitialisables (hors calques). */
+export type DesignSection = 'dimensions' | 'quantize' | 'zones' | 'decor';
 
 /** Calcule largeur/hauteur de carreau depuis « N sur le tour » (proportions gardées). */
 export function layoutFromTilesAround(
@@ -38,88 +62,6 @@ export function layoutFromTilesAround(
     ? Math.max(1, Math.round(tileRowsFor(tileStitches, stitchesPerCm, rowsPerCm)))
     : Math.max(1, currentRows);
   return { tileStitches, tileRows, tilesAround: n, tileSizeMode: 'around' };
-}
-
-/** Réglage partiel : chaque sous-objet est fusionné, pas remplacé. */
-export interface DesignPatch {
-  name?: string;
-  version?: 1;
-  layout?: Partial<Omit<LayoutSettings, 'calepinage'>> & {
-    calepinage?: Partial<CalepinageSpec> & { genere?: Partial<CalepinageSpec['genere']> };
-    /** @deprecated V1 — migré vers calepinage */
-    kind?: string;
-    rotation?: 0 | 90 | 180 | 270;
-    seed?: number;
-  };
-  dimensions?: Partial<SockDimensions>;
-  zones?: Partial<ZoneSettings>;
-  quantize?: Partial<QuantizeSettings>;
-  decor?: Partial<DecorSettings>;
-  pattern?: PatternSource;
-}
-
-export interface AppState {
-  design: SockDesign;
-  tiles: TileAsset[];
-  /** Message lisible, ou null s'il n'y a pas d'erreur. */
-  error: string | null;
-  /** Rendu 3D des frontières de mailles (hors sérialisation projet). */
-  knitFidelity: KnitFidelity;
-  /** Pied droit ou gauche (miroir X du maillage). Hors sérialisation projet. */
-  footSide: FootSide;
-  /** Bibliothèque de préréglages (session / projet) ; défaut = config/calepinages.json. */
-  calepPresets: Preset[];
-  calepWarnings: string[];
-  /** Catalogue synchronisé (`public/carreaux/`), ou null s’il n’est pas disponible. */
-  catalogue: Catalogue | null;
-  /** Message discret si `public/carreaux/` est absent. */
-  catalogueMissing: boolean;
-  /** Collection active (null = mode carreaux importés). */
-  activeCollectionId: string | null;
-  /** Couleurs de zones (codes nuancier) quand une collection est active. */
-  zoneColors: ZoneColors | null;
-  /** Option de palette courante (`defaut`, `reco-1`…). */
-  paletteOptionId: string | null;
-  /** Images embarquées du projet (composition) — T47. */
-  embeddedAssets: EmbeddedAsset[];
-}
-
-export interface StatePatch {
-  design?: DesignPatch;
-  tiles?: TileAsset[];
-  error?: string | null;
-  knitFidelity?: KnitFidelity;
-  footSide?: FootSide;
-  calepPresets?: Preset[];
-  calepWarnings?: string[];
-  catalogue?: Catalogue | null;
-  catalogueMissing?: boolean;
-  activeCollectionId?: string | null;
-  zoneColors?: ZoneColors | null;
-  paletteOptionId?: string | null;
-  embeddedAssets?: EmbeddedAsset[];
-}
-
-export interface UpdateOptions {
-  /** Mouvement continu d’un curseur : un seul pas d’historique. */
-  coalesce?: boolean;
-  /** Ne pas enregistrer dans l’historique (undo/redo internes). */
-  skipHistory?: boolean;
-}
-
-type Listener = (state: AppState) => void;
-
-const HISTORY_MAX = 100;
-
-interface HistoryEntry {
-  design: SockDesign;
-  tiles: TileAsset[];
-  knitFidelity: KnitFidelity;
-  footSide: FootSide;
-  activeCollectionId: string | null;
-  zoneColors: ZoneColors | null;
-  paletteOptionId: string | null;
-  coalesce: boolean;
 }
 
 function defaultCalepinage(): CalepinageSpec {
@@ -140,13 +82,12 @@ export function defaultDecor(): DecorSettings {
   };
 }
 
-/** Modèle de départ : homme, un seul motif, 4 couleurs auto, bord-côte présent. */
-export function defaultDesign(): SockDesign {
+/** Layout Motif par défaut (= écran de départ V6). */
+export function defaultMotifLayout(): MotifLayout {
   const dimensions = defaultDimensions('homme');
-  const tilesAround = 6;
   const sized = layoutFromTilesAround(
     dimensions.needles,
-    tilesAround,
+    6,
     0,
     dimensions.stitchesPerCm,
     dimensions.rowsPerCm,
@@ -154,22 +95,27 @@ export function defaultDesign(): SockDesign {
     1,
   );
   return {
-    version: 1,
+    calepinage: defaultCalepinage(),
+    tileStitches: sized.tileStitches,
+    tileRows: sized.tileRows,
+    gapStitches: 0,
+    gapRows: 0,
+    gapColor: '#d9d3c7',
+    offsetStitches: 0,
+    offsetRows: 0,
+    seam: 'dos',
+    tilesAround: sized.tilesAround,
+    tileSizeMode: 'around',
+  };
+}
+
+/** Modèle de départ : Fond + 1 Motif (importés, calepinage V6), palette d’après les calques. */
+export function defaultDesign(): SockDesignV2 {
+  const dimensions = defaultDimensions('homme');
+  const motif = newMotifLayer('motif-1', { kind: 'importes', tileIds: [] }, defaultMotifLayout(), 'Motif 1');
+  return {
+    version: 2,
     name: 'modele',
-    layout: {
-      calepinage: defaultCalepinage(),
-      tileIds: [],
-      tileStitches: sized.tileStitches,
-      tileRows: sized.tileRows,
-      gapStitches: 0,
-      gapRows: 0,
-      gapColor: '#d9d3c7',
-      offsetStitches: 0,
-      offsetRows: 0,
-      seam: 'dos',
-      tilesAround: sized.tilesAround,
-      tileSizeMode: 'around',
-    },
     dimensions,
     zones: {
       cuffEnabled: true,
@@ -189,15 +135,115 @@ export function defaultDesign(): SockDesign {
       sampling: 'majoritaire',
       despeckle: false,
       maxFloat: MACHINE_LIMITS.maxFloat,
+      paletteFromLayers: true,
     },
     decor: defaultDecor(),
+    layers: normalizeStack([newFondLayer(), motif]),
+  };
+}
+
+/**
+ * Design V1 figé (= `v1ShareDefaults.json`) pour construire des fixtures de migration / empreintes.
+ * Ne pas utiliser comme état runtime.
+ */
+export function defaultDesignV1(): SockDesign {
+  const v = V1_SHARE_DEFAULTS as unknown as {
+    name: string;
+    layout: Omit<LayoutSettings, 'tileIds'>;
+    dimensions: SockDimensions;
+    zones: ZoneSettings;
+    quantize: QuantizeSettings;
+    decor: DecorSettings;
+  };
+  return {
+    version: 1,
+    name: v.name,
+    layout: { ...structuredClone(v.layout), tileIds: [] },
+    dimensions: structuredClone(v.dimensions),
+    zones: structuredClone(v.zones),
+    quantize: structuredClone(v.quantize),
+    decor: structuredClone(v.decor),
     pattern: { kind: 'carreaux' },
   };
 }
 
+/** Patch d’un calque Motif (layout partiel + source). */
+export type MotifLayoutPatch = Partial<Omit<MotifLayout, 'calepinage'>> & {
+  calepinage?: Partial<CalepinageSpec> & { genere?: Partial<CalepinageSpec['genere']> };
+  /** @deprecated V1 — migré vers calepinage */
+  kind?: string;
+  rotation?: 0 | 90 | 180 | 270;
+  seed?: number;
+  tileIds?: string[];
+};
+
+export interface DesignPatch {
+  name?: string;
+  dimensions?: Partial<SockDimensions>;
+  zones?: Partial<ZoneSettings>;
+  quantize?: Partial<QuantizeSettings>;
+  decor?: Partial<DecorSettings>;
+  layers?: StackLayer[];
+  /**
+   * Compat V6 : appliqué au calque Motif en cours d’édition (sélectionné ou primaire).
+   * @deprecated préférer `updateLayer` / `patchMotifLayout`.
+   */
+  layout?: MotifLayoutPatch;
+}
+
+export interface AppState {
+  design: SockDesignV2;
+  tiles: TileAsset[];
+  error: string | null;
+  knitFidelity: KnitFidelity;
+  footSide: FootSide;
+  calepPresets: Preset[];
+  calepWarnings: string[];
+  catalogue: Catalogue | null;
+  catalogueMissing: boolean;
+  /** Calque sélectionné (null = aucun). Le Fond peut être sélectionné. */
+  selectedLayerId: string | null;
+  /** Images embarquées du projet (référencées par les calques Image). */
+  embeddedAssets: EmbeddedAsset[];
+}
+
+export interface StatePatch {
+  design?: DesignPatch;
+  tiles?: TileAsset[];
+  error?: string | null;
+  knitFidelity?: KnitFidelity;
+  footSide?: FootSide;
+  calepPresets?: Preset[];
+  calepWarnings?: string[];
+  catalogue?: Catalogue | null;
+  catalogueMissing?: boolean;
+  selectedLayerId?: string | null;
+  embeddedAssets?: EmbeddedAsset[];
+}
+
+export interface UpdateOptions {
+  coalesce?: boolean;
+  skipHistory?: boolean;
+}
+
+type Listener = (state: AppState) => void;
+
+const HISTORY_MAX = 100;
+
+interface HistoryEntry {
+  design: SockDesignV2;
+  tiles: TileAsset[];
+  knitFidelity: KnitFidelity;
+  footSide: FootSide;
+  selectedLayerId: string | null;
+  embeddedAssets: EmbeddedAsset[];
+  coalesce: boolean;
+}
+
 function createInitial(): AppState {
+  const design = defaultDesign();
   return {
-    design: defaultDesign(),
+    design,
     tiles: [],
     error: null,
     knitFidelity: 'fidele',
@@ -206,14 +252,12 @@ function createInitial(): AppState {
     calepWarnings: [...BUILTIN_PRESET_WARNINGS],
     catalogue: null,
     catalogueMissing: false,
-    activeCollectionId: null,
-    zoneColors: null,
-    paletteOptionId: null,
+    selectedLayerId: design.layers.find((l) => l.kind === 'motif')?.id ?? 'fond',
     embeddedAssets: [],
   };
 }
 
-function cloneDesign(design: SockDesign): SockDesign {
+function cloneDesign(design: SockDesignV2): SockDesignV2 {
   return structuredClone(design);
 }
 
@@ -223,9 +267,8 @@ function snapshot(coalesce: boolean): HistoryEntry {
     tiles: state.tiles,
     knitFidelity: state.knitFidelity,
     footSide: state.footSide,
-    activeCollectionId: state.activeCollectionId,
-    zoneColors: state.zoneColors ? { ...state.zoneColors } : null,
-    paletteOptionId: state.paletteOptionId,
+    selectedLayerId: state.selectedLayerId,
+    embeddedAssets: state.embeddedAssets,
     coalesce,
   };
 }
@@ -237,9 +280,8 @@ function restore(entry: HistoryEntry): void {
     tiles: entry.tiles,
     knitFidelity: entry.knitFidelity,
     footSide: entry.footSide,
-    activeCollectionId: entry.activeCollectionId,
-    zoneColors: entry.zoneColors,
-    paletteOptionId: entry.paletteOptionId,
+    selectedLayerId: entry.selectedLayerId,
+    embeddedAssets: entry.embeddedAssets,
   };
 }
 
@@ -300,9 +342,44 @@ function notify(): void {
   for (const listener of listeners) listener(state);
 }
 
+// --------------------------------------------------------------------------- accès calques
+/** Calque Motif utilisé pour l’édition (sélectionné s’il est Motif, sinon primaire). */
+export function editingMotif(design: SockDesignV2 = state.design, selectedId: string | null = state.selectedLayerId): MotifLayer | null {
+  if (selectedId) {
+    const sel = design.layers.find((l) => l.id === selectedId);
+    if (sel?.kind === 'motif') return sel;
+  }
+  return primaryMotifLayer(design.layers);
+}
+
+/** LayoutSettings (avec tileIds) du Motif en cours — pour contrôles / décor / checks. */
+export function editingLayoutSettings(
+  design: SockDesignV2 = state.design,
+  tiles: readonly TileAsset[] = state.tiles,
+  selectedId: string | null = state.selectedLayerId,
+): LayoutSettings {
+  const motif = editingMotif(design, selectedId);
+  const layout = motif?.layout ?? defaultMotifLayout();
+  let tileIds: string[] = [];
+  if (motif?.source.kind === 'importes') {
+    tileIds = motif.source.tileIds.length ? [...motif.source.tileIds] : tiles.map((t) => t.id);
+  }
+  return { ...layout, tileIds };
+}
+
+/** Collection dérivée du Motif en cours (null = importés / pas de Motif). */
+export function editingCollection(
+  design: SockDesignV2 = state.design,
+  selectedId: string | null = state.selectedLayerId,
+): { id: string; colors: ZoneColors; paletteId: string | null } | null {
+  const motif = editingMotif(design, selectedId);
+  if (!motif || motif.source.kind !== 'collection') return null;
+  return { id: motif.source.collectionId, colors: motif.source.colors, paletteId: motif.source.paletteId };
+}
+
 function mergeCalepinage(
   current: CalepinageSpec,
-  patch: NonNullable<DesignPatch['layout']>['calepinage'],
+  patch: MotifLayoutPatch['calepinage'],
 ): CalepinageSpec {
   if (!patch) return current;
   return {
@@ -312,7 +389,7 @@ function mergeCalepinage(
   };
 }
 
-function applyLayout(layout: LayoutSettings, patch: NonNullable<DesignPatch['layout']>): LayoutSettings {
+function applyMotifLayout(layout: MotifLayout, patch: MotifLayoutPatch): MotifLayout {
   let calepinage = layout.calepinage;
   if (patch.kind && !patch.calepinage) {
     const seed = patch.seed ?? calepinage.graine;
@@ -326,7 +403,6 @@ function applyLayout(layout: LayoutSettings, patch: NonNullable<DesignPatch['lay
   }
   return {
     calepinage,
-    tileIds: patch.tileIds ?? layout.tileIds,
     tileStitches: patch.tileStitches ?? layout.tileStitches,
     tileRows: patch.tileRows ?? layout.tileRows,
     gapStitches: patch.gapStitches ?? layout.gapStitches,
@@ -340,32 +416,32 @@ function applyLayout(layout: LayoutSettings, patch: NonNullable<DesignPatch['lay
   };
 }
 
-function applyDesign(design: SockDesign, patch: DesignPatch): SockDesign {
+function applyLayoutToDesign(design: SockDesignV2, patch: MotifLayoutPatch, selectedId: string | null): SockDesignV2 {
+  const motif = editingMotif(design, selectedId);
+  if (!motif) return design;
+  const nextLayout = applyMotifLayout(motif.layout, patch);
+  let source = motif.source;
+  if (patch.tileIds && source.kind === 'importes') {
+    source = { kind: 'importes', tileIds: [...patch.tileIds] };
+  }
   return {
     ...design,
+    layers: updateStackLayer<MotifLayer>(design.layers, motif.id, { layout: nextLayout, source }),
+  };
+}
+
+function applyDesign(design: SockDesignV2, patch: DesignPatch, selectedId: string | null): SockDesignV2 {
+  let next: SockDesignV2 = {
+    ...design,
     ...(patch.name !== undefined ? { name: patch.name } : {}),
-    ...(patch.version !== undefined ? { version: patch.version } : {}),
-    layout: patch.layout ? applyLayout(design.layout, patch.layout) : design.layout,
     dimensions: patch.dimensions ? { ...design.dimensions, ...patch.dimensions } : design.dimensions,
     zones: patch.zones ? { ...design.zones, ...patch.zones } : design.zones,
     quantize: patch.quantize ? { ...design.quantize, ...patch.quantize } : design.quantize,
     decor: patch.decor ? { ...design.decor, ...patch.decor } : design.decor,
-    pattern: patch.pattern ?? design.pattern ?? { kind: 'carreaux' },
+    layers: patch.layers ? normalizeStack(patch.layers) : design.layers,
   };
-}
-
-/** Garantit un `pattern` valide (anciens snapshots sans le champ). */
-export function ensurePattern(design: SockDesign): SockDesign {
-  if (design.pattern?.kind === 'composition') {
-    return {
-      ...design,
-      pattern: {
-        kind: 'composition',
-        composition: design.pattern.composition ?? { ...EMPTY_COMPOSITION },
-      },
-    };
-  }
-  return { ...design, pattern: { kind: 'carreaux' } };
+  if (patch.layout) next = applyLayoutToDesign(next, patch.layout, selectedId);
+  return next;
 }
 
 export function update(patch: StatePatch, options: UpdateOptions = {}): void {
@@ -375,19 +451,33 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
       patch.tiles !== undefined ||
       patch.knitFidelity !== undefined ||
       patch.footSide !== undefined ||
-      patch.activeCollectionId !== undefined ||
-      patch.zoneColors !== undefined ||
-      patch.paletteOptionId !== undefined);
+      patch.selectedLayerId !== undefined ||
+      patch.embeddedAssets !== undefined);
   if (records) pushHistory(options.coalesce === true);
 
-  let design = patch.design ? applyDesign(state.design, patch.design) : state.design;
-  const tiles = patch.tiles ?? state.tiles;
+  const selectedId = patch.selectedLayerId !== undefined ? patch.selectedLayerId : state.selectedLayerId;
+  let design = patch.design ? applyDesign(state.design, patch.design, selectedId) : state.design;
+  let tiles = patch.tiles ?? state.tiles;
+
+  // Si on remplace les carreaux importés, synchroniser le Motif « importés » en cours.
   if (patch.tiles) {
-    design = {
-      ...design,
-      layout: { ...design.layout, tileIds: patch.tiles.map((tile) => tile.id) },
-    };
+    const motif = editingMotif(design, selectedId);
+    if (motif?.source.kind === 'importes') {
+      design = {
+        ...design,
+        layers: updateStackLayer<MotifLayer>(design.layers, motif.id, {
+          source: { kind: 'importes', tileIds: patch.tiles.map((t) => t.id) },
+        }),
+      };
+    }
   }
+
+  // Vérifier que selectedLayerId existe encore.
+  let sel = selectedId;
+  if (sel && !design.layers.some((l) => l.id === sel)) {
+    sel = design.layers.find((l) => l.kind === 'motif')?.id ?? design.layers[0]?.id ?? null;
+  }
+
   state = {
     design,
     tiles,
@@ -399,11 +489,7 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
     catalogue: patch.catalogue === undefined ? state.catalogue : patch.catalogue,
     catalogueMissing:
       patch.catalogueMissing === undefined ? state.catalogueMissing : patch.catalogueMissing,
-    activeCollectionId:
-      patch.activeCollectionId === undefined ? state.activeCollectionId : patch.activeCollectionId,
-    zoneColors: patch.zoneColors === undefined ? state.zoneColors : patch.zoneColors,
-    paletteOptionId:
-      patch.paletteOptionId === undefined ? state.paletteOptionId : patch.paletteOptionId,
+    selectedLayerId: sel,
     embeddedAssets: patch.embeddedAssets ?? state.embeddedAssets,
   };
   notify();
@@ -429,47 +515,205 @@ export function redo(): boolean {
   return true;
 }
 
-/** Empreinte d’une section hors liste de carreaux (pour pastille « modifié »). */
-export function sectionFingerprint(section: DesignSection, design: SockDesign): string {
-  if (section === 'layout') {
-    const { tileIds: _ids, ...rest } = design.layout;
-    return JSON.stringify(rest);
-  }
+// --------------------------------------------------------------------------- actions calques
+export function selectLayer(id: string | null): void {
+  update({ selectedLayerId: id });
+}
+
+export function addMotifLayer(source: MotifSource, layout: MotifLayout = defaultMotifLayout(), name?: string): string {
+  const id = `motif-${Date.now().toString(36)}`;
+  const layer = newMotifLayer(id, source, layout, name ?? (source.kind === 'collection' ? source.collectionId : 'Motif'));
+  const layers = addStackLayer(state.design.layers, layer);
+  // Réassigner un id stable via nextLayerId déjà fait dans newMotifLayer ; on normalise.
+  const normalized = normalizeStack(layers);
+  const added = normalized[normalized.length - 1]!;
+  update({ design: { layers: normalized }, selectedLayerId: added.id });
+  return added.id;
+}
+
+export function addImageLayer(asset: AssetRef, name = 'Image'): string {
+  const g = {
+    needles: state.design.dimensions.needles,
+    rows: Math.max(1, state.design.dimensions.legRows + (state.design.zones.patternOnFoot ? state.design.dimensions.footRows : 0)),
+    stitchesPerCm: state.design.dimensions.stitchesPerCm,
+    rowsPerCm: state.design.dimensions.rowsPerCm,
+  };
+  const id = `image-${Date.now().toString(36)}`;
+  const layer = newImageLayer(id, asset, g, name);
+  const layers = addStackLayer(state.design.layers, layer);
+  const normalized = normalizeStack(layers);
+  const added = normalized[normalized.length - 1]!;
+  update({ design: { layers: normalized }, selectedLayerId: added.id });
+  return added.id;
+}
+
+export function removeLayer(id: string): void {
+  const layers = removeStackLayer(state.design.layers, id);
+  const sel = state.selectedLayerId === id ? (layers.find((l) => l.kind === 'motif')?.id ?? 'fond') : state.selectedLayerId;
+  update({ design: { layers }, selectedLayerId: sel });
+}
+
+export function duplicateLayer(id: string): void {
+  const layers = duplicateStackLayer(state.design.layers, id);
+  const copy = layers.find((l, i) => l.id !== id && layers[i - 1]?.id === id) ?? layers.find((l) => l.name.endsWith('(copie)'));
+  update({ design: { layers }, selectedLayerId: copy?.id ?? state.selectedLayerId });
+}
+
+export function moveLayer(id: string, dir: 'monter' | 'descendre' | 'dessus' | 'dessous' | number): void {
+  update({ design: { layers: moveStackLayer(state.design.layers, id, dir) } });
+}
+
+export function setLayerHidden(id: string, hidden: boolean): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (!layer || layer.kind === 'fond') return;
+  update({ design: { layers: updateStackLayer(state.design.layers, id, { hidden }) } });
+}
+
+export function setLayerLocked(id: string, locked: boolean): void {
+  update({ design: { layers: updateStackLayer(state.design.layers, id, { locked }) } });
+}
+
+export function renameLayer(id: string, name: string): void {
+  update({ design: { layers: updateStackLayer(state.design.layers, id, { name }) } });
+}
+
+export function patchLayer(id: string, patch: Partial<StackLayer>): void {
+  update({ design: { layers: updateStackLayer(state.design.layers, id, patch) } }, { coalesce: false });
+}
+
+export function patchLayerCoalesced(id: string, patch: Partial<StackLayer>): void {
+  update({ design: { layers: updateStackLayer(state.design.layers, id, patch) } }, { coalesce: true });
+}
+
+/** Remplace la source collection d’un Motif (ou du Motif en cours). */
+export function setMotifCollection(
+  collectionId: string,
+  colors: ZoneColors,
+  paletteId: string | null,
+  layerId?: string,
+): void {
+  const id = layerId ?? editingMotif()?.id;
+  if (!id) return;
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (!layer || layer.kind !== 'motif') return;
+  update({
+    design: {
+      layers: updateStackLayer<MotifLayer>(state.design.layers, id, {
+        source: { kind: 'collection', collectionId, colors: { ...colors }, paletteId },
+        name: layer.name.startsWith('Motif') ? collectionId.replace(/[-_]+/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : layer.name,
+      }),
+    },
+    selectedLayerId: id,
+  });
+}
+
+/** Passe le Motif en cours en carreaux importés. */
+export function setMotifImportes(tileIds?: string[], layerId?: string): void {
+  const id = layerId ?? editingMotif()?.id;
+  if (!id) return;
+  const ids = tileIds ?? state.tiles.map((t) => t.id);
+  update({
+    design: {
+      layers: updateStackLayer<MotifLayer>(state.design.layers, id, {
+        source: { kind: 'importes', tileIds: [...ids] },
+      }),
+    },
+  });
+}
+
+export function sectionFingerprint(section: DesignSection, design: SockDesignV2): string {
   return JSON.stringify(design[section]);
 }
 
-export function isSectionDirty(section: DesignSection, design: SockDesign = state.design): boolean {
+export function isSectionDirty(section: DesignSection, design: SockDesignV2 = state.design): boolean {
   return sectionFingerprint(section, design) !== sectionFingerprint(section, defaultDesign());
+}
+
+export function isMotifLayoutDirty(design: SockDesignV2 = state.design): boolean {
+  const motif = editingMotif(design);
+  if (!motif) return false;
+  return JSON.stringify(motif.layout) !== JSON.stringify(defaultMotifLayout());
 }
 
 export function resetSection(section: DesignSection): void {
   const defaults = defaultDesign();
-  if (section === 'layout') {
+  update({ design: { [section]: defaults[section] } });
+}
+
+/** Réinitialise le calque Motif / Image / Fond sélectionné (ou primaire). */
+export function resetSelectedLayer(): void {
+  const id = state.selectedLayerId;
+  const layer = state.design.layers.find((l) => l.id === id) ?? editingMotif();
+  if (!layer) return;
+  if (layer.kind === 'fond') {
+    update({ design: { layers: updateStackLayer(state.design.layers, 'fond', { color: newFondLayer().color }) } });
+    return;
+  }
+  if (layer.kind === 'motif') {
+    const fresh = newMotifLayer(layer.id, layer.source, defaultMotifLayout(), layer.name);
     update({
       design: {
-        layout: {
-          ...defaults.layout,
-          tileIds: state.design.layout.tileIds,
-        },
+        layers: updateStackLayer<MotifLayer>(state.design.layers, layer.id, {
+          layout: fresh.layout,
+          bounds: fresh.bounds,
+          transparentColors: [],
+          hidden: false,
+          locked: false,
+        }),
       },
     });
     return;
   }
-  update({ design: { [section]: defaults[section] } });
+  // Image : recentrer aux défauts
+  const g = {
+    needles: state.design.dimensions.needles,
+    rows: Math.max(1, state.design.dimensions.legRows),
+    stitchesPerCm: state.design.dimensions.stitchesPerCm,
+    rowsPerCm: state.design.dimensions.rowsPerCm,
+  };
+  const fresh = newImageLayer(layer.id, layer.asset, g, layer.name);
+  update({
+    design: {
+      layers: updateStackLayer<ImageLayer>(state.design.layers, layer.id, {
+        x: fresh.x,
+        y: fresh.y,
+        widthStitches: fresh.widthStitches,
+        rotation: 0,
+        flipX: false,
+        flipY: false,
+        repeatAroundGap: null,
+        transparentColors: [],
+        hidden: false,
+        locked: false,
+      }),
+    },
+  });
 }
 
-/** Remet tout au défaut sauf les carreaux importés. */
+/** Remet tout au défaut sauf les carreaux importés et images embarquées. */
 export function resetAllDesign(): void {
   coalesceActive = false;
   const defaults = defaultDesign();
+  const tileIds = state.tiles.map((t) => t.id);
+  const motif = defaults.layers.find((l): l is MotifLayer => l.kind === 'motif');
+  const layers = motif
+    ? normalizeStack([
+        defaults.layers[0]!,
+        {
+          ...motif,
+          source: { kind: 'importes', tileIds: [...tileIds] },
+        },
+      ])
+    : defaults.layers;
   update({
     design: {
       ...defaults,
-      layout: { ...defaults.layout, tileIds: state.design.layout.tileIds },
+      layers,
       name: state.design.name,
     },
     knitFidelity: 'fidele',
     footSide: 'droite',
+    selectedLayerId: layers.find((l) => l.kind === 'motif')?.id ?? 'fond',
   });
 }
 

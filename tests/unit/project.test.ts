@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseProject, ProjectError, serializeProject } from '../../src/io/project';
-import { defaultDesign } from '../../src/state';
+import { defaultDesign, defaultDesignV1 } from '../../src/state';
+import { newImageLayer, normalizeStack, primaryMotifLayer, type SockDesignV2 } from '../../src/core/layers';
 import type { TileAsset } from '../../src/core/types';
 
 function tile(): TileAsset {
@@ -19,17 +20,31 @@ function tile(): TileAsset {
   };
 }
 
+function withImportTiles(design: SockDesignV2, ids: string[]): SockDesignV2 {
+  const motif = primaryMotifLayer(design.layers);
+  if (!motif) return design;
+  return {
+    ...design,
+    layers: design.layers.map((l) =>
+      l.id === motif.id && l.kind === 'motif'
+        ? { ...l, source: { kind: 'importes' as const, tileIds: [...ids] } }
+        : l,
+    ),
+  };
+}
+
 describe('projet JSON', () => {
   it('retrouve les réglages et les pixels des carreaux', async () => {
-    const design = defaultDesign();
-    design.name = 'Étoile';
-    design.zones.heelColor = '#112233';
-    design.layout.tileIds = ['carreau-a'];
+    let design = defaultDesign();
+    design = { ...design, name: 'Étoile', zones: { ...design.zones, heelColor: '#112233' } };
+    design = withImportTiles(design, ['carreau-a']);
     const json = await serializeProject(design, [tile()]);
     const back = await parseProject(json);
     expect(back.design.name).toBe('Étoile');
     expect(back.design.zones.heelColor).toBe('#112233');
-    expect(back.design.layout.tileIds).toEqual(['carreau-a']);
+    expect(back.design.version).toBe(2);
+    const motif = primaryMotifLayer(back.design.layers);
+    expect(motif?.source).toEqual({ kind: 'importes', tileIds: ['carreau-a'] });
     expect(back.tiles).toHaveLength(1);
     expect(back.tiles[0]?.width).toBe(2);
     expect(back.tiles[0]?.height).toBe(2);
@@ -47,9 +62,9 @@ describe('projet JSON', () => {
       rgba[index + 2] = 90;
       rgba[index + 3] = 255;
     }
-    const design = defaultDesign();
+    let design = defaultDesign();
     const big: TileAsset = { id: 'grand', name: 'Grand', source: 'png', width, height, rgba };
-    design.layout.tileIds = ['grand'];
+    design = withImportTiles(design, ['grand']);
     const back = await parseProject(await serializeProject(design, [big]));
     expect(back.tiles[0]?.rgba).toEqual(rgba);
   });
@@ -60,59 +75,84 @@ describe('projet JSON', () => {
   });
 
   it('complète les réglages de talon manquants (anciens projets)', async () => {
-    const design = defaultDesign();
-    design.layout.tileIds = [];
-    const json = await serializeProject(design, []);
+    const v1 = defaultDesignV1();
+    v1.layout.tileIds = [];
+    const json = await serializeProject(
+      // serialize expects V2 — migrate via roundtrip craft
+      (
+        await parseProject(
+          JSON.stringify({ version: 1, design: v1, tiles: [], collection: null }),
+        )
+      ).design,
+      [],
+    );
     const doc = JSON.parse(json) as { design: { zones: Record<string, unknown> } };
     delete doc.design.zones.heelHeightMm;
     delete doc.design.zones.heelDepthMm;
     delete doc.design.zones.heelSpread;
-    const back = await parseProject(JSON.stringify(doc));
+    // Reconstruire un V1 pour tester la complétion (readDesign V1)
+    const v1doc = {
+      version: 1 as const,
+      design: {
+        ...v1,
+        zones: { ...v1.zones },
+      },
+      tiles: [],
+      collection: null,
+    };
+    delete (v1doc.design.zones as Record<string, unknown>).heelHeightMm;
+    delete (v1doc.design.zones as Record<string, unknown>).heelDepthMm;
+    delete (v1doc.design.zones as Record<string, unknown>).heelSpread;
+    const back = await parseProject(JSON.stringify(v1doc));
     expect(back.design.zones.heelHeightMm).toBe(55);
     expect(back.design.zones.heelDepthMm).toBe(72);
     expect(back.design.zones.heelSpread).toBe(100);
   });
 
-  it('migre les anciens LayoutKind vers CalepinageSpec', async () => {
-    const design = defaultDesign();
-    const json = await serializeProject(design, []);
-    const doc = JSON.parse(json) as {
-      design: { layout: Record<string, unknown> };
+  it('migre les anciens LayoutKind vers CalepinageSpec (puis calques)', async () => {
+    const v1 = defaultDesignV1();
+    const doc = {
+      version: 1 as const,
+      design: {
+        ...v1,
+        layout: { ...v1.layout, tileIds: [] as string[] } as Record<string, unknown>,
+      },
+      tiles: [],
+      collection: null,
     };
     delete doc.design.layout.calepinage;
     doc.design.layout.kind = 'rotation-4';
     doc.design.layout.rotation = 90;
     doc.design.layout.seed = 42;
     const back = await parseProject(JSON.stringify(doc));
-    expect(back.design.layout.calepinage.genere.rotation).toBe('rosace');
-    expect(back.design.layout.calepinage.rotationGlobale).toBe(90);
-    expect(back.design.layout.calepinage.graine).toBe(42);
+    const motif = primaryMotifLayer(back.design.layers);
+    expect(motif?.layout.calepinage.genere.rotation).toBe('rosace');
+    expect(motif?.layout.calepinage.rotationGlobale).toBe(90);
+    expect(motif?.layout.calepinage.graine).toBe(42);
 
     doc.design.layout.kind = 'quinconce-h';
     doc.design.layout.rotation = 0;
     doc.design.layout.seed = 1;
     const q = await parseProject(JSON.stringify(doc));
-    expect(q.design.layout.calepinage.appareil).toBe('quinconce-h');
-    expect(q.design.layout.calepinage.genere.ordre).toBe('unique');
+    expect(primaryMotifLayer(q.design.layers)?.layout.calepinage.appareil).toBe('quinconce-h');
 
     doc.design.layout.kind = 'damier';
     const d = await parseProject(JSON.stringify(doc));
-    expect(d.design.layout.calepinage.genere.ordre).toBe('suite');
-    expect(d.design.layout.calepinage.genere.pasRangee).toBe(1);
+    expect(primaryMotifLayer(d.design.layers)?.layout.calepinage.genere.ordre).toBe('suite');
 
     doc.design.layout.kind = 'miroir-4';
     const m = await parseProject(JSON.stringify(doc));
-    expect(m.design.layout.calepinage.genere.rotation).toBe('miroir');
+    expect(primaryMotifLayer(m.design.layers)?.layout.calepinage.genere.rotation).toBe('miroir');
 
     doc.design.layout.kind = 'rotation-aleatoire';
     const r = await parseProject(JSON.stringify(doc));
-    expect(r.design.layout.calepinage.genere.rotation).toBe('aleatoire-90');
+    expect(primaryMotifLayer(r.design.layers)?.layout.calepinage.genere.rotation).toBe('aleatoire-90');
   });
 
   it('aller-retour projet avec collection (id, zones, commit sync)', async () => {
-    const design = defaultDesign();
-    design.name = 'Medina test';
-    design.layout.tileIds = ['carreau-a'];
+    let design = defaultDesign();
+    design = { ...design, name: 'Medina test' };
+    design = withImportTiles(design, ['carreau-a']);
     const collection = {
       id: 'medina',
       zoneColors: {
@@ -132,24 +172,41 @@ describe('projet JSON', () => {
     expect(back.assets).toEqual([]);
   });
 
-  it('projet v1 (sans assets) reste lisible', async () => {
-    const design = defaultDesign();
-    design.name = 'Ancien';
-    const v1 = JSON.stringify({
+  it('projet v1 (sans assets) reste lisible et migré en calques', async () => {
+    const v1 = defaultDesignV1();
+    v1.name = 'Ancien';
+    const json = JSON.stringify({
       version: 1,
-      design,
+      design: v1,
       tiles: [],
       collection: null,
     });
-    const back = await parseProject(v1);
+    const back = await parseProject(json);
     expect(back.design.name).toBe('Ancien');
+    expect(back.design.version).toBe(2);
+    expect(back.design.layers.map((l) => l.kind)).toEqual(['fond', 'motif']);
+    expect(back.design.quantize.paletteFromLayers).toBe(false);
     expect(back.assets).toEqual([]);
-    expect(back.design.pattern.kind).toBe('carreaux');
   });
 
-  it('aller-retour projet v2 avec PNG + SVG embarqués', async () => {
-    const design = defaultDesign();
-    design.name = 'Composition v2';
+  it('aller-retour projet v2 avec images embarquées (calques Image)', async () => {
+    const g = {
+      needles: 168,
+      rows: 180,
+      stitchesPerCm: 7.5,
+      rowsPerCm: 10,
+    };
+    let design = defaultDesign();
+    design = {
+      ...design,
+      name: 'Composition v2',
+      layers: normalizeStack([
+        design.layers[0]!,
+        newImageLayer('L1', { kind: 'embarquee', assetId: 'png1' }, g, 'PNG'),
+        newImageLayer('L2', { kind: 'embarquee', assetId: 'svg1' }, g, 'SVG'),
+        newImageLayer('L3', { kind: 'collection', collectionId: 'medina', variation: 'VAR1' }, g, 'Medina'),
+      ]),
+    };
     const pngAsset = {
       id: 'png1',
       name: 'motif.png',
@@ -166,53 +223,6 @@ describe('projet JSON', () => {
       width: 10,
       height: 10,
     };
-    design.pattern = {
-      kind: 'composition',
-      composition: {
-        background: '#f1e9dc',
-        layers: [
-          {
-            id: 'L1',
-            asset: { kind: 'embarquee', assetId: 'png1' },
-            x: 40,
-            y: 20,
-            widthStitches: 30,
-            rotation: 15,
-            flipX: false,
-            flipY: false,
-            repeatAroundGap: null,
-            hidden: false,
-            locked: false,
-          },
-          {
-            id: 'L2',
-            asset: { kind: 'embarquee', assetId: 'svg1' },
-            x: 80,
-            y: 50,
-            widthStitches: 20,
-            rotation: 0,
-            flipX: true,
-            flipY: false,
-            repeatAroundGap: null,
-            hidden: false,
-            locked: false,
-          },
-          {
-            id: 'L3',
-            asset: { kind: 'collection', collectionId: 'medina', variation: 'VAR1' },
-            x: 10,
-            y: 10,
-            widthStitches: 24,
-            rotation: 0,
-            flipX: false,
-            flipY: false,
-            repeatAroundGap: null,
-            hidden: false,
-            locked: false,
-          },
-        ],
-      },
-    };
     const json = await serializeProject(design, [], {
       assets: [pngAsset, svgAsset, { ...pngAsset, id: 'unused', name: 'orphan.png' }],
     });
@@ -220,9 +230,7 @@ describe('projet JSON', () => {
     expect(doc.version).toBe(2);
     expect(doc.assets.map((a) => a.id).sort()).toEqual(['png1', 'svg1']);
     const back = await parseProject(json);
-    expect(back.design.pattern.kind).toBe('composition');
-    if (back.design.pattern.kind !== 'composition') throw new Error('expected composition');
-    expect(back.design.pattern.composition.layers).toHaveLength(3);
+    expect(back.design.layers.filter((l) => l.kind === 'image')).toHaveLength(3);
     expect(back.assets).toHaveLength(2);
     expect(back.assets.find((a) => a.id === 'png1')?.mime).toBe('image/png');
     expect(back.assets.find((a) => a.id === 'svg1')?.data).toContain('<svg');

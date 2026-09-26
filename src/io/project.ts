@@ -10,7 +10,13 @@ import {
 import type { ZoneColors } from '../core/collections';
 import { isLegacyLayoutKind, migrateLegacyKind } from '../core/presets';
 import type { SockDesign, TileAsset, SeamPosition, TileSizeMode, DecorMode, DecorSettings, PatternSource } from '../core/types';
-import { EMPTY_COMPOSITION, usedEmbeddedAssets, type Composition, type Layer, type AssetRef, type EmbeddedAsset } from '../core/composition';
+import { EMPTY_COMPOSITION, type Composition, type Layer, type AssetRef, type EmbeddedAsset } from '../core/composition';
+import {
+  migrateDesignV1,
+  normalizeStack,
+  type SockDesignV2,
+  type StackLayer,
+} from '../core/layers';
 import { base64ToBytes, bytesToBase64, decodePng, encodePng } from './pngCodec';
 
 /**
@@ -64,14 +70,14 @@ export interface ProjectCollectionMeta {
 
 interface ProjectDocument {
   version: 1 | 2;
-  design: SockDesign;
+  design: SockDesign | SockDesignV2;
   tiles: StoredTile[];
   collection?: ProjectCollectionMeta | null;
   assets?: EmbeddedAsset[];
 }
 
 export interface ParsedProject {
-  design: SockDesign;
+  design: SockDesignV2;
   tiles: TileAsset[];
   collection: ProjectCollectionMeta | null;
   assets: EmbeddedAsset[];
@@ -367,7 +373,7 @@ function readCollectionMeta(value: unknown): ProjectCollectionMeta | null {
 }
 
 export async function serializeProject(
-  design: SockDesign,
+  design: SockDesignV2,
   tiles: readonly TileAsset[],
   options: SerializeProjectOptions = {},
 ): Promise<string> {
@@ -381,13 +387,14 @@ export async function serializeProject(
       pngBase64: bytesToBase64(png),
     });
   }
-  const pattern = design.pattern;
   const allAssets = options.assets ?? [];
-  const assets = options.omitAssets
-    ? []
-    : pattern?.kind === 'composition'
-      ? usedEmbeddedAssets(pattern.composition, [...allAssets])
-      : [];
+  const usedIds = new Set(
+    design.layers
+      .filter((l): l is Extract<StackLayer, { kind: 'image' }> => l.kind === 'image')
+      .map((l) => (l.asset.kind === 'embarquee' ? l.asset.assetId : null))
+      .filter((id): id is string => !!id),
+  );
+  const assets = options.omitAssets ? [] : allAssets.filter((a) => usedIds.has(a.id));
   const document: ProjectDocument = {
     version: 2,
     design,
@@ -428,7 +435,6 @@ export async function parseProject(text: string): Promise<ParsedProject> {
   if (!isRecord(parsed)) throw new ProjectError('contenu illisible.');
   const docVersion = parsed.version;
   if (docVersion !== 1 && docVersion !== 2) throw new ProjectError('version non prise en charge.');
-  const design = readDesign(parsed.design);
   if (!Array.isArray(parsed.tiles)) throw new ProjectError('carreaux manquants.');
   const tiles: TileAsset[] = [];
   for (const entry of parsed.tiles) {
@@ -452,15 +458,72 @@ export async function parseProject(text: string): Promise<ParsedProject> {
       rgba: decoded.rgba,
     });
   }
-  const known = new Set(tiles.map((tile) => tile.id));
-  if (design.layout.tileIds.some((id) => !known.has(id))) {
-    throw new ProjectError('un carreau référencé est absent.');
-  }
   const collection = readCollectionMeta(parsed.collection);
   const assetsRaw = parsed.assets;
   const assets =
     docVersion === 2 && Array.isArray(assetsRaw) ? assetsRaw.map(readEmbeddedAsset) : [];
-  return { design, tiles, collection, assets };
+
+  const rawDesign = parsed.design;
+  let designV2: SockDesignV2;
+  if (isRecord(rawDesign) && rawDesign.version === 2 && Array.isArray(rawDesign.layers)) {
+    const shell = readDesign({
+      version: 1,
+      name: typeof rawDesign.name === 'string' ? rawDesign.name : 'modele',
+      layout: {
+        calepinage: {
+          source: 'genere',
+          presetId: null,
+          genere: { ordre: 'unique', pasRangee: 0, rotation: 'aucune', rotationFixe: 0 },
+          appareil: 'droit',
+          rotationGlobale: 0,
+          graine: 1,
+        },
+        tileIds: [],
+        tileStitches: 28,
+        tileRows: 37,
+        gapStitches: 0,
+        gapRows: 0,
+        gapColor: '#d9d3c7',
+        offsetStitches: 0,
+        offsetRows: 0,
+        seam: 'dos',
+        tilesAround: 6,
+        tileSizeMode: 'around',
+      },
+      dimensions: rawDesign.dimensions,
+      zones: rawDesign.zones,
+      quantize: rawDesign.quantize,
+      decor: rawDesign.decor,
+      pattern: { kind: 'carreaux' },
+    });
+    designV2 = {
+      version: 2,
+      name: shell.name,
+      dimensions: shell.dimensions,
+      zones: shell.zones,
+      quantize: {
+        ...shell.quantize,
+        paletteFromLayers:
+          isRecord(rawDesign.quantize) && rawDesign.quantize.paletteFromLayers === true,
+      },
+      decor: shell.decor,
+      layers: normalizeStack(rawDesign.layers as StackLayer[]),
+    };
+  } else {
+    const design = readDesign(parsed.design);
+    const known = new Set(tiles.map((tile) => tile.id));
+    if (design.layout.tileIds.some((id) => !known.has(id))) {
+      throw new ProjectError('un carreau référencé est absent.');
+    }
+    designV2 = migrateDesignV1(design, {
+      collectionId: collection?.id ?? null,
+      zoneColors: collection?.zoneColors ?? null,
+      paletteOptionId: collection?.paletteOptionId ?? null,
+      tileIds: design.layout.tileIds,
+    });
+    designV2.quantize = { ...designV2.quantize, paletteFromLayers: false };
+  }
+  return { design: designV2, tiles, collection, assets };
 }
 
 function openDb(): Promise<IDBDatabase> {

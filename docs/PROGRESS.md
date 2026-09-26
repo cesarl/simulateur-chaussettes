@@ -585,3 +585,10 @@ Fait : `src/core/layers.ts` + `v1ShareDefaults.json` copiés depuis `reference/l
 Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (139 tests unitaires, dont `layers.test.ts` et `golden.test.ts`).
 Décisions : D47
 Reste / risques : l’UI et `state.ts` sont encore V6 ; T51 branche l’état sur les calques. Les e2e partage qui attendent `#p=1.` seront adaptés en T52.
+
+## T51 — État V2 calques — 2026-09-26 19:44
+Statut : terminée
+Fait : `SockDesignV2` runtime (`state.ts`) : Fond + 1 Motif, actions calques, undo/redo, `paletteFromLayers`. `recompute` via `stackCompute` (cache `motifLayerRgb` + `renderStack`). `patternSource.ts` supprimé. Projet : lecture V1→migration calques, écriture design V2. Lien : écriture `#p=2.`, lecture V1/V2 (`designV2` + `design` V1 pour empreintes). Hook e2e : miroir `layout`/`pattern` (D48). UI adaptée (commit précédent).
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (139, dont `golden` + `layers` + cache/undo T51). Empreintes liens réels inchangées.
+Décisions : D48
+Reste / risques : UI encore branchée sur le Motif « en cours » (pas le dock T54) ; e2e composition stub ; T52 finalise projet v3 + e2e liens réels + verify jalon A.

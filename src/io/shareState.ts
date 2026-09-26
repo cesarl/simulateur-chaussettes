@@ -1,11 +1,20 @@
 /**
- * Sérialisation du projet pour le lien de partage (`#p=1.…`).
- * Format JSON compact (diff vs défaut) — sans images lourdes ni mode dev.
+ * Lien de partage : sérialisation applicative autour de `shareLink` + `layers`.
+ * - Écriture : `#p=2.` (SockDesignV2 compact via `designV2ToShareJson`)
+ * - Lecture : `#p=1.` et `#p=2.` (défauts figés via `shareDefaultsFor`)
  */
 import type { ZoneColors } from '../core/collections';
-import { normalizePatternSource } from '../core/patternSource';
+import {
+  designFromShare,
+  designV2ToShareJson,
+  migrateDesignV1,
+  primaryMotifLayer,
+  shareDefaultsFor,
+  type SockDesignV2,
+  V1_SHARE_DEFAULTS,
+} from '../core/layers';
 import type { SockDesign, TileAsset } from '../core/types';
-import { defaultDesign, getState, type AppState } from '../state';
+import { editingCollection, getState, type AppState } from '../state';
 import { encodeShare, decodeShare, SHARE_SOFT_LIMIT, type Json } from './shareLink';
 
 export type ShareDesignJson = Json;
@@ -14,54 +23,37 @@ function asJson(value: unknown): Json {
   return JSON.parse(JSON.stringify(value)) as Json;
 }
 
-/** État partageable : design + collection + décor (déjà dans SockDesign). */
-export function designToShareJson(state: AppState = getState()): ShareDesignJson {
-  const { design, activeCollectionId, zoneColors, paletteOptionId } = state;
-  const { tileIds: _ids, ...layoutRest } = design.layout;
-  return asJson({
-    version: design.version,
-    name: design.name,
-    collection: {
-      id: activeCollectionId,
-      colors: zoneColors ?? {},
-      paletteId: paletteOptionId ?? 'defaut',
-    },
-    layout: layoutRest,
-    dimensions: design.dimensions,
-    zones: design.zones,
-    quantize: design.quantize,
-    decor: design.decor,
-    pattern: normalizePatternSource(design.pattern),
-  });
+function asRecord(v: unknown): Record<string, unknown> | null {
+  return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 }
 
+/** JSON compact V2 pour l’encode (diff vs `shareDefaultsFor(2)`). */
+export function designToShareJson(state: AppState = getState()): ShareDesignJson {
+  return designV2ToShareJson(state.design);
+}
+
+/** Défauts d’écriture des liens `#p=2.`. */
 export function defaultShareJson(): ShareDesignJson {
-  const design = defaultDesign();
-  const { tileIds: _ids, ...layoutRest } = design.layout;
-  return asJson({
-    version: design.version,
-    name: design.name,
-    collection: { id: null, colors: {}, paletteId: 'defaut' },
-    layout: layoutRest,
-    dimensions: design.dimensions,
-    zones: design.zones,
-    quantize: design.quantize,
-    decor: design.decor,
-    pattern: normalizePatternSource(design.pattern),
-  });
+  return shareDefaultsFor(2);
+}
+
+/** Défauts figés V1 (tests / fusion des anciens liens). */
+export function defaultShareJsonV1(): ShareDesignJson {
+  return shareDefaultsFor(1);
 }
 
 export interface ShareTilesResult {
-  tiles: Array<{ name: string; svg: string }>;
+  tiles: Array<{ name: string; svg: string; id?: string }>;
   omitted: boolean;
 }
 
-/** Carreaux manuels SVG candidats au lien (jamais les PNG, jamais si collection active). */
+/** Carreaux manuels SVG candidats au lien (jamais les PNG ; pas si Motif en collection). */
 export function shareableManualTiles(state: AppState = getState()): ShareTilesResult {
-  if (state.activeCollectionId) return { tiles: [], omitted: false };
+  const col = editingCollection(state.design, state.selectedLayerId);
+  if (col) return { tiles: [], omitted: false };
   const svgTiles = state.tiles
     .filter((t) => t.source === 'svg' && typeof t.svgText === 'string' && t.svgText.length > 0)
-    .map((t) => ({ name: t.name, svg: t.svgText! }));
+    .map((t) => ({ name: t.name, svg: t.svgText!, id: t.id }));
   const hadManual = state.tiles.length > 0;
   const hadPng = state.tiles.some((t) => t.source === 'png');
   const omittedSvg = state.tiles.some((t) => t.source === 'svg' && !t.svgText);
@@ -84,13 +76,11 @@ export async function buildShareUrl(state: AppState = getState()): Promise<Build
   const design = designToShareJson(state);
   let { tiles, omitted } = shareableManualTiles(state);
   let result = await encodeShare({ design, tiles: tiles.length ? tiles : undefined }, defaults);
-  // Si trop long avec SVG : retirer les carreaux et signaler.
   if (result.tooLong && tiles.length) {
     omitted = true;
     tiles = [];
     result = await encodeShare({ design }, defaults);
   }
-  // Essai sans SVG si encore trop long n'aide pas (c'est le design) — on laisse tooLong.
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const path = typeof window !== 'undefined' ? window.location.pathname : '/';
   return {
@@ -102,60 +92,82 @@ export async function buildShareUrl(state: AppState = getState()): Promise<Build
   };
 }
 
+/**
+ * Résultat de décodage côté application.
+ * - `design` : SockDesign V1 pour les liens `#p=1.` (empreintes layers.test) ; pour `#p=2.`
+ *   c’est une vue dérivée minimale (ne pas s’y fier pour la grille).
+ * - `designV2` : toujours le modèle calques à appliquer dans l’état.
+ */
 export interface ParsedShare {
+  design: SockDesign;
+  designV2: SockDesignV2;
+  activeCollectionId: string | null;
+  zoneColors: ZoneColors | null;
+  paletteOptionId: string | null;
+  tiles: Array<{ name: string; svg: string; id?: string }>;
+  shareVersion: number;
+}
+
+/** Reconstruit un SockDesign V1 depuis le JSON fusionné d’un lien `#p=1.`. */
+export function shareJsonToAppV1(raw: ShareDesignJson): {
   design: SockDesign;
   activeCollectionId: string | null;
   zoneColors: ZoneColors | null;
   paletteOptionId: string | null;
-  tiles: Array<{ name: string; svg: string }>;
-}
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return typeof v === 'object' && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
-}
-
-/** Fusionne un JSON décodé sur `defaultDesign()` (champs absents = défaut). */
-export function shareJsonToApp(raw: ShareDesignJson): Omit<ParsedShare, 'tiles'> {
-  const base = defaultDesign();
+} {
+  const base = V1_SHARE_DEFAULTS as unknown as Record<string, unknown>;
   const root = asRecord(raw) ?? {};
   const collection = asRecord(root.collection);
   const layout = asRecord(root.layout);
-  const dimensions = asRecord(root.dimensions);
-  const zones = asRecord(root.zones);
-  const quantize = asRecord(root.quantize);
-  const decor = asRecord(root.decor);
+  const baseLayout = asRecord(base.layout) ?? {};
+  const baseCalep = asRecord(baseLayout.calepinage) ?? {};
+  const baseGenere = asRecord(baseCalep.genere) ?? {};
+
+  const patternRaw = asRecord(root.pattern);
+  const pattern =
+    patternRaw && patternRaw.kind === 'composition'
+      ? (root.pattern as SockDesign['pattern'])
+      : { kind: 'carreaux' as const };
 
   const design: SockDesign = {
-    ...base,
     version: 1,
-    name: typeof root.name === 'string' ? root.name : base.name,
+    name: typeof root.name === 'string' ? root.name : String(base.name ?? 'modele'),
     layout: {
-      ...base.layout,
+      ...(baseLayout as unknown as SockDesign['layout']),
       ...(layout ?? {}),
       calepinage: {
-        ...base.layout.calepinage,
+        ...(baseCalep as unknown as SockDesign['layout']['calepinage']),
         ...(asRecord(layout?.calepinage) ?? {}),
         genere: {
-          ...base.layout.calepinage.genere,
+          ...(baseGenere as unknown as SockDesign['layout']['calepinage']['genere']),
           ...(asRecord(asRecord(layout?.calepinage)?.genere) ?? {}),
         },
       },
       tileIds: [],
-    } as SockDesign['layout'],
-    dimensions: { ...base.dimensions, ...(dimensions ?? {}) } as SockDesign['dimensions'],
-    zones: { ...base.zones, ...(zones ?? {}) } as SockDesign['zones'],
-    quantize: { ...base.quantize, ...(quantize ?? {}) } as SockDesign['quantize'],
-    decor: { ...base.decor, ...(decor ?? {}) } as SockDesign['decor'],
-    pattern: normalizePatternSource(
-      root.pattern && typeof root.pattern === 'object' && !Array.isArray(root.pattern)
-        ? (root.pattern as SockDesign['pattern'])
-        : undefined,
-    ),
+    },
+    dimensions: {
+      ...(asRecord(base.dimensions) as unknown as SockDesign['dimensions']),
+      ...(asRecord(root.dimensions) ?? {}),
+    },
+    zones: {
+      ...(asRecord(base.zones) as unknown as SockDesign['zones']),
+      ...(asRecord(root.zones) ?? {}),
+    },
+    quantize: {
+      ...(asRecord(base.quantize) as unknown as SockDesign['quantize']),
+      ...(asRecord(root.quantize) ?? {}),
+    },
+    decor: {
+      ...(asRecord(base.decor) as unknown as SockDesign['decor']),
+      ...(asRecord(root.decor) ?? {}),
+    },
+    pattern,
   };
 
-  const id = collection && (collection.id === null || typeof collection.id === 'string')
-    ? (collection.id as string | null)
-    : null;
+  const id =
+    collection && (collection.id === null || typeof collection.id === 'string')
+      ? (collection.id as string | null)
+      : null;
   const colorsRaw = collection ? asRecord(collection.colors) : null;
   const zoneColors: ZoneColors | null = colorsRaw
     ? Object.fromEntries(
@@ -173,22 +185,84 @@ export function shareJsonToApp(raw: ShareDesignJson): Omit<ParsedShare, 'tiles'>
   };
 }
 
+/** @deprecated alias — préfère `shareJsonToAppV1`. */
+export function shareJsonToApp(raw: ShareDesignJson): {
+  design: SockDesign;
+  activeCollectionId: string | null;
+  zoneColors: ZoneColors | null;
+  paletteOptionId: string | null;
+} {
+  return shareJsonToAppV1(raw);
+}
+
 export async function decodeShareHash(
   hash: string,
 ): Promise<{ ok: true; parsed: ParsedShare } | { ok: false; reason: string }> {
-  const decoded = await decodeShare(hash, defaultShareJson());
+  const decoded = await decodeShare(hash, shareDefaultsFor);
   if (!decoded.ok) return { ok: false, reason: decoded.reason };
-  const partial = shareJsonToApp(decoded.design);
+
+  if (decoded.version === 1) {
+    const v1 = shareJsonToAppV1(decoded.design);
+    const designV2 = migrateDesignV1(v1.design, {
+      collectionId: v1.activeCollectionId,
+      zoneColors: v1.zoneColors,
+      paletteOptionId: v1.paletteOptionId,
+      tileIds: [],
+    });
+    designV2.quantize = { ...designV2.quantize, paletteFromLayers: false };
+    return {
+      ok: true,
+      parsed: {
+        design: v1.design,
+        designV2,
+        activeCollectionId: v1.activeCollectionId,
+        zoneColors: v1.zoneColors,
+        paletteOptionId: v1.paletteOptionId,
+        tiles: decoded.tiles,
+        shareVersion: 1,
+      },
+    };
+  }
+
+  const { design: designV2 } = designFromShare(decoded.version, decoded.design);
+  const motif = primaryMotifLayer(designV2.layers);
+  const activeCollectionId =
+    motif?.source.kind === 'collection' ? motif.source.collectionId : null;
+  const zoneColors = motif?.source.kind === 'collection' ? motif.source.colors : null;
+  const paletteOptionId = motif?.source.kind === 'collection' ? motif.source.paletteId : null;
+  // Vue V1 minimale (tests historiques / champs absents).
+  const design: SockDesign = {
+    version: 1,
+    name: designV2.name,
+    layout: {
+      ...(motif?.layout ?? (V1_SHARE_DEFAULTS as unknown as { layout: SockDesign['layout'] }).layout),
+      tileIds: motif?.source.kind === 'importes' ? [...motif.source.tileIds] : [],
+    },
+    dimensions: designV2.dimensions,
+    zones: designV2.zones,
+    quantize: designV2.quantize,
+    decor: designV2.decor,
+    pattern: { kind: 'carreaux' },
+  };
   return {
     ok: true,
     parsed: {
-      ...partial,
+      design,
+      designV2,
+      activeCollectionId,
+      zoneColors,
+      paletteOptionId,
       tiles: decoded.tiles,
+      shareVersion: decoded.version,
     },
   };
 }
 
-/** Exposé pour tests : empreinte légère des carreaux manuels. */
 export function manualTileNames(tiles: TileAsset[]): string[] {
   return tiles.map((t) => t.name);
+}
+
+/** Exposé pour tests qui comparent encore le JSON V1. */
+export function v1ShareDefaultsJson(): ShareDesignJson {
+  return asJson(V1_SHARE_DEFAULTS);
 }

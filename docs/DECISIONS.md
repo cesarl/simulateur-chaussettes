@@ -270,3 +270,10 @@ Contexte : les liens `#p=1.` déjà partagés fusionnent sur des défauts figés
 Options : A) garder le JSON tel quel si égal à main ; B) réécrire le JSON avec les valeurs de main en cas d’écart.
 Choix : A — comparaison champ à champ (layout hors `tileIds`, dimensions, zones, quantize) entre `git show main:src/state.ts` `defaultDesign()` résolu et `v1ShareDefaults.json` : **aucune différence**. Les champs `collection` et `pattern` du JSON sont des enveloppes de partage (absents du `SockDesign` nu de main) ; `decor` de main via `defaultDecor()` coïncide aussi.
 Conséquence : `v1ShareDefaults.json` reste intouchable ; `shareDefaultsFor(1)` et la lecture des liens réels restent valides. `SHARE_VERSION` passe à 2 (écriture `#p=2.`) ; lecture `#p=1.` et `#p=2.` conservée.
+
+## D48 — État runtime SockDesignV2 + miroirs e2e (T51)
+Contexte : T51 remplace `layout` / `pattern` / collection active par des calques. Les e2e V3–V6 lisent encore `window.__SIM__.design.layout`.
+Options : A) réécrire tous les e2e immédiatement ; B) exposer sur le hook un `layout` / `pattern` dérivés du Motif en cours.
+Choix : B — `publish()` attache `editingLayoutSettings()` et `pattern: { kind: 'carreaux' }` sur le design cloné (`HookDesign`). L’état réel reste `SockDesignV2` pur. `defaultDesignV1()` exporté pour les fixtures de migration (layers.test).
+Conséquence : e2e anciens compilent ; T53+ les adaptera au dock / options calques. `patternSource.ts` supprimé ; `stackCompute.ts` porte le cache `motifLayerRgb`.
+

@@ -16,7 +16,7 @@ import { applyGeneratedPreset, BUILTIN_PRESETS } from '../../src/core/presets';
 import { renderComposition, type Composition, type RasterImage } from '../../src/core/composition';
 import { decodePng } from '../../src/io/pngCodec';
 import { decodeShareHash } from '../../src/io/shareState';
-import { defaultDesign, layoutFromTilesAround } from '../../src/state';
+import { defaultDesign, defaultDesignV1, layoutFromTilesAround } from '../../src/state';
 import type { SockDesign, TileAsset } from '../../src/core/types';
 import { decodeShare, encodeShare } from '../../src/io/shareLink';
 import {
@@ -188,7 +188,7 @@ describe('empreintes T41 : projet carreaux migré = même grille', () => {
       pngTile('tests/fixtures/golden/exemple-etoile.png', 'ex2'),
       pngTile('tests/fixtures/golden/exemple-quart.png', 'ex3'),
     ]);
-    const base = defaultDesign();
+    const base = defaultDesignV1();
     const dims = defaultDimensions('homme');
     const zones = { ...base.zones, cuffColor: '#1f3a5f', heelColor: '#b5462f', toeColor: '#1d1d1b' };
     const quant = { maxColors: 4, paletteMode: 'auto' as const, palette: [], sampling: 'majoritaire' as const, despeckle: false, maxFloat: MACHINE_LIMITS.maxFloat };
@@ -218,7 +218,7 @@ describe('empreintes T41 : projet carreaux migré = même grille', () => {
 // ------------------------------------------------------------------ 3. composition V6 migrée
 describe('composition V6 migrée = mêmes couleurs', () => {
   it('fond + 2 images (rotation, miroir, frise, transparence PNG)', () => {
-    const d = defaultDesign();
+    const d = defaultDesignV1();
     const comp: Composition = {
       background: '#123456',
       layers: [

@@ -5,28 +5,29 @@ import {
   decodeShareHash,
   defaultShareJson,
   designToShareJson,
-  shareJsonToApp,
 } from '../../src/io/shareState';
-import { defaultDesign, getState, resetState, update } from '../../src/state';
+import { primaryMotifLayer } from '../../src/core/layers';
+import { defaultDesign, getState, resetState, setMotifCollection, update } from '../../src/state';
 
 describe('intégration lien de partage', () => {
   it('état modifié → encode → decode → même design (diff vs défaut)', async () => {
     resetState();
-    update({
-      design: {
-        name: 'Test partage',
-        zones: { heelHeightMm: 88, cuffColor: '#112233' },
-        layout: {
-          tilesAround: 4,
-          seam: 'interieur',
-          calepinage: { graine: 42 },
+    update(
+      {
+        design: {
+          name: 'Test partage',
+          zones: { heelHeightMm: 88, cuffColor: '#112233' },
+          layout: {
+            tilesAround: 4,
+            seam: 'interieur',
+            calepinage: { graine: 42 },
+          },
+          decor: { mode: 'sol', tileCm: 15 },
         },
-        decor: { mode: 'sol', tileCm: 15 },
       },
-      activeCollectionId: 'medina',
-      zoneColors: { 'zone-1': 'BW002', 'zone-2': 'OR012' },
-      paletteOptionId: 'reco-1',
-    }, { skipHistory: true });
+      { skipHistory: true },
+    );
+    setMotifCollection('medina', { 'zone-1': 'BW002', 'zone-2': 'OR012' }, 'reco-1');
 
     const built = await buildShareUrl(getState());
     expect(built.hash.startsWith('#p=2.')).toBe(true);
@@ -35,41 +36,41 @@ describe('intégration lien de partage', () => {
     const decoded = await decodeShareHash(built.hash);
     expect(decoded.ok).toBe(true);
     if (!decoded.ok) return;
-    expect(decoded.parsed.design.name).toBe('Test partage');
-    expect(decoded.parsed.design.zones.heelHeightMm).toBe(88);
-    expect(decoded.parsed.design.zones.cuffColor).toBe('#112233');
-    expect(decoded.parsed.design.layout.tilesAround).toBe(4);
-    expect(decoded.parsed.design.layout.seam).toBe('interieur');
-    expect(decoded.parsed.design.decor.mode).toBe('sol');
+    expect(decoded.parsed.designV2.name).toBe('Test partage');
+    expect(decoded.parsed.designV2.zones.heelHeightMm).toBe(88);
+    expect(decoded.parsed.designV2.zones.cuffColor).toBe('#112233');
+    const motif = primaryMotifLayer(decoded.parsed.designV2.layers);
+    expect(motif?.layout.tilesAround).toBe(4);
+    expect(motif?.layout.seam).toBe('interieur');
+    expect(decoded.parsed.designV2.decor.mode).toBe('sol');
     expect(decoded.parsed.activeCollectionId).toBe('medina');
     expect(decoded.parsed.paletteOptionId).toBe('reco-1');
 
-    // Les champs non touchés restent aux défauts.
     const defaults = defaultDesign();
-    expect(decoded.parsed.design.dimensions.needles).toBe(defaults.dimensions.needles);
+    expect(decoded.parsed.designV2.dimensions.needles).toBe(defaults.dimensions.needles);
   });
 
   it('defaultShareJson est stable et court', async () => {
+    resetState();
     const d = defaultShareJson();
     const again = designToShareJson({
       ...getState(),
       design: defaultDesign(),
       tiles: [],
-      activeCollectionId: null,
-      zoneColors: null,
-      paletteOptionId: null,
     });
-    expect(shareJsonToApp(d).design.name).toBe(defaultDesign().name);
+    // Un design d’appli (Fond+Motif) diffère des défauts de lien figés (Fond seul) :
+    // le lien d’un modèle « vide d’appli » n’est plus minimal. On vérifie plutôt
+    // qu’encoder exactement les défauts de lien donne un hash court.
+    const { encodeShare } = await import('../../src/io/shareLink');
+    const { length: minimal } = await encodeShare({ design: d }, d);
+    expect(minimal).toBeLessThan(20);
+    expect(again).not.toEqual(d); // Motifs / paletteFromLayers
     const { length } = await buildShareUrl({
       ...getState(),
       design: defaultDesign(),
       tiles: [],
-      activeCollectionId: null,
-      zoneColors: null,
-      paletteOptionId: null,
     });
-    expect(length).toBeLessThan(40);
-    expect(again).toEqual(d);
+    expect(length).toBeLessThan(400);
     expect(gridFingerprint).toBeTypeOf('function');
   });
 });
