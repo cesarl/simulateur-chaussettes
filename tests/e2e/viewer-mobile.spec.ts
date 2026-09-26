@@ -27,7 +27,9 @@ test('visionneuse mobile : canvas pleine hauteur viewport', async ({ page }) => 
 
   const metrics = await page.evaluate(() => {
     const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="sock-canvas"]')!;
-    const viewport = document.getElementById('viewport')!;
+    const viewport =
+      document.getElementById('view3d') ??
+      document.querySelector<HTMLElement>('[data-testid="viewport"]')!;
     const app = document.getElementById('app')!;
     return {
       canvasH: canvas.clientHeight,

@@ -45,19 +45,40 @@ import { mountCompositionEditor } from './ui/compositionEditor';
 import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
+import { mountSplitters } from './ui/splitters';
+import { mountLayersDock } from './ui/layersDock';
+import { mountProjectBar } from './ui/projectBar';
 import { createDecorController } from './render/decorController';
 import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
 import * as THREE from 'three';
-const viewportEl = document.getElementById('viewport');
+
 const panelEl = document.getElementById('panel');
 const appEl = document.getElementById('app');
-if (!(viewportEl instanceof HTMLElement) || !(panelEl instanceof HTMLElement) || !(appEl instanceof HTMLElement)) {
+const view3dEl = document.getElementById('view3d');
+const view2dEl = document.getElementById('view2d');
+const projectBarEl = document.getElementById('project-bar');
+const layersDockEl = document.getElementById('layers-dock');
+const toolbar2dEl = document.querySelector('[data-testid="toolbar-2d"]');
+const toolbar3dEl = document.querySelector('[data-testid="toolbar-3d"]');
+if (
+  !(panelEl instanceof HTMLElement) ||
+  !(appEl instanceof HTMLElement) ||
+  !(view3dEl instanceof HTMLElement) ||
+  !(view2dEl instanceof HTMLElement) ||
+  !(projectBarEl instanceof HTMLElement) ||
+  !(layersDockEl instanceof HTMLElement)
+) {
   throw new Error('Structure de page introuvable');
 }
-const viewport = viewportEl;
 const panel = panelEl;
 const app = appEl;
+const view3d = view3dEl;
+const view2d = view2dEl;
+const projectBar = projectBarEl;
+const layersDock = layersDockEl;
+/** Zone 3D = viewport historique (visionneuse + e2e). */
+void view3d;
 
 function tryLocalStorage(): Storage | null {
   try {
@@ -77,10 +98,22 @@ let devMode = resolveDevMode(
   (url) => window.history.replaceState(null, '', url),
 );
 
-const handle = createScene(viewport);
-const flat = mountFlatView(viewport, () => handle.requestRender());
-const compositionEditor = mountCompositionEditor(viewport);
-const viewer = mountViewerBar(viewport, {
+mountSplitters(storage);
+
+const handle = createScene(view3d);
+const sockCanvas =
+  handle.renderer.domElement instanceof HTMLCanvasElement ? handle.renderer.domElement : null;
+const flat = mountFlatView(
+  {
+    canvasHost: view2d,
+    toolsHost: toolbar2dEl instanceof HTMLElement ? toolbar2dEl : view2d,
+    sockCanvas,
+    dualPane: true,
+  },
+  () => handle.requestRender(),
+);
+const compositionEditor = mountCompositionEditor(view3d);
+const viewer = mountViewerBar(view3d, {
   onView: (view) => {
     frameCamera(view);
     publish();
@@ -90,11 +123,27 @@ const viewer = mountViewerBar(viewport, {
   isFlat: () => flat.isFlat(),
 });
 
+if (toolbar3dEl instanceof HTMLElement) {
+  const label = document.createElement('span');
+  label.className = 'zone-label';
+  label.textContent = 'Vue 3D';
+  toolbar3dEl.prepend(label);
+}
+if (toolbar2dEl instanceof HTMLElement) {
+  const label = document.createElement('span');
+  label.className = 'zone-label';
+  label.textContent = 'Vue à plat';
+  toolbar2dEl.prepend(label);
+}
+
 const shareHint = document.createElement('p');
 shareHint.className = 'share-hint';
 shareHint.dataset.testid = 'share-hint';
 shareHint.hidden = true;
-viewport.appendChild(shareHint);
+view3d.appendChild(shareHint);
+
+mountProjectBar(projectBar, { copyShareLink });
+mountLayersDock(layersDock);
 
 function showShareHint(message: string | null): void {
   if (!message) {
@@ -142,8 +191,25 @@ function applyShellMode(dev: boolean): void {
   devMode = dev;
   app.classList.toggle('viewer-mode', !dev);
   panel.hidden = !dev;
+  projectBar.hidden = !dev;
+  layersDock.hidden = !dev;
   viewer.setVisible(!dev);
   flat.setDevTools(dev);
+  if (dev) {
+    flat.setHosts({
+      canvasHost: view2d,
+      toolsHost: toolbar2dEl instanceof HTMLElement ? toolbar2dEl : view2d,
+      sockCanvas,
+      dualPane: true,
+    });
+  } else {
+    flat.setHosts({
+      canvasHost: view3d,
+      toolsHost: view3d,
+      sockCanvas,
+      dualPane: false,
+    });
+  }
   handle.requestRender();
 }
 
@@ -393,6 +459,9 @@ function publish(): void {
       x: handle.controls.target.x,
       y: handle.controls.target.y,
       z: handle.controls.target.z,
+    },
+    get cameraAspect() {
+      return handle.camera.aspect;
     },
     warnings: [...warnings],
     catalogue: state.catalogue,

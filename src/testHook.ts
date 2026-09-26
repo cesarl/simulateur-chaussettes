@@ -37,6 +37,8 @@ export interface SimHook {
   knitFidelity: KnitFidelity;
   cameraPosition: { x: number; y: number; z: number };
   cameraTarget: { x: number; y: number; z: number };
+  /** Rapport largeur/hauteur de la caméra 3D (contrôle disposition T53). */
+  cameraAspect: number;
   warnings: string[];
   /** Catalogue synchronisé, ou null si absent. */
   catalogue: Catalogue | null;

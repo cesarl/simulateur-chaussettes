@@ -611,3 +611,12 @@ Fait : projet v3 ; e2e `liens-reels` ; e2e composition V6 **supprimés** (mode r
 Vérification : verify complet vert.
 Décisions : D48 (suite) — e2e composition retirés, listés ici.
 Reste / risques : Jalon B (T53–T59) UI calques.
+
+## T53 — Disposition écran + 3D non déformée — 2026-09-26 20:18
+Statut : terminée
+Fait : Grille CSS unique (`#project-bar`, `#view2d-wrap`/`#view2d`, `#view3d-wrap`/`#view3d`, `#panel`, `#layers-dock`, séparateurs). `createScene(#view3d)` + ResizeObserver → `camera.aspect` correct. Visionneuse = `#view3d` plein écran (`data-testid=viewport`). Splitters mémorisés (`sim-layout-splits`). Breakpoint empilement `max-width: 1100px`. Stub barre projet + dock (T54). Flat en dual-pane dans `#view2d`.
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (141) ; e2e `disposition.spec.ts` ✅ (2). Captures ouvertes :
+- **1440×900** (`docs/captures/v7/visuel-T53-disposition-1440.png`) : barre projet en haut (Motif 1, Annuler… Bibliothèque) ; 2D | 3D | options côte à côte sans chevauchement ; dock bas avec Fond + Motif 1 ; chaussette 3D non écrasée (proportions normales après drag séparateur) ; onglets Calque/Chaussette/Décor/Export dans le cadre options.
+- **1100×800** (`docs/captures/v7/visuel-T53-disposition-1100.png`) : 2D au-dessus de 3D, options dessous, dock en bas ; pas de chevauchement visible ; scroll page nul.
+Décisions : D49
+Reste / risques : dock stub (pas de drag / vignettes) → T54 ; options encore le panneau V6 monolithique → T55 ; boutons Ouvrir/Enregistrer/Bibliothèque désactivés → T57.

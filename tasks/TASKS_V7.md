@@ -123,7 +123,7 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 
 ## Jalon B — le nouvel écran
 
-### [ ] T53 — Disposition de l'écran (mode dev) et 3D non déformée
+### [x] T53 — Disposition de l'écran (mode dev) et 3D non déformée
 
 La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 × 900 :
 
@@ -151,11 +151,11 @@ La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 ×
 - La page entière ne défile jamais. Le dock et les vues ne défilent pas ; seul le panneau d'options peut défiler.
 
 **Critères**
-- [ ] e2e `disposition.spec.ts` à 1440 × 900 et 1100 × 800 :
+- [x] e2e `disposition.spec.ts` à 1440 × 900 et 1100 × 800 :
   - les boîtes des zones (2D, 3D, options, dock, et chaque barre d'outils) ne se chevauchent pas deux à deux ;
   - `document.scrollingElement.scrollHeight <= innerHeight` ;
   - le rapport largeur/hauteur du canvas 3D est égal à `camera.aspect` à 1 % près, **après avoir déplacé le séparateur à la souris** et après redimensionnement de la fenêtre.
-- [ ] Capture de l'écran entier aux deux tailles, ouverte et décrite.
+- [x] Capture de l'écran entier aux deux tailles, ouverte et décrite.
 
 ### [ ] T54 — Liste des calques (dock du bas)
 

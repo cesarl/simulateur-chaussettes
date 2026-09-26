@@ -9,11 +9,31 @@
   </head>
   <body>
     <div id="app">
-      <main id="viewport" data-testid="viewport" aria-label="Aperçu 3D de la chaussette"></main>
-      <aside id="panel" data-testid="panel" aria-label="Réglages">
-        <h1>Simulateur de chaussettes</h1>
-        <div id="panel-body"></div>
+      <header id="project-bar" data-testid="project-bar" hidden>
+        <div id="project-bar-body" class="project-bar-body"></div>
+      </header>
+      <section id="view2d-wrap" class="view-zone" data-testid="view2d-wrap">
+        <div class="zone-toolbar" data-testid="toolbar-2d"></div>
+        <div id="view2d" data-testid="view2d" aria-label="Vue à plat"></div>
+      </section>
+      <div id="split-v" class="splitter splitter-v" data-testid="split-v" role="separator" aria-orientation="vertical" tabindex="0"></div>
+      <section id="view3d-wrap" class="view-zone" data-testid="view3d-wrap">
+        <div class="zone-toolbar" data-testid="toolbar-3d"></div>
+        <div id="view3d" data-testid="viewport" aria-label="Vue 3D"></div>
+      </section>
+      <div id="split-h" class="splitter splitter-h" data-testid="split-h" role="separator" aria-orientation="vertical" tabindex="0"></div>
+      <aside id="panel" data-testid="panel" aria-label="Options">
+        <div class="zone-toolbar options-tabs" data-testid="options-tabs">
+          <button type="button" data-testid="tab-calque" class="tab active">Calque</button>
+          <button type="button" data-testid="tab-chaussette" class="tab">Chaussette</button>
+          <button type="button" data-testid="tab-decor" class="tab">Décor</button>
+          <button type="button" data-testid="tab-export" class="tab">Export</button>
+        </div>
+        <div id="panel-body" class="zone-body options-body"></div>
       </aside>
+      <footer id="layers-dock" data-testid="layers-dock" hidden>
+        <div id="layers-dock-body" class="layers-dock-body"></div>
+      </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

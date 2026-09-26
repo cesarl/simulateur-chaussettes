@@ -277,3 +277,9 @@ Options : A) réécrire tous les e2e immédiatement ; B) exposer sur le hook un 
 Choix : B — `publish()` attache `editingLayoutSettings()` et `pattern: { kind: 'carreaux' }` sur le design cloné (`HookDesign`). L’état réel reste `SockDesignV2` pur. `defaultDesignV1()` exporté pour les fixtures de migration (layers.test).
 Conséquence : e2e anciens compilent ; T53+ les adaptera au dock / options calques. `patternSource.ts` supprimé ; `stackCompute.ts` porte le cache `motifLayerRgb`.
 
+
+## D49 — Grille CSS V7 et `#view3d` = viewport (T53)
+Contexte : V6 montait la scène sur `#viewport` (toute la zone gauche) alors que le canvas n’occupait qu’une fraction → `camera.aspect` faux. V7 exige 2D | 3D | options + dock.
+Options : A) wrapper + scène sur le body 3D seul ; B) `#view3d` = conteneur canvas, wraps pour toolbars.
+Choix : B — `createScene(view3d)` observe exactement l’élément du canvas ; toolbars dans `#view*-wrap`. `data-testid="viewport"` reste sur `#view3d` pour les e2e visionneuse. Breakpoint empilement à `max-width: 1100px` (le critère e2e teste 1100×800 en pile). Splitters : ratios `localStorage` clé `sim-layout-splits`.
+Conséquence : visionneuse inchangée (plein écran `#view3d`) ; dual-pane en `?dev` ; flat reparenté visionneuse ↔ `#view2d`.
