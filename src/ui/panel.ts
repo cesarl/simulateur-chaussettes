@@ -23,6 +23,7 @@ import {
 } from '../state';
 import type { Hex, QuantizeSettings, SizeId, SockDesign, TileAsset } from '../core/types';
 import { visibleCollections } from '../core/collections';
+import { isLinkShareable } from '../core/composition';
 import { tileCmFromFormat } from '../render/decorController';
 import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
@@ -179,7 +180,13 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   copyLink.addEventListener('click', () => {
     void actions.copyShareLink();
   });
-  shareRow.appendChild(copyLink);
+  const shareDisabledHint = document.createElement('p');
+  shareDisabledHint.className = 'hint';
+  shareDisabledHint.dataset.testid = 'share-disabled-hint';
+  shareDisabledHint.hidden = true;
+  shareDisabledHint.textContent =
+    'Cette composition contient des images importées : envoyez le fichier projet (.json)';
+  shareRow.append(copyLink, shareDisabledHint);
   host.appendChild(shareRow);
 
   const collectionPicker = mountCollectionPicker(host);
@@ -266,10 +273,22 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
     collectionPicker.sync();
     palettePanel.sync();
     patternMode.sync();
+    const pattern = getState().design.pattern;
+    const blocked =
+      pattern?.kind === 'composition' && !isLinkShareable(pattern.composition);
+    copyLink.disabled = blocked;
+    shareDisabledHint.hidden = !blocked;
   });
   collectionPicker.sync();
   palettePanel.sync();
   patternMode.sync();
+  {
+    const pattern = getState().design.pattern;
+    const blocked =
+      pattern?.kind === 'composition' && !isLinkShareable(pattern.composition);
+    copyLink.disabled = blocked;
+    shareDisabledHint.hidden = !blocked;
+  }
 
   panel.addEventListener('dragover', (event) => {
     event.preventDefault();

@@ -254,3 +254,8 @@ Conséquence : premier frame peut être fond seul, puis motif dès images prête
 Contexte : T46 demande bibliothèque + import embarqué ; les `EmbeddedAsset` et projet v2 sont T47.
 Choix : bibliothèque collections pleinement branchée ; bouton Import présent mais renvoie vers T47 pour la persistance des images. Drag-and-drop fichier sur la vue à plat idem. Split vertical CSS + poignée ; aimantation douce désactivable.
 Conséquence : e2e T46 couvre le flux bibliothèque → clavier → supprimer ; l’import fichier est complété avec le projet v2.
+
+## D45 — Projet v2 et lien composition (T47)
+Contexte : images importées dans le projet ; lien de partage ne peut pas porter des data URL.
+Choix : document `version: 2` + `assets[]` (seulement `usedEmbeddedAssets`) ; v1 toujours lue (`assets: []`). Bouton « Copier le lien » désactivé si `!isLinkShareable` avec hint. Autosave IndexedDB omet les assets au-delà de 4 Mo avec message. Seuil d’avertissement enregistrement : 20 Mo.
+Conséquence : composition bibliothèque partageable ; composition avec import → fichier .json obligatoire.

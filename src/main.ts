@@ -14,6 +14,9 @@ import {
   parseProject,
   saveLastProject,
   serializeProject,
+  projectByteLength,
+  PROJECT_SIZE_WARN_BYTES,
+  AUTOSAVE_OMIT_ASSETS_BYTES,
   type ParsedProject,
   type ProjectCollectionMeta,
 } from './io/project';
@@ -27,6 +30,7 @@ import { capturePng, frameView, type ViewName } from './render/sock3d/studio';
 import { getState, subscribe, update, undo, redo, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
+import { isLinkShareable } from './core/composition';
 import { mountFlatView } from './ui/flatView';
 import { mountCompositionEditor } from './ui/compositionEditor';
 import { mountPanel, renderChecks, renderStatus } from './ui/panel';
@@ -93,6 +97,13 @@ function showShareHint(message: string | null): void {
 }
 
 async function copyShareLink(): Promise<void> {
+  const pattern = getState().design.pattern;
+  if (pattern?.kind === 'composition' && !isLinkShareable(pattern.composition)) {
+    showShareHint(
+      'Cette composition contient des images importées : envoyez le fichier projet (.json)',
+    );
+    return;
+  }
   const built = await buildShareUrl();
   try {
     await navigator.clipboard.writeText(built.url);
@@ -522,6 +533,7 @@ function currentCollectionMeta(): ProjectCollectionMeta | null {
 async function applyParsedProject(project: ParsedProject): Promise<void> {
   const catalogue = getState().catalogue;
   const meta = project.collection;
+  const embeddedAssets = project.assets;
   if (meta && catalogue) {
     const collection = catalogue.collections.find((c) => c.id === meta.id);
     if (collection) {
@@ -541,6 +553,7 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
             },
           },
           tiles,
+          embeddedAssets,
           activeCollectionId: meta.id,
           zoneColors: { ...meta.zoneColors },
           paletteOptionId: meta.paletteOptionId,
@@ -552,6 +565,7 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
         update({
           design: project.design,
           tiles: project.tiles,
+          embeddedAssets,
           activeCollectionId: null,
           zoneColors: null,
           paletteOptionId: null,
@@ -563,6 +577,7 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
     update({
       design: project.design,
       tiles: project.tiles,
+      embeddedAssets,
       activeCollectionId: null,
       zoneColors: null,
       paletteOptionId: null,
@@ -573,6 +588,7 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
   update({
     design: project.design,
     tiles: project.tiles,
+    embeddedAssets,
     activeCollectionId: null,
     zoneColors: null,
     paletteOptionId: null,
@@ -580,13 +596,43 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
   });
 }
 
+let autosaveAssetsOmitted = false;
+
 function scheduleSave(): void {
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
-    const { design, tiles } = getState();
-    void serializeProject(design, tiles, { collection: currentCollectionMeta() })
-      .then((json) => saveLastProject(json))
-      .catch(() => undefined);
+    const { design, tiles, embeddedAssets } = getState();
+    void (async () => {
+      try {
+        let json = await serializeProject(design, tiles, {
+          collection: currentCollectionMeta(),
+          assets: embeddedAssets,
+        });
+        let omitAssets = false;
+        if (projectByteLength(json) > AUTOSAVE_OMIT_ASSETS_BYTES && embeddedAssets.length > 0) {
+          omitAssets = true;
+          json = await serializeProject(design, tiles, {
+            collection: currentCollectionMeta(),
+            assets: embeddedAssets,
+            omitAssets: true,
+          });
+        }
+        await saveLastProject(json);
+        if (omitAssets && !autosaveAssetsOmitted) {
+          autosaveAssetsOmitted = true;
+          update(
+            {
+              error:
+                'Images non sauvegardées automatiquement (trop lourdes) : enregistrez le projet.',
+            },
+            { skipHistory: true },
+          );
+        }
+        if (!omitAssets) autosaveAssetsOmitted = false;
+      } catch {
+        /* ignore autosave errors */
+      }
+    })();
   }, 200);
 }
 
@@ -594,6 +640,10 @@ let shareTimer: number | undefined;
 function scheduleShareHash(): void {
   window.clearTimeout(shareTimer);
   shareTimer = window.setTimeout(() => {
+    const pattern = getState().design.pattern;
+    if (pattern?.kind === 'composition' && !isLinkShareable(pattern.composition)) {
+      return;
+    }
     void buildShareUrl()
       .then((built) => {
         window.history.replaceState(null, '', `${window.location.pathname}${built.hash}`);
@@ -723,8 +773,19 @@ async function boot(): Promise<void> {
       );
     },
     saveProject: async () => {
-      const { design, tiles } = getState();
-      const json = await serializeProject(design, tiles, { collection: currentCollectionMeta() });
+      const { design, tiles, embeddedAssets } = getState();
+      const json = await serializeProject(design, tiles, {
+        collection: currentCollectionMeta(),
+        assets: embeddedAssets,
+      });
+      const bytes = projectByteLength(json);
+      if (bytes > PROJECT_SIZE_WARN_BYTES) {
+        const mo = (bytes / (1024 * 1024)).toFixed(1);
+        const ok = window.confirm(
+          `Le projet fait ${mo} Mo (seuil conseillé : 20 Mo). Enregistrer quand même ?`,
+        );
+        if (!ok) return;
+      }
       const blob = new Blob([json], { type: 'application/json' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);

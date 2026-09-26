@@ -129,5 +129,102 @@ describe('projet JSON', () => {
     expect(back.collection).toEqual(collection);
     expect(back.design.name).toBe('Medina test');
     expect(back.tiles).toHaveLength(1);
+    expect(back.assets).toEqual([]);
+  });
+
+  it('projet v1 (sans assets) reste lisible', async () => {
+    const design = defaultDesign();
+    design.name = 'Ancien';
+    const v1 = JSON.stringify({
+      version: 1,
+      design,
+      tiles: [],
+      collection: null,
+    });
+    const back = await parseProject(v1);
+    expect(back.design.name).toBe('Ancien');
+    expect(back.assets).toEqual([]);
+    expect(back.design.pattern.kind).toBe('carreaux');
+  });
+
+  it('aller-retour projet v2 avec PNG + SVG embarqués', async () => {
+    const design = defaultDesign();
+    design.name = 'Composition v2';
+    const pngAsset = {
+      id: 'png1',
+      name: 'motif.png',
+      mime: 'image/png' as const,
+      data: 'data:image/png;base64,aaaa',
+      width: 16,
+      height: 16,
+    };
+    const svgAsset = {
+      id: 'svg1',
+      name: 'forme.svg',
+      mime: 'image/svg+xml' as const,
+      data: '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><rect fill="#f00" width="10" height="10"/></svg>',
+      width: 10,
+      height: 10,
+    };
+    design.pattern = {
+      kind: 'composition',
+      composition: {
+        background: '#f1e9dc',
+        layers: [
+          {
+            id: 'L1',
+            asset: { kind: 'embarquee', assetId: 'png1' },
+            x: 40,
+            y: 20,
+            widthStitches: 30,
+            rotation: 15,
+            flipX: false,
+            flipY: false,
+            repeatAroundGap: null,
+            hidden: false,
+            locked: false,
+          },
+          {
+            id: 'L2',
+            asset: { kind: 'embarquee', assetId: 'svg1' },
+            x: 80,
+            y: 50,
+            widthStitches: 20,
+            rotation: 0,
+            flipX: true,
+            flipY: false,
+            repeatAroundGap: null,
+            hidden: false,
+            locked: false,
+          },
+          {
+            id: 'L3',
+            asset: { kind: 'collection', collectionId: 'medina', variation: 'VAR1' },
+            x: 10,
+            y: 10,
+            widthStitches: 24,
+            rotation: 0,
+            flipX: false,
+            flipY: false,
+            repeatAroundGap: null,
+            hidden: false,
+            locked: false,
+          },
+        ],
+      },
+    };
+    const json = await serializeProject(design, [], {
+      assets: [pngAsset, svgAsset, { ...pngAsset, id: 'unused', name: 'orphan.png' }],
+    });
+    const doc = JSON.parse(json) as { version: number; assets: Array<{ id: string }> };
+    expect(doc.version).toBe(2);
+    expect(doc.assets.map((a) => a.id).sort()).toEqual(['png1', 'svg1']);
+    const back = await parseProject(json);
+    expect(back.design.pattern.kind).toBe('composition');
+    if (back.design.pattern.kind !== 'composition') throw new Error('expected composition');
+    expect(back.design.pattern.composition.layers).toHaveLength(3);
+    expect(back.assets).toHaveLength(2);
+    expect(back.assets.find((a) => a.id === 'png1')?.mime).toBe('image/png');
+    expect(back.assets.find((a) => a.id === 'svg1')?.data).toContain('<svg');
   });
 });

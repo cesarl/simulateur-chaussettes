@@ -10,17 +10,23 @@ import {
 import type { ZoneColors } from '../core/collections';
 import { isLegacyLayoutKind, migrateLegacyKind } from '../core/presets';
 import type { SockDesign, TileAsset, SeamPosition, TileSizeMode, DecorMode, DecorSettings, PatternSource } from '../core/types';
-import { EMPTY_COMPOSITION, type Composition, type Layer, type AssetRef } from '../core/composition';
+import { EMPTY_COMPOSITION, usedEmbeddedAssets, type Composition, type Layer, type AssetRef, type EmbeddedAsset } from '../core/composition';
 import { base64ToBytes, bytesToBase64, decodePng, encodePng } from './pngCodec';
 
 /**
  * Projet JSON : réglages + carreaux en PNG base64.
+ * v1 : design + tiles (+ collection).
+ * v2 : v1 + assets embarqués (composition). Le champ pattern est dans design (absent ⇒ carreaux).
  * La sauvegarde IndexedDB reprend le même document. Si IndexedDB manque, on ignore.
  */
 
 const DB_NAME = 'cesar-bazaar';
 const STORE = 'project';
 const KEY = 'last';
+/** Seuil d’avertissement à l’enregistrement (octets, JSON UTF-8). */
+export const PROJECT_SIZE_WARN_BYTES = 20 * 1024 * 1024;
+/** Seuil autosave navigateur : au-delà, on omet les assets embarqués. */
+export const AUTOSAVE_OMIT_ASSETS_BYTES = 4 * 1024 * 1024;
 
 const ORDRES: readonly Ordre[] = ['unique', 'suite', 'aleatoire', 'aleatoire-sans-voisin'];
 const MODES: readonly ModeRotation[] = [
@@ -57,20 +63,25 @@ export interface ProjectCollectionMeta {
 }
 
 interface ProjectDocument {
-  version: 1;
+  version: 1 | 2;
   design: SockDesign;
   tiles: StoredTile[];
   collection?: ProjectCollectionMeta | null;
+  assets?: EmbeddedAsset[];
 }
 
 export interface ParsedProject {
   design: SockDesign;
   tiles: TileAsset[];
   collection: ProjectCollectionMeta | null;
+  assets: EmbeddedAsset[];
 }
 
 export interface SerializeProjectOptions {
   collection?: ProjectCollectionMeta | null;
+  assets?: readonly EmbeddedAsset[];
+  /** Si true, omet les assets (autosave léger). */
+  omitAssets?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -370,13 +381,41 @@ export async function serializeProject(
       pngBase64: bytesToBase64(png),
     });
   }
+  const pattern = design.pattern;
+  const allAssets = options.assets ?? [];
+  const assets = options.omitAssets
+    ? []
+    : pattern?.kind === 'composition'
+      ? usedEmbeddedAssets(pattern.composition, [...allAssets])
+      : [];
   const document: ProjectDocument = {
-    version: 1,
+    version: 2,
     design,
     tiles: stored,
     collection: options.collection ?? null,
+    assets,
   };
   return JSON.stringify(document);
+}
+
+export function projectByteLength(json: string): number {
+  return new TextEncoder().encode(json).length;
+}
+
+function readEmbeddedAsset(value: unknown): EmbeddedAsset {
+  if (!isRecord(value)) throw new ProjectError('image embarquée illisible.');
+  const mime = needString(value, 'mime');
+  if (mime !== 'image/svg+xml' && mime !== 'image/png') {
+    throw new ProjectError('type d’image embarquée inconnu.');
+  }
+  return {
+    id: needString(value, 'id'),
+    name: needString(value, 'name'),
+    mime,
+    data: needString(value, 'data'),
+    width: needNumber(value, 'width'),
+    height: needNumber(value, 'height'),
+  };
 }
 
 export async function parseProject(text: string): Promise<ParsedProject> {
@@ -387,6 +426,8 @@ export async function parseProject(text: string): Promise<ParsedProject> {
     throw new ProjectError('JSON illisible.');
   }
   if (!isRecord(parsed)) throw new ProjectError('contenu illisible.');
+  const docVersion = parsed.version;
+  if (docVersion !== 1 && docVersion !== 2) throw new ProjectError('version non prise en charge.');
   const design = readDesign(parsed.design);
   if (!Array.isArray(parsed.tiles)) throw new ProjectError('carreaux manquants.');
   const tiles: TileAsset[] = [];
@@ -416,7 +457,10 @@ export async function parseProject(text: string): Promise<ParsedProject> {
     throw new ProjectError('un carreau référencé est absent.');
   }
   const collection = readCollectionMeta(parsed.collection);
-  return { design, tiles, collection };
+  const assetsRaw = parsed.assets;
+  const assets =
+    docVersion === 2 && Array.isArray(assetsRaw) ? assetsRaw.map(readEmbeddedAsset) : [];
+  return { design, tiles, collection, assets };
 }
 
 function openDb(): Promise<IDBDatabase> {

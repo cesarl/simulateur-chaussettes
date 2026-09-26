@@ -515,3 +515,11 @@ Contrôle visuel `visuel-t46-composition.png` : mode Composition actif (onglet t
 Vérification : typecheck ✅ ; e2e `composition-editor.spec.ts` ✅ ; unitaires 123 ✅.
 Décisions : D44.
 Reste / risques : import PNG/SVG + assets projet en T47.
+
+## T47 — Projet v2 + lien partage — 2026-09-26 14:05
+Statut : terminée
+Fait : projet JSON v2 (`assets` embarqués, `usedEmbeddedAssets`) ; lecture v1 ; import PNG/SVG dans l’éditeur ; lien désactivé si images importées ; autosave omet assets si > 4 Mo ; avertissement save > 20 Mo.
+Contrôle visuel `visuel-t47-share-viewer.png` : visionneuse publique après lien composition bibliothèque (chaussette 3D avec motif).
+Vérification : `npm run verify` ✅ (unitaires + 50 e2e). Fin jalon C.
+Décisions : D45.
+Reste / risques : aides jacquard T48, bilan T49.

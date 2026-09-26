@@ -11,6 +11,7 @@ import {
   moveLayer,
   updateLayer,
   type Composition,
+  type EmbeddedAsset,
   type RasterImage,
 } from '../core/composition';
 import { motifRows } from '../core/layout';
@@ -18,6 +19,8 @@ import { getState, update } from '../state';
 import { Zone } from '../core/types';
 import { rowRanges } from '../core/grid';
 import { seamColumn } from '../core/calepinage';
+import { encodePng, bytesToBase64 } from '../io/pngCodec';
+import { loadTileFromFile } from '../io/tiles';
 
 export interface CompositionEditorApi {
   sync: () => void;
@@ -382,6 +385,7 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
       row.className = layer.id === selectedId ? 'comp-layer selected' : 'comp-layer';
       row.dataset.testid = `comp-layer-${layer.id}`;
       const name = document.createElement('span');
+      name.dataset.testid = `comp-layer-name-${layer.id}`;
       name.textContent = layer.asset.kind === 'collection'
         ? `${layer.asset.collectionId}/${layer.asset.variation}`
         : layer.id;
@@ -394,20 +398,20 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
       const vis = document.createElement('button');
       vis.type = 'button';
       vis.dataset.testid = `comp-vis-${layer.id}`;
-      vis.textContent = layer.hidden ? 'masqué' : 'visible';
-      vis.title = 'Visibilité';
+      vis.textContent = layer.hidden ? 'afficher' : 'cacher';
+      vis.title = layer.hidden ? 'Afficher' : 'Masquer';
       vis.addEventListener('click', (e) => {
         e.stopPropagation();
-        setComposition(updateLayer(comp, layer.id, { hidden: !layer.hidden }));
+        setComposition(updateLayer(composition(), layer.id, { hidden: !layer.hidden }));
       });
       const lock = document.createElement('button');
       lock.type = 'button';
       lock.dataset.testid = `comp-lock-${layer.id}`;
-      lock.textContent = layer.locked ? 'verrou' : 'libre';
+      lock.textContent = layer.locked ? 'déverrouiller' : 'verrouiller';
       lock.title = 'Verrou';
       lock.addEventListener('click', (e) => {
         e.stopPropagation();
-        setComposition(updateLayer(comp, layer.id, { locked: !layer.locked }));
+        setComposition(updateLayer(composition(), layer.id, { locked: !layer.locked }));
       });
       const up = document.createElement('button');
       up.type = 'button';
@@ -415,7 +419,7 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
       up.textContent = '↑';
       up.addEventListener('click', (e) => {
         e.stopPropagation();
-        setComposition(moveLayer(comp, layer.id, 'monter'));
+        setComposition(moveLayer(composition(), layer.id, 'monter'));
       });
       const down = document.createElement('button');
       down.type = 'button';
@@ -423,7 +427,7 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
       down.textContent = '↓';
       down.addEventListener('click', (e) => {
         e.stopPropagation();
-        setComposition(moveLayer(comp, layer.id, 'descendre'));
+        setComposition(moveLayer(composition(), layer.id, 'descendre'));
       });
       const del = document.createElement('button');
       del.type = 'button';
@@ -431,7 +435,8 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
       del.textContent = '✕';
       del.addEventListener('click', (e) => {
         e.stopPropagation();
-        setComposition({ ...comp, layers: comp.layers.filter((l) => l.id !== layer.id) });
+        const cur = composition();
+        setComposition({ ...cur, layers: cur.layers.filter((l) => l.id !== layer.id) });
         if (selectedId === layer.id) selectedId = null;
       });
       void idx;
@@ -708,9 +713,48 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
 
   addImport.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', () => {
-    // Import complet en T47 (assets) — pour T46 on ajoute une couche collection factice si possible
-    setStatusHint('Import fichier : enregistrez le projet (T47) pour garder les images embarquées. Utilisez la bibliothèque pour l’instant.');
+    const files = [...(fileInput.files ?? [])];
     fileInput.value = '';
+    if (files.length) void importFiles(files);
+  });
+
+  async function importFiles(files: File[]): Promise<void> {
+    const g = gauge();
+    let next = composition();
+    const assets = [...getState().embeddedAssets];
+    for (const file of files) {
+      try {
+        const asset = await fileToEmbeddedAsset(file);
+        assets.push(asset);
+        const newId = `L${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+        next = addLayer(next, { kind: 'embarquee', assetId: asset.id }, g, newId);
+        next = updateLayer(next, newId, {
+          x: g.needles / 2,
+          y: g.rows / 3,
+          widthStitches: Math.round(g.needles / 4),
+        });
+        selectedId = newId;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Import impossible.';
+        setStatusHint(message);
+      }
+    }
+    update({
+      embeddedAssets: assets,
+      design: { pattern: { kind: 'composition', composition: next } },
+    });
+    libPicker.hidden = true;
+  }
+
+  canvas.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+  canvas.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const files = [...(e.dataTransfer?.files ?? [])].filter((f) =>
+      /\.(png|svg)$/i.test(f.name) || f.type === 'image/png' || f.type === 'image/svg+xml',
+    );
+    if (files.length) void importFiles(files);
   });
 
   function setStatusHint(msg: string): void {
@@ -734,6 +778,36 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
       root.remove();
       splitter.remove();
     },
+  };
+}
+
+async function fileToEmbeddedAsset(file: File): Promise<EmbeddedAsset> {
+  const id = `A${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const isSvg = /\.svg$/i.test(file.name) || file.type === 'image/svg+xml';
+  if (isSvg) {
+    const data = await file.text();
+    // Dimensions via le pipeline tiles (SVG → raster) pour width/height.
+    const tile = await loadTileFromFile(file);
+    return {
+      id,
+      name: file.name,
+      mime: 'image/svg+xml',
+      data,
+      width: tile.width,
+      height: tile.height,
+    };
+  }
+  const tile = await loadTileFromFile(file);
+  // PNG > 2 Mo : déjà plafonné par loadTileFromFile (1024) ; on ré-encode en data URL.
+  const png = await encodePng(tile.rgba, tile.width, tile.height);
+  const data = `data:image/png;base64,${bytesToBase64(png)}`;
+  return {
+    id,
+    name: file.name,
+    mime: 'image/png',
+    data,
+    width: tile.width,
+    height: tile.height,
   };
 }
 
