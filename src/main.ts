@@ -10,6 +10,9 @@ import {
   primaryMotifLayer,
   renderStack,
   stackGauge,
+  imageGizmo,
+  motifGizmo,
+  layerAtStitch,
   type SockDesignV2,
   type StackLayer,
 } from './core/layers';
@@ -44,11 +47,16 @@ import {
   update,
   undo,
   redo,
+  selectLayer,
+  patchImageLayer,
+  patchLayerCoalesced,
+  setMotifBounds,
   type DesignPatch,
 } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
+import { mountFlatGizmos } from './ui/flatGizmos';
 import { mountCompositionEditor } from './ui/compositionEditor';
 import { mountPanel, renderChecks, renderStatus, type PanelApi } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
@@ -60,7 +68,7 @@ import { mountOptionsTabs } from './ui/optionsTabs';
 import { mountProjectBar } from './ui/projectBar';
 import { createDecorController } from './render/decorController';
 import { checkFabrication } from './core/checks';
-import { composeGrid, gridFingerprint } from './core/grid';
+import { composeGrid, gridFingerprint, rowRanges } from './core/grid';
 import * as THREE from 'three';
 
 const panelEl = document.getElementById('panel');
@@ -122,6 +130,20 @@ const flat = mountFlatView(
   },
   () => handle.requestRender(),
 );
+const flatCanvasEl = view2d.querySelector('[data-testid="flat-canvas"]');
+if (!(flatCanvasEl instanceof HTMLCanvasElement)) {
+  throw new Error('Canvas vue 2D introuvable');
+}
+mountFlatGizmos(flat, flatCanvasEl, {
+  getDesign: () => getState().design,
+  getSelectedId: () => getState().selectedLayerId,
+  getStackOwner: () => stackOwner,
+  getImages: () => compositionImages,
+  selectLayer,
+  patchImage: patchImageLayer,
+  patchMotif: patchLayerCoalesced,
+  setMotifBounds,
+});
 const compositionEditor = mountCompositionEditor(view3d);
 const viewer = mountViewerBar(view3d, {
   onView: (view) => {
@@ -608,6 +630,47 @@ function publish(): void {
     capturePair,
     decorBuildId: decor.getBuildId(),
     stackOwnerLength: stackOwner?.length ?? 0,
+    motifRowOrigin: rowRanges(state.design.dimensions, state.design.zones).leg.start,
+    gizmoClient(layerId: string) {
+      const layer = state.design.layers.find((l) => l.id === layerId);
+      if (!layer || layer.kind === 'fond' || layer.locked) return null;
+      const g = stackGauge(state.design.dimensions, state.design.zones);
+      if (layer.kind === 'image') {
+        const img = compositionImages.get(assetKey(layer.asset));
+        const gz = imageGizmo(layer, img ?? { width: 1, height: 1 }, g);
+        const rotate = flat.clientAtMotifStitch(gz.rotate[0], gz.rotate[1]);
+        const br = flat.clientAtMotifStitch(gz.corners[2]![0], gz.corners[2]![1]);
+        const cx =
+          gz.corners.reduce((s, c) => s + c[0], 0) / gz.corners.length;
+        const cy =
+          gz.corners.reduce((s, c) => s + c[1], 0) / gz.corners.length;
+        const center = flat.clientAtMotifStitch(cx, cy);
+        return {
+          rotate: rotate ?? undefined,
+          scaleCorner: br ?? undefined,
+          imageCenter: center ?? undefined,
+        };
+      }
+      const gz = motifGizmo(layer, g);
+      const move = flat.clientAtMotifStitch(gz.tile.x + gz.tile.w / 2, gz.tile.y + gz.tile.h / 2);
+      const scale = flat.clientAtMotifStitch(gz.tile.x + gz.tile.w, gz.tile.y + gz.tile.h);
+      const bandTop = flat.clientAtMotifStitch(Math.round(g.needles / 4), gz.band.from);
+      const bandBottom = flat.clientAtMotifStitch(Math.round(g.needles / 4), gz.band.to - 0.01);
+      return {
+        motifMove: move ?? undefined,
+        motifScale: scale ?? undefined,
+        bandTop: bandTop ?? undefined,
+        bandBottom: bandBottom ?? undefined,
+      };
+    },
+    stackLayerAt(col: number, motifRow: number) {
+      if (!stackOwner) return null;
+      const g = stackGauge(state.design.dimensions, state.design.zones);
+      return layerAtStitch(state.design.layers, stackOwner, g.needles, col + 0.5, motifRow + 0.5);
+    },
+    flatMotifCenter: (col, motifRow) => flat.clientAtMotifStitch(col, motifRow),
+    flatRevealMotif: (col, motifRow) => flat.revealMotifStitch(col, motifRow),
+    motifStitchFromLocal: (px, py) => flat.clientToMotifStitch(px, py),
   };
   window.__SIM__ = hook;
 }

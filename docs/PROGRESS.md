@@ -663,4 +663,19 @@ Contrôles visuels (panneau `#panel`, images ouvertes) :
 - `docs/captures/v7/visuel-T55-bande.png` — étendue « Bande de rangs », curseurs 0→66 rangs, libellé « 0,0 cm à 6,6 cm » ; deux pastilles couleurs du motif.
 - `docs/captures/v7/visuel-T55-options-chaussette.png` — onglet Chaussette : Dimensions (Homme, curseurs tige/talon/pied/pointe), Zones (bord-côte, couleurs talon), pas le volet Calque.
 Décisions : aucune nouvelle (réutilisation panneau V6 branché sur calque, D48/D50).
-Reste / risques : poignées 2D et vrai rendu grille → T56 ; bibliothèque enrichie → T57 ; e2e legacy V6 (9 rouges listés en T54) toujours à adapter.
+Reste / risques : bibliothèque enrichie → T57 ; e2e legacy V6 (9 rouges listés en T54) toujours à adapter.
+
+## T56 — Vue 2D : vrai rendu et poignées — 2026-09-26 23:12
+Statut : terminée
+Fait :
+- `src/ui/flatGizmos.ts` : sélection au clic (`layerAtStitch`), Échap pour désélectionner, poignées Image (`imageGizmo`, `dragImage`) et Motif (`motifGizmo`, `dragMotif`, `scaleMotif`, `setMotifBand`), calques verrouillés / Fond sans poignées ; pan avec espace ou clic milieu/droit ; molette = zoom (déjà dans `flatView`).
+- `src/ui/flatView.ts` : coordonnées motif ↔ canvas, overlay poignées, `revealMotifStitch` (centrage), pan sans glisser par défaut sur le fond.
+- `src/main.ts` : branchement gizmos ; crochet `__SIM__` (`gizmoClient`, `stackLayerAt`, `flatRevealMotif`, `motifStitchFromLocal`) pour les e2e.
+- `tests/e2e/poignees.spec.ts` : déplacement image +20 mailles, rotation 90°, échelle ×2, décalage Motif, bande (poignée basse), tout à la souris.
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (156 unitaires) ; `npm run build` ✅ ; e2e `poignees.spec.ts` ✅ (1 test, ~3 min).
+Contrôle visuel — `docs/captures/v7/poignees-2d.png` (copie aussi dans `media/v7/`) :
+- Grille **maille par maille** (barreaux horizontaux, pas de rectangle lissé) : bord-côte marine, tige grise avec le motif Medina quantifié, repères « Bord-côte » / « Tige » à gauche.
+- Calque **Motif en bande** sélectionné : deux lignes rouges pointillées horizontales avec **poignées rondes rouges** à gauche (haut et bas de bande) ; le motif reste visible en vrai tricot dans la bande.
+- (Calque Image tourné sélectionné juste avant la capture : cadre terracotta + poignées visibles pendant le test ; sur la capture finale le Motif bande domine avec ses poignées.)
+Décisions : aucune nouvelle.
+Reste / risques : bibliothèque complète → T57 ; e2e legacy V6 (9 rouges) ; optimiser recalcul à la seule sélection (noté T54).

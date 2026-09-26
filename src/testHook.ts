@@ -58,6 +58,26 @@ export interface SimHook {
   decorBuildId: number;
   /** Longueur du buffer owner (debug / T56). */
   stackOwnerLength: number;
+  /** Rang complet de la maille (0,0) du motif (haut de tige). */
+  motifRowOrigin: number;
+  /** Points écran des poignées (tests e2e T56). */
+  gizmoClient: (layerId: string) => {
+    rotate?: { x: number; y: number };
+    scaleCorner?: { x: number; y: number };
+    imageCenter?: { x: number; y: number };
+    motifMove?: { x: number; y: number };
+    motifScale?: { x: number; y: number };
+    bandTop?: { x: number; y: number };
+    bandBottom?: { x: number; y: number };
+  } | null;
+  /** Calque empilement à une maille motif (lecture seule). */
+  stackLayerAt: (col: number, motifRow: number) => string | null;
+  /** Centre écran d'une maille motif, ou null si hors canvas. */
+  flatMotifCenter: (col: number, motifRow: number) => { x: number; y: number } | null;
+  /** Décale la vue 2D pour centrer une maille motif. */
+  flatRevealMotif: (col: number, motifRow: number) => void;
+  /** Coordonnées canvas → maille motif (tests). */
+  motifStitchFromLocal: (px: number, py: number) => { col: number; row: number } | null;
 }
 
 declare global {

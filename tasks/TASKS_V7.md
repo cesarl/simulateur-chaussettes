@@ -209,7 +209,7 @@ L'onglet « Calque » montre les options **du type** de calque sélectionné. On
 - [x] e2e `calque-options.spec.ts`, à la souris : choisir un Motif jaune et blanc, rendre le blanc transparent → dans la vue 2D, une maille qui était blanche prend la couleur du Fond ; limiter ce motif à une bande → hors de la bande, on voit le Fond.
 - [x] Capture de l'onglet pour chacun des trois types, décrite.
 
-### [ ] T56 — Vue 2D : vrai rendu et poignées
+### [x] T56 — Vue 2D : vrai rendu et poignées
 
 - La vue 2D affiche **la grille réelle**, c'est-à-dire la sortie de `renderStack` après la réduction des couleurs, maille par maille. Les images y apparaissent donc comme elles seront tricotées, jamais comme des rectangles.
   - Pendant qu'on déplace une image, l'aperçu peut être allégé (image posée en transparence sur la grille). La grille exacte est recalculée au lâcher, ou toutes les 100 ms au plus.
@@ -228,13 +228,13 @@ L'onglet « Calque » montre les options **du type** de calque sélectionné. On
 - Zoom avec la molette et déplacement de la vue avec la barre espace ou le bouton du milieu (bonus, si le temps le permet).
 
 **Critères**
-- [ ] e2e `poignees.spec.ts`, **uniquement à la souris** :
+- [x] e2e `poignees.spec.ts`, **uniquement à la souris** :
   - déplacer une image de 20 mailles vers la droite : la couleur de l'image apparaît 20 mailles plus loin dans la grille ;
   - la tourner de 90° avec la poignée ronde : `rotation` = 90 ± 1 ;
   - l'agrandir par un coin : la largeur double à ± 5 % ;
   - décaler un Motif ;
   - régler la bande par sa poignée basse.
-- [ ] Capture 2D avec une image tournée sélectionnée et un Motif en bande sélectionné, décrite (on doit voir le vrai dessin, pas un rectangle).
+- [x] Capture 2D avec une image tournée sélectionnée et un Motif en bande sélectionné, décrite (on doit voir le vrai dessin, pas un rectangle).
 
 ### [ ] T57 — Bibliothèque
 

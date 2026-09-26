@@ -1,7 +1,8 @@
-import type { StitchGrid } from '../core/types';
+import type { SockDimensions, StitchGrid, ZoneSettings } from '../core/types';
 import { Zone } from '../core/types';
 import { seamColumn } from '../core/calepinage';
-import { editingLayoutSettings } from '../state';
+import { rowRanges } from '../core/grid';
+import { editingLayoutSettings, getState } from '../state';
 
 /**
  * Vue à plat : une maille = un rectangle au rapport réel.
@@ -26,6 +27,16 @@ export interface FlatHandle {
   setGrid: (grid: StitchGrid, aspect: number) => void;
   setFloatMask: (mask: Uint8Array | null) => void;
   centerOf: (col: number, row: number) => { x: number; y: number } | null;
+  /** Centre écran d'une maille en coordonnées motif (rang 0 = haut de la tige). */
+  clientAtMotifStitch: (col: number, motifRow: number) => { x: number; y: number } | null;
+  /** Souris → maille motif, ou null hors zone motif. */
+  clientToMotifStitch: (px: number, py: number) => { col: number; row: number } | null;
+  redraw: () => void;
+  panBy: (dx: number, dy: number) => void;
+  setPanMode: (active: boolean) => void;
+  setOverlayDrawer: (draw: (() => void) | null) => void;
+  /** Décale la vue 2D pour centrer une maille motif. */
+  revealMotifStitch: (col: number, motifRow: number) => void;
   setDevTools: (visible: boolean) => void;
   /** Affiche la vue à plat (true) ou la 3D (false). En double panneau, no-op (toujours visible). */
   setFlat: (flat: boolean) => void;
@@ -92,16 +103,29 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   let zoom = 1;
   let panX = 0;
   let panY = 0;
-  let dragging = false;
-  let lastX = 0;
-  let lastY = 0;
+  let panMode = false;
   let toolsVisible = true;
+  let overlayDrawer: (() => void) | null = null;
+  let dims: SockDimensions = getState().design.dimensions;
+  let zones: ZoneSettings = getState().design.zones;
 
   const context = canvas.getContext('2d');
 
+  function motifOriginRow(): number {
+    return rowRanges(dims, zones).leg.start;
+  }
+
+  function isMotifFullRow(row: number): boolean {
+    if (!grid || row < 0 || row >= grid.height) return false;
+    const z = grid.zone[row * grid.width] ?? Zone.Empty;
+    if (z === Zone.Leg) return true;
+    return z === Zone.Foot && zones.patternOnFoot;
+  }
+
   function cells(): { w: number; h: number } {
     const w = 4 * zoom;
-    const h = Math.max(1, Math.round(4 * aspect)) * zoom;
+    const ar = aspect > 0 && Number.isFinite(aspect) ? aspect : 0.75;
+    const h = Math.max(1, Math.round(4 * ar)) * zoom;
     return { w, h };
   }
 
@@ -158,6 +182,7 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     }
 
     drawZones(originY, h);
+    overlayDrawer?.();
   }
 
   function drawZones(originY: number, cellH: number): void {
@@ -193,6 +218,20 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     const y = Math.floor(MARGIN_TOP + panY + row * h + h / 2);
     if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return null;
     return { x, y };
+  }
+
+  function clientAtMotifStitch(col: number, motifRow: number): { x: number; y: number } | null {
+    return centerOf(col, motifOriginRow() + motifRow);
+  }
+
+  function clientToMotifStitch(px: number, py: number): { col: number; row: number } | null {
+    if (!grid) return null;
+    const { w, h } = cells();
+    const col = Math.floor((px - MARGIN_LEFT - panX) / w);
+    const row = Math.floor((py - MARGIN_TOP - panY) / h);
+    if (col < 0 || row < 0 || col >= grid.width || row >= grid.height) return null;
+    if (!isMotifFullRow(row)) return null;
+    return { col, row: row - motifOriginRow() };
   }
 
   function stitchAt(px: number, py: number): { col: number; row: number } | null {
@@ -253,28 +292,12 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     draw();
   }, { passive: false });
 
-  canvas.addEventListener('pointerdown', (event) => {
-    dragging = true;
-    lastX = event.clientX;
-    lastY = event.clientY;
-    canvas.setPointerCapture(event.pointerId);
-  });
-  canvas.addEventListener('pointerup', () => {
-    dragging = false;
-  });
   canvas.addEventListener('pointermove', (event) => {
-    if (dragging) {
-      panX += event.clientX - lastX;
-      panY += event.clientY - lastY;
-      lastX = event.clientX;
-      lastY = event.clientY;
-      draw();
-    }
     const rect = canvas.getBoundingClientRect();
     showHover(event.clientX - rect.left, event.clientY - rect.top);
   });
   canvas.addEventListener('pointerleave', () => {
-    if (!dragging) hover.textContent = 'Survolez une maille.';
+    hover.textContent = 'Survolez une maille.';
   });
 
   const observer = new ResizeObserver(() => {
@@ -288,7 +311,10 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   return {
     setGrid(next, nextAspect) {
       grid = next;
-      aspect = nextAspect > 0 ? nextAspect : 0.75;
+      aspect = nextAspect > 0 && Number.isFinite(nextAspect) ? nextAspect : aspect > 0 ? aspect : 0.75;
+      const state = getState();
+      dims = state.design.dimensions;
+      zones = state.design.zones;
       draw();
     },
     setFloatMask(mask: Uint8Array | null) {
@@ -296,6 +322,32 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
       draw();
     },
     centerOf,
+    clientAtMotifStitch,
+    clientToMotifStitch,
+    redraw: draw,
+    panBy(dx: number, dy: number) {
+      panX += dx;
+      panY += dy;
+      draw();
+    },
+    setPanMode(active: boolean) {
+      panMode = active;
+      canvas.style.cursor = active || panMode ? 'grabbing' : '';
+    },
+    setOverlayDrawer(fn: (() => void) | null) {
+      overlayDrawer = fn;
+      draw();
+    },
+    revealMotifStitch(col: number, motifRow: number) {
+      if (!grid) return;
+      const { w, h } = cells();
+      const fullRow = motifOriginRow() + motifRow;
+      const targetX = MARGIN_LEFT + col * w + w / 2;
+      const targetY = MARGIN_TOP + fullRow * h + h / 2;
+      panX = canvas.width / 2 - targetX;
+      panY = canvas.height / 2 - targetY;
+      draw();
+    },
     setDevTools(visible: boolean) {
       toolsVisible = visible;
       applyToolsVisibility();
