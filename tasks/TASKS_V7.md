@@ -236,7 +236,7 @@ L'onglet « Calque » montre les options **du type** de calque sélectionné. On
   - régler la bande par sa poignée basse.
 - [x] Capture 2D avec une image tournée sélectionnée et un Motif en bande sélectionné, décrite (on doit voir le vrai dessin, pas un rectangle).
 
-### [ ] T57 — Bibliothèque
+### [~] T57 — Bibliothèque
 
 Bouton « Bibliothèque » dans la barre du projet, et boutons « + Motif » / « + Image » du dock. Il ouvre un **panneau par-dessus l'écran** (dialogue modal, Échap pour fermer) avec deux onglets :
 

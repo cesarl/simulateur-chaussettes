@@ -1,11 +1,16 @@
 /**
- * Bibliothèque — version minimale (T54) : ajouter un calque Motif depuis une collection,
- * ou un calque Image (exemple fourni, ou PNG / SVG importé et embarqué dans le projet).
- * T57 enrichit ce dialogue (vignettes de variations, glisser-déposer, « importer comme carreau »).
+ * Bibliothèque (T57) : dialogue modal pour ajouter des calques Motif ou Image.
  */
-import { visibleCollections, isPngCollection, type Catalogue, type Collection } from '../core/collections';
+import {
+  visibleCollections,
+  isPngCollection,
+  type Catalogue,
+  type Collection,
+  type CollectionVariation,
+} from '../core/collections';
 import type { EmbeddedAsset } from '../core/composition';
-import { addImageLayer, addMotifLayer, canAddLayer, defaultMotifLayout, getState, update } from '../state';
+import type { TileAsset } from '../core/types';
+import { addImageLayer, addMotifLayer, canAddLayer, defaultMotifLayout, getState, subscribe, update } from '../state';
 import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
@@ -21,9 +26,35 @@ export interface LibraryApi {
 /** Image d’exemple servie par l’application (aucun réseau externe). */
 const EXAMPLE_IMAGE = 'carreau-test-damier.png';
 
+const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
+  { id: 'mes-collections', label: 'Mes collections' },
+  { id: 'signature', label: 'Signature' },
+  { id: 'classic', label: 'Classiques' },
+  { id: 'new', label: 'Nouveautés' },
+  { id: 'autres', label: 'Autres' },
+];
+
+function categoryKey(c: Collection): string {
+  if (c.source === 'locale') return 'mes-collections';
+  const cat = (c.categorie ?? '').toLowerCase();
+  if (cat === 'mes-collections' || cat === 'locale' || cat === 'local') return 'mes-collections';
+  if (cat === 'signature') return 'signature';
+  if (cat === 'classic' || cat === 'classique' || cat === 'classiques') return 'classic';
+  if (cat === 'new' || cat === 'nouveaute' || cat === 'nouveautés' || cat === 'nouveautes') return 'new';
+  return 'autres';
+}
+
 function matches(c: Collection, query: string): boolean {
   if (!query) return true;
   return `${c.nom} ${c.id} ${c.description}`.toLowerCase().includes(query.toLowerCase());
+}
+
+function assetPreviewUrl(asset: EmbeddedAsset): string {
+  if (asset.mime === 'image/svg+xml' && !asset.data.startsWith('data:')) {
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(asset.data)}`;
+  }
+  if (asset.data.startsWith('data:')) return asset.data;
+  return `data:${asset.mime};base64,${asset.data}`;
 }
 
 /** Carreau rasterisé (PNG ou SVG) → image embarquée dans le projet (aucun envoi réseau). */
@@ -92,14 +123,14 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   search.className = 'coll-search';
 
   const collectionsList = document.createElement('div');
-  collectionsList.className = 'library-grid';
+  collectionsList.className = 'library-collections';
   collectionsList.dataset.testid = 'lib-collections';
 
   collectionsPane.append(search, collectionsList);
 
   // -------------------------------------------------------------- onglet Images
   const imagesPane = document.createElement('div');
-  imagesPane.className = 'library-pane';
+  imagesPane.className = 'library-pane library-pane-images';
   imagesPane.dataset.testid = 'lib-pane-images';
 
   const imagesTools = document.createElement('div');
@@ -115,6 +146,13 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   importBtn.dataset.testid = 'lib-image-import';
   importBtn.textContent = 'Importer PNG / SVG…';
 
+  const importAsMotif = document.createElement('label');
+  importAsMotif.className = 'row library-import-motif';
+  const importAsMotifBox = document.createElement('input');
+  importAsMotifBox.type = 'checkbox';
+  importAsMotifBox.dataset.testid = 'lib-import-as-motif';
+  importAsMotif.append(importAsMotifBox, document.createTextNode(' Importer comme carreau (Motif)'));
+
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = '.png,.svg,image/png,image/svg+xml';
@@ -122,19 +160,32 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   fileInput.dataset.testid = 'lib-image-file';
   fileInput.hidden = true;
 
-  imagesTools.append(exampleBtn, importBtn, fileInput);
+  imagesTools.append(exampleBtn, importBtn, importAsMotif, fileInput);
+
+  const imagesDrop = document.createElement('div');
+  imagesDrop.className = 'library-drop';
+  imagesDrop.dataset.testid = 'lib-images-drop';
+  imagesDrop.textContent = 'Glisser-déposer des PNG ou SVG ici';
 
   const imagesList = document.createElement('div');
   imagesList.className = 'library-grid';
   imagesList.dataset.testid = 'lib-images';
 
-  imagesPane.append(imagesTools, imagesList);
+  imagesPane.append(imagesTools, imagesDrop, imagesList);
 
-  dialog.append(header, status, collectionsPane, imagesPane);
+  const variationMenu = document.createElement('div');
+  variationMenu.className = 'library-variation-menu';
+  variationMenu.dataset.testid = 'lib-variation-menu';
+  variationMenu.hidden = true;
+  variationMenu.setAttribute('role', 'menu');
+
+  dialog.append(header, status, collectionsPane, imagesPane, variationMenu);
   host.appendChild(dialog);
 
   let activeTab: LibraryTab = 'collections';
   let busy = false;
+  let variationAnchor: HTMLElement | null = null;
+  let variationCollection: Collection | null = null;
   const thumbs = new Map<string, string>();
 
   function setStatus(message: string): void {
@@ -147,7 +198,15 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   }
 
   function close(): void {
+    closeVariationMenu();
     if (dialog.open) dialog.close();
+  }
+
+  function closeVariationMenu(): void {
+    variationMenu.hidden = true;
+    variationAnchor = null;
+    variationCollection = null;
+    variationMenu.replaceChildren();
   }
 
   async function thumbFor(c: Collection, cat: Catalogue): Promise<string> {
@@ -185,14 +244,31 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     }
   }
 
+  function addVariationImage(c: Collection, variation: CollectionVariation): void {
+    if (busy) return;
+    const label = `${c.nom} · ${variation.name}`;
+    const added = addImageLayer(
+      { kind: 'collection', collectionId: c.id, variation: variation.name },
+      label,
+    );
+    if (added) close();
+    else setStatus('16 calques au maximum.');
+  }
+
   function addAssetLayer(asset: EmbeddedAsset, assets: EmbeddedAsset[]): void {
     const added = addImageLayer({ kind: 'embarquee', assetId: asset.id }, asset.name, assets);
     if (added) close();
     else setStatus('16 calques au maximum.');
   }
 
+  function addImportedMotifLayer(tile: TileAsset, tiles: TileAsset[], name: string): void {
+    const added = addMotifLayer({ kind: 'importes', tileIds: [tile.id] }, defaultMotifLayout(), name, tiles);
+    if (added) close();
+    else setStatus('16 calques au maximum.');
+  }
+
   async function addExample(): Promise<void> {
-    if (busy) return;
+    if (busy || importAsMotifBox.checked) return;
     setBusy(true);
     setStatus('Chargement de l’exemple…');
     try {
@@ -215,6 +291,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   async function importFiles(files: File[]): Promise<void> {
     if (busy || files.length === 0) return;
     setBusy(true);
+    const asMotif = importAsMotifBox.checked;
     try {
       for (const file of files) {
         if (!canAddLayer()) {
@@ -222,8 +299,15 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
           break;
         }
         const tile = await loadTileFromFile(file);
-        const asset = await embeddedAssetFromTile(file.name, tile);
-        addAssetLayer(asset, [...getState().embeddedAssets, asset]);
+        if (asMotif) {
+          const tiles = [...getState().tiles, tile];
+          const base = file.name.replace(/\.[^.]+$/, '') || file.name;
+          addImportedMotifLayer(tile, tiles, base);
+          if (!dialog.open) break;
+        } else {
+          const asset = await embeddedAssetFromTile(file.name, tile);
+          addAssetLayer(asset, [...getState().embeddedAssets, asset]);
+        }
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Import impossible.';
@@ -231,6 +315,75 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     } finally {
       setBusy(false);
     }
+  }
+
+  function openVariationMenu(c: Collection, cat: Catalogue, anchor: HTMLElement): void {
+    if (variationAnchor === anchor && !variationMenu.hidden) {
+      closeVariationMenu();
+      return;
+    }
+    variationAnchor = anchor;
+    variationCollection = c;
+    variationMenu.replaceChildren();
+    const title = document.createElement('p');
+    title.className = 'library-variation-title';
+    title.textContent = 'Ajouter une variation comme image';
+    variationMenu.appendChild(title);
+    for (const variation of c.variations) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'library-variation-item';
+      item.role = 'menuitem';
+      item.dataset.testid = `lib-add-variation-${c.id}-${variation.name}`;
+      item.textContent = variation.name;
+      item.addEventListener('click', (event) => {
+        event.stopPropagation();
+        addVariationImage(c, variation);
+        closeVariationMenu();
+      });
+      variationMenu.appendChild(item);
+    }
+    variationMenu.hidden = false;
+    const rect = anchor.getBoundingClientRect();
+    const dialogRect = dialog.getBoundingClientRect();
+    variationMenu.style.left = `${Math.min(rect.left - dialogRect.left, dialogRect.width - 220)}px`;
+    variationMenu.style.top = `${rect.bottom - dialogRect.top + 4}px`;
+  }
+
+  function renderCollectionItem(c: Collection, cat: Catalogue, container: HTMLElement): void {
+    const wrap = document.createElement('div');
+    wrap.className = 'library-item-wrap';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'library-item';
+    button.dataset.testid = `lib-collection-${c.id}`;
+    button.title = c.nom;
+    const img = document.createElement('img');
+    img.alt = '';
+    img.className = 'coll-thumb';
+    void thumbFor(c, cat).then((src) => {
+      if (src) img.src = src;
+    });
+    const name = document.createElement('span');
+    name.className = 'coll-name';
+    name.textContent = c.nom;
+    button.append(img, name);
+    button.addEventListener('click', () => void addCollectionLayer(c, cat));
+
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'library-item-more';
+    more.dataset.testid = `lib-collection-menu-${c.id}`;
+    more.title = 'Variations comme image';
+    more.textContent = '▾';
+    more.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openVariationMenu(c, cat, more);
+    });
+
+    wrap.append(button, more);
+    container.appendChild(wrap);
   }
 
   function renderCollections(): void {
@@ -247,24 +400,26 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       return;
     }
     setStatus(`${items.length} collection${items.length > 1 ? 's' : ''} · un clic ajoute un calque Motif.`);
+
+    const byCat = new Map<string, Collection[]>();
     for (const c of items) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'library-item';
-      button.dataset.testid = `lib-collection-${c.id}`;
-      button.title = c.nom;
-      const img = document.createElement('img');
-      img.alt = '';
-      img.className = 'coll-thumb';
-      void thumbFor(c, catalogue).then((src) => {
-        if (src) img.src = src;
-      });
-      const name = document.createElement('span');
-      name.className = 'coll-name';
-      name.textContent = c.nom;
-      button.append(img, name);
-      button.addEventListener('click', () => void addCollectionLayer(c, catalogue));
-      collectionsList.appendChild(button);
+      const key = categoryKey(c);
+      const arr = byCat.get(key) ?? [];
+      arr.push(c);
+      byCat.set(key, arr);
+    }
+
+    for (const group of CATEGORY_ORDER) {
+      const cols = byCat.get(group.id);
+      if (!cols?.length) continue;
+      const h = document.createElement('h3');
+      h.className = 'calep-group-title';
+      h.textContent = group.label;
+      collectionsList.appendChild(h);
+      const row = document.createElement('div');
+      row.className = 'library-grid';
+      for (const c of cols) renderCollectionItem(c, catalogue, row);
+      collectionsList.appendChild(row);
     }
   }
 
@@ -274,17 +429,21 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     setStatus(
       embeddedAssets.length === 0
         ? 'Aucune image dans le projet : ajoutez l’exemple ou importez un PNG / SVG.'
-        : `${embeddedAssets.length} image${embeddedAssets.length > 1 ? 's' : ''} dans le projet.`,
+        : `${embeddedAssets.length} image${embeddedAssets.length > 1 ? 's' : ''} dans le projet · un clic ajoute un calque Image.`,
     );
     for (const asset of embeddedAssets) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'library-item';
       button.dataset.testid = `lib-asset-${asset.id}`;
+      const img = document.createElement('img');
+      img.alt = '';
+      img.className = 'coll-thumb';
+      img.src = assetPreviewUrl(asset);
       const name = document.createElement('span');
       name.className = 'coll-name';
       name.textContent = asset.name;
-      button.append(name);
+      button.append(img, name);
       button.addEventListener('click', () => addAssetLayer(asset, [...getState().embeddedAssets]));
       imagesList.appendChild(button);
     }
@@ -297,6 +456,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     tabImages.classList.toggle('active', !onCollections);
     collectionsPane.hidden = !onCollections;
     imagesPane.hidden = onCollections;
+    closeVariationMenu();
     if (onCollections) renderCollections();
     else renderImages();
   }
@@ -304,6 +464,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   tabCollections.addEventListener('click', () => showTab('collections'));
   tabImages.addEventListener('click', () => showTab('images'));
   closeBtn.addEventListener('click', () => close());
+  dialog.addEventListener('close', () => closeVariationMenu());
   search.addEventListener('input', () => {
     if (activeTab === 'collections') renderCollections();
   });
@@ -313,6 +474,31 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     const files = [...(fileInput.files ?? [])];
     fileInput.value = '';
     void importFiles(files);
+  });
+
+  imagesDrop.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    imagesDrop.classList.add('over');
+  });
+  imagesDrop.addEventListener('dragleave', () => imagesDrop.classList.remove('over'));
+  imagesDrop.addEventListener('drop', (event) => {
+    event.preventDefault();
+    imagesDrop.classList.remove('over');
+    const files = [...(event.dataTransfer?.files ?? [])];
+    if (files.length > 0) void importFiles(files);
+  });
+
+  document.addEventListener('pointerdown', (event) => {
+    if (variationMenu.hidden) return;
+    const target = event.target;
+    if (target instanceof Node && (variationMenu.contains(target) || variationAnchor?.contains(target))) return;
+    closeVariationMenu();
+  });
+
+  subscribe(() => {
+    if (!dialog.open) return;
+    if (activeTab === 'collections') renderCollections();
+    else renderImages();
   });
 
   return {
