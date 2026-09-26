@@ -486,3 +486,10 @@ Fait : `design.pattern` (carreaux | composition), `src/core/patternSource.ts` (`
 Vérification : `npm run verify` ✅ (unitaires + 47 e2e). Golden T41 inchangé et vert.
 Décisions : D40.
 Reste / risques : images composition branchées en T45 ; UI mode composition en T46.
+
+## T43 — Collections locales — 2026-09-26 12:30
+Statut : terminée
+Fait : `collections-locales/`, sync `--local` (défaut si dossier présent) et `npm run sync:local` (`--local-only`). Champ `source: carreaux|locale` ; PNG = zones vides, couleurs auto ; UI « Mes collections » + hint PNG.
+Vérification : vitest collections + golden + pattern-source ✅ ; typecheck ✅.
+Décisions : D41.
+Reste / risques : admin en T44.

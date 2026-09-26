@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  paletteOptions, recolorSvg, suggestZoneColors, visibleCollections, yarnColors, zoneHex,
+  isPngCollection, paletteOptions, recolorSvg, suggestZoneColors, visibleCollections, yarnColors, zoneHex,
   type Catalogue, type NuancierColor,
 } from '../../src/core/collections';
 
@@ -47,11 +47,11 @@ describe('script de synchronisation', () => {
     expect(lianes.recommandations[0]).toEqual({ 'zone-1': 'GN007', 'zone-2': 'GN020', 'zone-3': 'GN002' });
     expect(lianes.calepinages.every((l) => ['Liane_1', 'Liane_2', 'Liane_3'].includes(l))).toBe(true);
     const report = fs.readFileSync(path.join(out, 'SYNC_REPORT.md'), 'utf8');
-    expect(report).toContain('FANTOME-VAR1.svg manquant');
+    expect(report).toContain('FANTOME-VAR1.svg / FANTOME-VAR1.png manquant');
     expect(report).toContain('mal formée');
     expect(report).toContain('ZZ999');
     expect(report).toContain('ORPHELIN-VAR1.svg');
-  });
+    expect(cat.collections.every((c) => c.source === 'carreaux')).toBe(true);  });
   it('est rejouable : une seconde synchronisation donne le même résultat', () => {
     execFileSync(process.execPath, [path.join(root, 'scripts/sync-carreaux.mjs'), '--source', fixture, '--out', out]);
     const again = JSON.parse(fs.readFileSync(path.join(out, 'catalogue.json'), 'utf8')) as Catalogue;
@@ -88,5 +88,75 @@ describe('collections dans le simulateur', () => {
     const s = suggestZoneColors(yarns);
     expect(yarns.map((y) => y.hex)).toContain(s.cuff);
     expect(yarns.map((y) => y.hex)).toContain(s.heel);
+  });
+});
+
+describe('collections locales (T43)', () => {
+  const localFixture = path.join(root, 'tests/fixtures/collections-locales-mini');
+  let localOut = '';
+  let localCat: Catalogue;
+
+  beforeAll(() => {
+    localOut = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-local-'));
+    execFileSync(
+      process.execPath,
+      [
+        path.join(root, 'scripts/sync-carreaux.mjs'),
+        '--source',
+        fixture,
+        '--local',
+        localFixture,
+        '--out',
+        localOut,
+      ],
+      { encoding: 'utf8' },
+    );
+    localCat = JSON.parse(fs.readFileSync(path.join(localOut, 'catalogue.json'), 'utf8'));
+  });
+
+  it('fusionne SVG et PNG locaux avec source locale et catégorie Mes collections', () => {
+    const svg = localCat.collections.find((c) => c.id === 'LOCALSVG')!;
+    const png = localCat.collections.find((c) => c.id === 'LOCALPNG')!;
+    expect(svg.source).toBe('locale');
+    expect(png.source).toBe('locale');
+    expect(svg.categorie).toBe('mes-collections');
+    expect(png.categorie).toBe('mes-collections');
+    expect(svg.variations[0]?.file).toBe('svg/LOCALSVG-VAR1.svg');
+    expect(png.variations[0]?.file).toBe('svg/LOCALPNG-VAR1.png');
+    expect(png.variations[0]?.zones).toEqual([]);
+    expect(isPngCollection(png)).toBe(true);
+    expect(isPngCollection(svg)).toBe(false);
+    expect(fs.existsSync(path.join(localOut, 'svg/LOCALSVG-VAR1.svg'))).toBe(true);
+    expect(fs.existsSync(path.join(localOut, 'svg/LOCALPNG-VAR1.png'))).toBe(true);
+    expect(visibleCollections(localCat).some((c) => c.id === 'LOCALSVG')).toBe(true);
+  });
+
+  it('sync:local (--local-only) met à jour seulement les locales', () => {
+    const again = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-lo-'));
+    // catalogue de départ = sync carreaux seul
+    execFileSync(process.execPath, [
+      path.join(root, 'scripts/sync-carreaux.mjs'),
+      '--source',
+      fixture,
+      '--local',
+      path.join(root, 'collections-locales'),
+      '--out',
+      again,
+    ]);
+    const before = JSON.parse(fs.readFileSync(path.join(again, 'catalogue.json'), 'utf8')) as Catalogue;
+    const carreauxIds = before.collections.filter((c) => c.source !== 'locale').map((c) => c.id);
+    execFileSync(process.execPath, [
+      path.join(root, 'scripts/sync-carreaux.mjs'),
+      '--local-only',
+      '--local',
+      localFixture,
+      '--out',
+      again,
+    ]);
+    const after = JSON.parse(fs.readFileSync(path.join(again, 'catalogue.json'), 'utf8')) as Catalogue;
+    for (const id of carreauxIds) {
+      expect(after.collections.some((c) => c.id === id && c.source !== 'locale')).toBe(true);
+    }
+    expect(after.collections.some((c) => c.id === 'LOCALPNG' && c.source === 'locale')).toBe(true);
   });
 });

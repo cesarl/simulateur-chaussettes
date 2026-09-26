@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "verify": "npm run typecheck && npm run test && npm run build && npm run e2e",
-    "sync:carreaux": "node scripts/sync-carreaux.mjs"
+    "sync:carreaux": "node scripts/sync-carreaux.mjs",
+    "sync:local": "node scripts/sync-carreaux.mjs --local-only"
   },
   "author": "César Bazaar",
   "license": "UNLICENSED",

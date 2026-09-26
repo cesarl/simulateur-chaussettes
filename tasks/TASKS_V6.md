@@ -33,11 +33,11 @@ Module de référence fourni et testé : `reference/composition/composition.ts` 
 - `src/core/patternSource.ts` : `computePatternRgb(state) → Uint8ClampedArray` qui aiguille vers `samplePattern` (carreaux) ou `renderComposition` (composition). `recompute()` n'appelle plus que cette fonction ; tout ce qui suit (réduction des couleurs, zones, talon, pointe, grille, 3D, exports) est inchangé.
 - Projet .json et lien de partage : champ `pattern` absent ⇒ `carreaux` (anciens projets et anciens liens toujours valides).
 
-**Critères** : [ ] `golden.test.ts` vert sans modification ; [ ] test unitaire : un ancien projet (sans `pattern`) se charge en mode carreaux ; [ ] `npm run verify` complet vert (fin du jalon A).
+**Critères** : [x] `golden.test.ts` vert sans modification ; [x] test unitaire : un ancien projet (sans `pattern`) se charge en mode carreaux ; [x] `npm run verify` complet vert (fin du jalon A).
 
 ## Jalon B — collections locales et outil d'administration
 
-### [ ] T43 — Collections locales fusionnées par la synchronisation
+### [~] T43 — Collections locales fusionnées par la synchronisation
 - Dossier `collections-locales/` à la racine, **même format que le simulateur de carreaux** : `collections-locales/collections.json` (tableau de collections, mêmes champs : `id`, `nom`, `format`, `variations`, `layouts`, `defaut_layout`, `category`, `colors`, `artist_recommendations`…) et `collections-locales/svg/<ID>-VAR<n>.svg` **ou** `.png`.
 - `scripts/sync-carreaux.mjs` : ajouter une seconde source facultative `--local collections-locales` (par défaut si le dossier existe). Fusion : les collections locales s'ajoutent ; en cas d'identifiant identique, **la locale gagne** (avertissement dans le rapport). Nouveau champ `source: 'carreaux' | 'locale'` dans le catalogue. Les PNG sont copiés tels quels (variation `file` en `.png`, `zones: []`).
 - Nouvelle commande `npm run sync:local` = synchronisation **sans** le simulateur de carreaux (ne met à jour que la partie locale, garde le reste du catalogue existant).

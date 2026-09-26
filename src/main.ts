@@ -29,7 +29,7 @@ import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
 import { createDecorController } from './render/decorController';
-import { yarnColors } from './core/collections';
+import { yarnColors, isPngCollection } from './core/collections';
 import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
 import * as THREE from 'three';
@@ -369,7 +369,7 @@ function recompute(): void {
     const source = normalizePatternSource(design.pattern);
     if (source.kind === 'carreaux' && catalogue && activeCollectionId && zoneColors) {
       const collection = catalogue.collections.find((c) => c.id === activeCollectionId);
-      if (collection) {
+      if (collection && !isPngCollection(collection) && Object.keys(zoneColors).length > 0) {
         const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));
         const yarns = yarnColors(collection, zoneColors, nuancier);
         quantizeSettings = {

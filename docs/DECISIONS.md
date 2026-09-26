@@ -232,3 +232,9 @@ Choix : `SockDesign.pattern = { kind:'carreaux' } | { kind:'composition', compos
 Conséquence : recompute, quantize, grille, 3D et exports inchangés ; golden T41 reste le filet.
 
 
+
+## D41 — Collections locales fusionnées (T43)
+Contexte : César veut ajouter des collections sans passer par le simulateur de carreaux.
+Options : catalogue séparé / fusion dans public/carreaux / CDN.
+Choix : dossier `collections-locales/` même format ; sync complète fusionne (locale gagne) ; `npm run sync:local` met à jour seulement les locales. PNG : `zones: []`, pas de recoloration, quantize auto + hint UI.
+Conséquence : une seule source runtime (`public/carreaux/`) ; catégorie « Mes collections ».

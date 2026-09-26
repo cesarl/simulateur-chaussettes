@@ -4,6 +4,7 @@
 import {
   visibleCollections,
   yarnColors,
+  isPngCollection,
   type Catalogue,
   type Collection,
 } from '../core/collections';
@@ -12,6 +13,7 @@ import { getState, update } from '../state';
 import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 
 const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
+  { id: 'mes-collections', label: 'Mes collections' },
   { id: 'signature', label: 'Signature' },
   { id: 'classic', label: 'Classiques' },
   { id: 'new', label: 'Nouveautés' },
@@ -19,7 +21,9 @@ const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
 ];
 
 function categoryKey(c: Collection): string {
+  if (c.source === 'locale') return 'mes-collections';
   const cat = (c.categorie ?? '').toLowerCase();
+  if (cat === 'mes-collections' || cat === 'locale' || cat === 'local') return 'mes-collections';
   if (cat === 'signature') return 'signature';
   if (cat === 'classic' || cat === 'classique' || cat === 'classiques') return 'classic';
   if (cat === 'new' || cat === 'nouveaute' || cat === 'nouveautés' || cat === 'nouveautes') return 'new';
@@ -105,20 +109,27 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
       const nuancier = nuancierMap(cat);
       const colors = { ...c.couleursParDefaut };
       const tiles = await tilesFromCollection(c, colors, nuancier);
-      const yarns = yarnColors(c, colors, nuancier);
+      const png = isPngCollection(c);
+      const yarns = png ? [] : yarnColors(c, colors, nuancier);
       update({
         tiles,
         activeCollectionId: c.id,
-        zoneColors: colors,
+        zoneColors: png ? {} : colors,
         paletteOptionId: 'defaut',
         design: {
           layout: { calepinage: calepinageForCollection(c) },
           name: c.nom,
-          quantize: {
-            paletteMode: 'manuelle',
-            palette: yarns.map((y) => y.hex),
-            maxColors: Math.max(2, Math.min(8, yarns.length)),
-          },
+          quantize: png
+            ? {
+                paletteMode: 'auto',
+                palette: [],
+                maxColors: Math.max(2, Math.min(8, getState().design.quantize.maxColors || 4)),
+              }
+            : {
+                paletteMode: 'manuelle',
+                palette: yarns.map((y) => y.hex),
+                maxColors: Math.max(2, Math.min(8, yarns.length || 2)),
+              },
         },
         error: null,
       });

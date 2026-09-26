@@ -3,21 +3,12 @@
  * Synchronise les données du simulateur de carreaux vers le simulateur de chaussettes.
  *
  *   npm run sync:carreaux                          (source par défaut : ../configurateur-carreaux-cesar-bazaar)
- *   npm run sync:carreaux -- --source "C:\\chemin\\vers\\configurateur-carreaux-cesar-bazaar"
- *   npm run sync:carreaux -- --dry-run             (affiche ce qui serait fait, n'écrit rien)
+ *   npm run sync:carreaux -- --source "…" --local collections-locales
+ *   npm run sync:local                             (ne met à jour que la partie locale)
+ *   npm run sync:carreaux -- --dry-run
  *
- * Ce qui est copié (liste fermée, rien d'autre) :
- *   data/collections.json, data/calepinages.json, data/nuancier.json  → lus, normalisés
- *   assets/svg/<COLLECTION>-VAR<n>.svg (uniquement ceux des collections)  → public/carreaux/svg/
- * Ce qui n'est JAMAIS copié : recettes de pigments, config, mockups, images, PSD, outils.
- *
- * Résultat dans public/carreaux/ :
- *   catalogue.json   collections + nuancier normalisés, prêts pour l'application
- *   calepinages.json copie conforme (l'application corrige les petites anomalies à la lecture)
- *   svg/…            SVG des variations
- *   SYNC_REPORT.md   résumé + avertissements (couleurs inconnues, fichiers manquants…)
- *
- * Le script ne modifie jamais le dépôt source. Aucune dépendance : Node 18+.
+ * Résultat dans public/carreaux/ : catalogue.json, calepinages.json, svg/…, SYNC_REPORT.md
+ * Champ `source` : 'carreaux' | 'locale'. En cas d'id identique, la locale gagne.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,17 +17,25 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
 
-// ---------------------------------------------------------------- arguments
 const args = process.argv.slice(2);
 const opt = (name) => {
   const i = args.indexOf(name);
   return i >= 0 ? args[i + 1] : undefined;
 };
 const DRY = args.includes('--dry-run');
+const LOCAL_ONLY = args.includes('--local-only');
 const source = path.resolve(
   opt('--source') ?? process.env.CARREAUX_SOURCE ?? path.join(projectRoot, '..', 'configurateur-carreaux-cesar-bazaar'),
 );
 const outDir = path.resolve(opt('--out') ?? path.join(projectRoot, 'public', 'carreaux'));
+const defaultLocal = path.join(projectRoot, 'collections-locales');
+const localOpt = opt('--local');
+const localDir =
+  localOpt !== undefined
+    ? path.resolve(localOpt)
+    : fs.existsSync(defaultLocal)
+      ? defaultLocal
+      : null;
 
 const warnings = [];
 const warn = (msg) => {
@@ -48,9 +47,9 @@ function fail(msg) {
   process.exit(1);
 }
 
-function readJson(rel) {
-  const p = path.join(source, rel);
-  if (!fs.existsSync(p)) fail(`Fichier introuvable dans la source : ${rel}\n  Source utilisée : ${source}\n  Précisez-la avec --source "<chemin>" ou la variable CARREAUX_SOURCE.`);
+function readJsonAt(base, rel) {
+  const p = path.join(base, rel);
+  if (!fs.existsSync(p)) fail(`Fichier introuvable : ${rel}\n  Dossier : ${base}`);
   try {
     return JSON.parse(fs.readFileSync(p, 'utf8'));
   } catch (e) {
@@ -58,10 +57,13 @@ function readJson(rel) {
   }
 }
 
-/** Commit courant du dépôt source, sans appeler git. */
-function sourceCommit() {
+function readJson(rel) {
+  return readJsonAt(source, rel);
+}
+
+function sourceCommit(dir = source) {
   try {
-    const gitDir = path.join(source, '.git');
+    const gitDir = path.join(dir, '.git');
     const head = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim();
     if (!head.startsWith('ref:')) return head.slice(0, 12);
     const ref = head.slice(5).trim();
@@ -73,7 +75,7 @@ function sourceCommit() {
       if (line) return line.slice(0, 12);
     }
   } catch {
-    /* pas un dépôt git : sans importance */
+    /* pas un dépôt git */
   }
   return null;
 }
@@ -183,113 +185,240 @@ function parseRecommendation(url, nuancier, byHex, where) {
   return out;
 }
 
-// ---------------------------------------------------------------- traitement
-if (!fs.existsSync(source)) fail(`Dossier source introuvable : ${source}`);
-console.log(`Source : ${source}`);
-console.log(`Destination : ${outDir}${DRY ? '  (essai à blanc : rien ne sera écrit)' : ''}`);
-
-const collectionsRaw = readJson('data/collections.json');
-const calepinagesRaw = readJson('data/calepinages.json');
-const nuancierRaw = readJson('data/nuancier.json');
-if (!Array.isArray(collectionsRaw) || !Array.isArray(nuancierRaw) || !Array.isArray(calepinagesRaw)) fail('Format inattendu : les trois fichiers JSON doivent contenir des tableaux.');
-
-const nuancier = new Map();
-const byHex = new Map();
-for (const c of nuancierRaw) {
-  const id = String(c.Color_ID ?? '').trim().toUpperCase();
-  const hex = normHex(c.Hex);
-  if (!id || !hex) {
-    warn(`Nuancier : entrée ignorée (${JSON.stringify(c).slice(0, 80)})`);
-    continue;
-  }
-  const etat = String(c.Etat ?? '').trim();
-  nuancier.set(id, { id, nom: String(c['Nom couleur'] ?? id).trim(), hex, ral: String(c.RAL ?? '').trim(), etat, public: etat === 'Validé' });
-  if (!byHex.has(hex)) byHex.set(hex, id);
-}
-
-const calepinageIds = new Set(calepinagesRaw.map((p) => String(p.id)));
-const svgDir = path.join(source, 'assets', 'svg');
-const svgFiles = new Set(fs.existsSync(svgDir) ? fs.readdirSync(svgDir).filter((f) => f.toLowerCase().endsWith('.svg')) : []);
-const usedSvgs = new Set();
-const toCopy = [];
-
-const collections = [];
-for (const c of collectionsRaw) {
-  const id = String(c.id ?? '').trim();
-  if (!id) {
-    warn('Collection sans identifiant ignorée');
-    continue;
-  }
-  const prefix = id.toUpperCase();
-  const n = Math.max(1, Number(c.variations) || 1);
-  const variations = [];
-  const defaultColors = {};
-  const zoneIds = new Set();
-  for (let i = 1; i <= n; i++) {
-    const file = `${prefix}-VAR${i}.svg`;
-    if (!svgFiles.has(file)) {
-      warn(`${id} : ${file} manquant dans assets/svg`);
+/**
+ * Construit les collections normalisées depuis un dossier source (format configurateur).
+ * `assetRoot` = dossier contenant les fichiers (assets/svg ou svg/).
+ * `srcKind` = 'carreaux' | 'locale'.
+ * Retourne { collections, toCopy: [{ file, fromPath }] }.
+ */
+function buildCollections(collectionsRaw, assetRoot, calepinageIds, nuancier, byHex, srcKind) {
+  const assetFiles = new Set(
+    fs.existsSync(assetRoot)
+      ? fs.readdirSync(assetRoot).filter((f) => /\.(svg|png)$/i.test(f))
+      : [],
+  );
+  const used = new Set();
+  const toCopy = [];
+  const collections = [];
+  for (const c of collectionsRaw) {
+    const id = String(c.id ?? '').trim();
+    if (!id) {
+      warn('Collection sans identifiant ignorée');
       continue;
     }
-    usedSvgs.add(file);
-    const svg = fs.readFileSync(path.join(svgDir, file), 'utf8');
-    const zones = readZones(svg, file, nuancier, byHex);
-    if (!zones.length) warn(`${file} : aucune zone « zone-N » (recoloration impossible, le SVG sera utilisé tel quel)`);
-    for (const z of zones) {
-      zoneIds.add(z.id);
-      if (z.colorId && !defaultColors[z.id]) defaultColors[z.id] = z.colorId;
+    const prefix = id.toUpperCase();
+    const n = Math.max(1, Number(c.variations) || 1);
+    const variations = [];
+    const defaultColors = {};
+    const zoneIds = new Set();
+    for (let i = 1; i <= n; i++) {
+      const svgName = `${prefix}-VAR${i}.svg`;
+      const pngName = `${prefix}-VAR${i}.png`;
+      let file = null;
+      let isPng = false;
+      if (assetFiles.has(svgName)) {
+        file = svgName;
+      } else if (assetFiles.has(pngName)) {
+        file = pngName;
+        isPng = true;
+      } else {
+        warn(`${id} : ${svgName} / ${pngName} manquant dans ${path.basename(assetRoot)}`);
+        continue;
+      }
+      used.add(file);
+      const fromPath = path.join(assetRoot, file);
+      if (isPng) {
+        variations.push({ name: `VAR${i}`, motif: i, file: `svg/${file}`, zones: [] });
+        toCopy.push({ file, fromPath });
+        continue;
+      }
+      const svg = fs.readFileSync(fromPath, 'utf8');
+      const zones = readZones(svg, file, nuancier, byHex);
+      if (!zones.length) warn(`${file} : aucune zone « zone-N » (recoloration impossible, le SVG sera utilisé tel quel)`);
+      for (const z of zones) {
+        zoneIds.add(z.id);
+        if (z.colorId && !defaultColors[z.id]) defaultColors[z.id] = z.colorId;
+      }
+      variations.push({
+        name: `VAR${i}`,
+        motif: i,
+        file: `svg/${file}`,
+        zones: zones.filter((z) => z.shapes > 0).map((z) => z.id),
+      });
+      toCopy.push({ file, fromPath });
     }
-    variations.push({ name: `VAR${i}`, motif: i, file: `svg/${file}`, zones: zones.filter((z) => z.shapes > 0).map((z) => z.id) });
-    toCopy.push(file);
+    const zones = [...zoneIds].sort((a, b) => Number(a.split('-')[1]) - Number(b.split('-')[1]));
+    const recommendations = (Array.isArray(c.artist_recommendations) ? c.artist_recommendations : [])
+      .map((u) => parseRecommendation(u, nuancier, byHex, id))
+      .filter((r) => Object.keys(r).length > 0);
+    const layouts = (Array.isArray(c.layouts) ? c.layouts : []).map(String);
+    for (const l of [...layouts, c.defaut_layout].filter(Boolean)) {
+      if (!calepinageIds.has(String(l))) warn(`${id} : calepinage « ${l} » inconnu de calepinages.json`);
+    }
+    const colors = (Array.isArray(c.colors) ? c.colors : []).map((x) => String(x).toUpperCase());
+    for (const col of colors) if (!nuancier.has(col)) warn(`${id} : couleur ${col} absente du nuancier`);
+    const category =
+      srcKind === 'locale' && !(c.category ?? '').toString().trim()
+        ? 'mes-collections'
+        : (c.category ?? null);
+    collections.push({
+      id,
+      nom: String(c.nom ?? id),
+      description: String(c.description ?? ''),
+      categorie: category,
+      format: String(c.format ?? ''),
+      actif: c.active !== false,
+      devSeulement: c.dev_only === true,
+      zonesLibres: c.no_color_zone_restriction === true,
+      variations,
+      zones,
+      couleursParDefaut: defaultColors,
+      couleursCollection: colors,
+      recommandations: recommendations,
+      calepinages: layouts.filter((l) => calepinageIds.has(l)),
+      calepinageParDefaut: calepinageIds.has(String(c.defaut_layout)) ? String(c.defaut_layout) : null,
+      urlCollection: c.collection_url ?? null,
+      source: srcKind,
+    });
   }
-  const zones = [...zoneIds].sort((a, b) => Number(a.split('-')[1]) - Number(b.split('-')[1]));
-  const recommendations = (Array.isArray(c.artist_recommendations) ? c.artist_recommendations : [])
-    .map((u) => parseRecommendation(u, nuancier, byHex, id))
-    .filter((r) => Object.keys(r).length > 0);
-  const layouts = (Array.isArray(c.layouts) ? c.layouts : []).map(String);
-  for (const l of [...layouts, c.defaut_layout].filter(Boolean)) {
-    if (!calepinageIds.has(String(l))) warn(`${id} : calepinage « ${l} » inconnu de calepinages.json`);
+  for (const f of assetFiles) {
+    if (!used.has(f) && srcKind === 'carreaux') warn(`assets/svg/${f} : n'appartient à aucune collection (non copié)`);
   }
-  const colors = (Array.isArray(c.colors) ? c.colors : []).map((x) => String(x).toUpperCase());
-  for (const col of colors) if (!nuancier.has(col)) warn(`${id} : couleur ${col} absente du nuancier`);
-  collections.push({
-    id,
-    nom: String(c.nom ?? id),
-    description: String(c.description ?? ''),
-    categorie: c.category ?? null,
-    format: String(c.format ?? ''),
-    actif: c.active !== false,
-    devSeulement: c.dev_only === true,
-    zonesLibres: c.no_color_zone_restriction === true,
-    variations,
-    zones,
-    couleursParDefaut: defaultColors,
-    couleursCollection: colors,
-    recommandations: recommendations,
-    calepinages: layouts.filter((l) => calepinageIds.has(l)),
-    calepinageParDefaut: calepinageIds.has(String(c.defaut_layout)) ? String(c.defaut_layout) : null,
-    urlCollection: c.collection_url ?? null,
-  });
+  return { collections, toCopy };
 }
-for (const f of svgFiles) if (!usedSvgs.has(f)) warn(`assets/svg/${f} : n'appartient à aucune collection (non copié)`);
 
-const commit = sourceCommit();
+function mergeCollections(base, locale) {
+  const byId = new Map();
+  for (const c of base) byId.set(c.id, c);
+  for (const c of locale) {
+    if (byId.has(c.id)) warn(`Identifiant « ${c.id} » : la collection locale remplace celle du simulateur de carreaux`);
+    byId.set(c.id, c);
+  }
+  return [...byId.values()];
+}
+
+// ---------------------------------------------------------------- traitement
+let nuancier = new Map();
+let byHex = new Map();
+let calepinagesRaw = [];
+let calepinageIds = new Set();
+let collections = [];
+let toCopy = [];
+let commit = null;
+let sourceLabel = '';
+
+if (LOCAL_ONLY) {
+  const catPath = path.join(outDir, 'catalogue.json');
+  const calPath = path.join(outDir, 'calepinages.json');
+  if (!fs.existsSync(catPath)) fail(`Catalogue existant introuvable : ${catPath}\n  Lancez d'abord npm run sync:carreaux.`);
+  if (!localDir || !fs.existsSync(localDir)) fail(`Dossier local introuvable : ${localDir ?? 'collections-locales'}`);
+  console.log(`Mode local-only — catalogue : ${catPath}`);
+  console.log(`Local : ${localDir}`);
+  console.log(`Destination : ${outDir}${DRY ? '  (essai à blanc)' : ''}`);
+  const existing = JSON.parse(fs.readFileSync(catPath, 'utf8'));
+  calepinagesRaw = fs.existsSync(calPath) ? JSON.parse(fs.readFileSync(calPath, 'utf8')) : [];
+  calepinageIds = new Set(calepinagesRaw.map((p) => String(p.id)));
+  for (const c of existing.nuancier ?? []) {
+    nuancier.set(c.id, c);
+    if (!byHex.has(c.hex)) byHex.set(c.hex, c.id);
+  }
+  const kept = (existing.collections ?? []).filter((c) => c.source !== 'locale');
+  for (const c of kept) {
+    if (!c.source) c.source = 'carreaux';
+  }
+  const localRaw = readJsonAt(localDir, 'collections.json');
+  if (!Array.isArray(localRaw)) fail('collections-locales/collections.json doit être un tableau.');
+  const assetRoot = fs.existsSync(path.join(localDir, 'svg'))
+    ? path.join(localDir, 'svg')
+    : path.join(localDir, 'assets', 'svg');
+  const built = buildCollections(localRaw, assetRoot, calepinageIds, nuancier, byHex, 'locale');
+  collections = mergeCollections(kept, built.collections);
+  // Conserver les fichiers des collections carreaux déjà présents + nouveaux locaux
+  const svgOutExisting = fs.existsSync(path.join(outDir, 'svg'))
+    ? fs.readdirSync(path.join(outDir, 'svg'))
+    : [];
+  const carreauxFiles = kept.flatMap((c) => c.variations.map((v) => path.basename(v.file)));
+  for (const f of carreauxFiles) {
+    if (svgOutExisting.includes(f)) {
+      toCopy.push({ file: f, fromPath: path.join(outDir, 'svg', f) });
+    }
+  }
+  toCopy.push(...built.toCopy);
+  commit = existing.source?.commit ?? null;
+  sourceLabel = `${existing.source?.dossier ?? 'catalogue'}+local`;
+} else {
+  if (!fs.existsSync(source)) fail(`Dossier source introuvable : ${source}`);
+  console.log(`Source : ${source}`);
+  if (localDir) console.log(`Local : ${localDir}`);
+  console.log(`Destination : ${outDir}${DRY ? '  (essai à blanc : rien ne sera écrit)' : ''}`);
+
+  const collectionsRaw = readJson('data/collections.json');
+  calepinagesRaw = readJson('data/calepinages.json');
+  const nuancierRaw = readJson('data/nuancier.json');
+  if (!Array.isArray(collectionsRaw) || !Array.isArray(nuancierRaw) || !Array.isArray(calepinagesRaw)) {
+    fail('Format inattendu : les trois fichiers JSON doivent contenir des tableaux.');
+  }
+
+  for (const c of nuancierRaw) {
+    const id = String(c.Color_ID ?? '').trim().toUpperCase();
+    const hex = normHex(c.Hex);
+    if (!id || !hex) {
+      warn(`Nuancier : entrée ignorée (${JSON.stringify(c).slice(0, 80)})`);
+      continue;
+    }
+    const etat = String(c.Etat ?? '').trim();
+    nuancier.set(id, {
+      id,
+      nom: String(c['Nom couleur'] ?? id).trim(),
+      hex,
+      ral: String(c.RAL ?? '').trim(),
+      etat,
+      public: etat === 'Validé',
+    });
+    if (!byHex.has(hex)) byHex.set(hex, id);
+  }
+
+  calepinageIds = new Set(calepinagesRaw.map((p) => String(p.id)));
+  const svgDir = path.join(source, 'assets', 'svg');
+  const built = buildCollections(collectionsRaw, svgDir, calepinageIds, nuancier, byHex, 'carreaux');
+  collections = built.collections;
+  toCopy = [...built.toCopy];
+
+  if (localDir && fs.existsSync(localDir)) {
+    const localRaw = readJsonAt(localDir, 'collections.json');
+    if (!Array.isArray(localRaw)) fail('collections-locales/collections.json doit être un tableau.');
+    const assetRoot = fs.existsSync(path.join(localDir, 'svg'))
+      ? path.join(localDir, 'svg')
+      : path.join(localDir, 'assets', 'svg');
+    const loc = buildCollections(localRaw, assetRoot, calepinageIds, nuancier, byHex, 'locale');
+    collections = mergeCollections(collections, loc.collections);
+    // Remplacer les fichiers copiés en cas d'id local gagnant
+    const localFiles = new Set(loc.toCopy.map((t) => t.file));
+    toCopy = toCopy.filter((t) => !localFiles.has(t.file));
+    toCopy.push(...loc.toCopy);
+  }
+
+  commit = sourceCommit();
+  sourceLabel = path.basename(source);
+}
+
 const catalogue = {
   version: 1,
   synchroniseLe: new Date().toISOString(),
-  source: { dossier: path.basename(source), commit },
+  source: { dossier: sourceLabel, commit },
   nuancier: [...nuancier.values()],
   collections,
 };
 
-// ---------------------------------------------------------------- écriture
+const localeCount = collections.filter((c) => c.source === 'locale').length;
 const report = [
   '# Rapport de synchronisation carreaux → chaussettes',
   '',
   `- Date : ${catalogue.synchroniseLe}`,
-  `- Source : \`${path.basename(source)}\`${commit ? ` (commit ${commit})` : ''}`,
-  `- Collections : ${collections.length} (${collections.filter((c) => c.actif && !c.devSeulement).length} publiques)`,
-  `- Variations (SVG copiés) : ${toCopy.length}`,
+  `- Source : \`${sourceLabel}\`${commit ? ` (commit ${commit})` : ''}`,
+  `- Mode : ${LOCAL_ONLY ? 'local-only' : 'complet'}`,
+  `- Collections : ${collections.length} (${localeCount} locales)`,
+  `- Variations (fichiers copiés) : ${toCopy.length}`,
   `- Couleurs du nuancier : ${nuancier.size} (${[...nuancier.values()].filter((c) => c.public).length} validées)`,
   `- Calepinages : ${calepinagesRaw.length}`,
   `- Recommandations de l'artiste : ${collections.reduce((s, c) => s + c.recommandations.length, 0)}`,
@@ -307,16 +436,26 @@ if (DRY) {
 
 const svgOut = path.join(outDir, 'svg');
 fs.mkdirSync(svgOut, { recursive: true });
-// on ne supprime que nos propres SVG (ceux listés au précédent passage), jamais autre chose
 const manifestPath = path.join(outDir, '.sync-manifest.json');
 const previous = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : [];
-const keep = new Set(toCopy);
-for (const f of previous) if (!keep.has(f) && fs.existsSync(path.join(svgOut, f))) fs.unlinkSync(path.join(svgOut, f));
-for (const f of toCopy) fs.copyFileSync(path.join(svgDir, f), path.join(svgOut, f));
-fs.writeFileSync(manifestPath, JSON.stringify(toCopy, null, 0));
+const fileNames = toCopy.map((t) => t.file);
+const keep = new Set(fileNames);
+for (const f of previous) {
+  if (!keep.has(f) && fs.existsSync(path.join(svgOut, f))) fs.unlinkSync(path.join(svgOut, f));
+}
+for (const { file, fromPath } of toCopy) {
+  if (path.resolve(fromPath) !== path.resolve(path.join(svgOut, file))) {
+    fs.copyFileSync(fromPath, path.join(svgOut, file));
+  }
+}
+fs.writeFileSync(manifestPath, JSON.stringify(fileNames, null, 0));
 fs.writeFileSync(path.join(outDir, 'catalogue.json'), JSON.stringify(catalogue, null, 1));
-fs.writeFileSync(path.join(outDir, 'calepinages.json'), JSON.stringify(calepinagesRaw, null, 1));
+if (!LOCAL_ONLY) {
+  fs.writeFileSync(path.join(outDir, 'calepinages.json'), JSON.stringify(calepinagesRaw, null, 1));
+}
 fs.writeFileSync(path.join(outDir, 'SYNC_REPORT.md'), report);
 
-console.log(`\n✔ ${collections.length} collections, ${toCopy.length} SVG, ${nuancier.size} couleurs, ${calepinagesRaw.length} calepinages.`);
-console.log(warnings.length ? `⚠ ${warnings.length} avertissement(s) : voir public/carreaux/SYNC_REPORT.md` : 'Aucun avertissement.');
+console.log(
+  `\n✔ ${collections.length} collections (${localeCount} locales), ${toCopy.length} fichiers, ${nuancier.size} couleurs, ${calepinagesRaw.length} calepinages.`,
+);
+console.log(warnings.length ? `⚠ ${warnings.length} avertissement(s) : voir SYNC_REPORT.md` : 'Aucun avertissement.');

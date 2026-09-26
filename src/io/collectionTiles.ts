@@ -1,16 +1,14 @@
-/**
- * Charge les variations d’une collection (SVG recolorés → TileAsset).
- */
 import {
   recolorSvg,
   zoneHex,
+  isPngCollection,
   type Catalogue,
   type Collection,
   type NuancierColor,
   type ZoneColors,
 } from '../core/collections';
 import type { TileAsset } from '../core/types';
-import { loadTileFromSvgText } from './tiles';
+import { loadTileFromSvgText, loadTileFromUrl } from './tiles';
 
 const CARREAUX_BASE = './carreaux/';
 
@@ -30,7 +28,7 @@ export async function fetchSvgText(file: string): Promise<string> {
   return res.text();
 }
 
-/** Recolore et rasterise toutes les variations d’une collection. */
+/** Recolore et rasterise toutes les variations d’une collection (PNG : tel quel). */
 export async function tilesFromCollection(
   collection: Collection,
   colors: ZoneColors,
@@ -39,23 +37,29 @@ export async function tilesFromCollection(
   const hexByZone = zoneHex(colors, nuancier);
   const out: TileAsset[] = [];
   for (const variation of collection.variations) {
+    if (/\.png$/i.test(variation.file)) {
+      const tile = await loadTileFromUrl(carreauxUrl(variation.file));
+      out.push({ ...tile, id: tile.id, name: `${collection.id}-${variation.name}` });
+      continue;
+    }
     const raw = await fetchSvgText(variation.file);
-    const svg = recolorSvg(raw, hexByZone);
+    const svg = variation.zones.length === 0 ? raw : recolorSvg(raw, hexByZone);
     const tile = await loadTileFromSvgText(svg, `${collection.id}-${variation.name}`);
     out.push(tile);
   }
   return out;
 }
 
-/** Data-URL SVG VAR1 recoloré pour vignette de galerie (sans rasterisation lourde). */
+/** Data-URL SVG VAR1 recoloré pour vignette (PNG : URL directe). */
 export async function collectionThumbDataUrl(
   collection: Collection,
   nuancier: Map<string, NuancierColor>,
 ): Promise<string> {
   const first = collection.variations[0];
   if (!first) return '';
+  if (/\.png$/i.test(first.file)) return carreauxUrl(first.file);
   const raw = await fetchSvgText(first.file);
   const hexByZone = zoneHex(collection.couleursParDefaut, nuancier);
-  const svg = recolorSvg(raw, hexByZone);
+  const svg = isPngCollection(collection) || first.zones.length === 0 ? raw : recolorSvg(raw, hexByZone);
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }

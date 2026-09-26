@@ -44,6 +44,13 @@ export interface Collection {
   calepinages: string[];
   calepinageParDefaut: string | null;
   urlCollection: string | null;
+  /** Provenance (T43) : absent dans d’anciens catalogues ⇒ traité comme `carreaux`. */
+  source?: 'carreaux' | 'locale';
+}
+
+/** Collection locale PNG (pas de zones) → pas de recoloration. */
+export function isPngCollection(c: Collection): boolean {
+  return c.variations.length > 0 && c.variations.every((v) => v.zones.length === 0 && /\.png$/i.test(v.file));
 }
 
 export interface Catalogue {

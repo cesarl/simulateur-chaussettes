@@ -1,0 +1,26 @@
+[
+  {
+    "id": "LOCALSVG",
+    "nom": "Locale SVG test",
+    "description": "Collection locale SVG",
+    "format": "20x20",
+    "variations": 1,
+    "defaut_layout": "g-unique",
+    "layouts": ["aleatoire"],
+    "category": "mes-collections",
+    "colors": ["OR008", "WT001"],
+    "active": true
+  },
+  {
+    "id": "LOCALPNG",
+    "nom": "Locale PNG test",
+    "description": "Collection locale PNG",
+    "format": "20x20",
+    "variations": 1,
+    "defaut_layout": "aleatoire",
+    "layouts": ["aleatoire"],
+    "category": "mes-collections",
+    "colors": [],
+    "active": true
+  }
+]

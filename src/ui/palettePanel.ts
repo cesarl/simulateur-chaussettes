@@ -5,6 +5,7 @@ import {
   paletteOptions,
   suggestZoneColors,
   yarnColors,
+  isPngCollection,
   type Collection,
   type NuancierColor,
   type ZoneColors,
@@ -60,6 +61,13 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
   countLine.className = 'hint';
   countLine.dataset.testid = 'yarn-count';
   section.appendChild(countLine);
+
+  const pngHint = document.createElement('p');
+  pngHint.className = 'hint';
+  pngHint.dataset.testid = 'png-colors-hint';
+  pngHint.hidden = true;
+  pngHint.textContent = 'Couleurs figées : image PNG (réduction automatique, N réglable dans Gros pixels).';
+  section.appendChild(pngHint);
 
   const alert = document.createElement('p');
   alert.className = 'tile-error';
@@ -247,14 +255,27 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
     const state = getState();
     const collection = activeCollection();
     const cat = state.catalogue;
-    section.hidden = !collection || !cat || !state.zoneColors;
-    if (!collection || !cat || !state.zoneColors) {
+    const png = collection ? isPngCollection(collection) : false;
+    section.hidden = !collection || !cat || (!png && !state.zoneColors);
+    if (!collection || !cat || (!png && !state.zoneColors)) {
       closePicker();
       return;
     }
 
+    pngHint.hidden = !png;
+    showTest.hidden = png;
+    optionsHost.hidden = png;
+    swatches.hidden = png;
+    matchBtn.hidden = png;
+
+    if (png) {
+      countLine.textContent = `Couleurs figées : image PNG — ${state.design.quantize.maxColors} couleurs max (auto)`;
+      alert.hidden = true;
+      return;
+    }
+
     const nuancier = nuancierMap(cat);
-    const yarns = yarnColors(collection, state.zoneColors, nuancier);
+    const yarns = yarnColors(collection, state.zoneColors!, nuancier);
     countLine.textContent = `${yarns.length} couleur${yarns.length > 1 ? 's' : ''} de fil`;
     const over = yarns.length > MACHINE_LIMITS.maxColorsTotal;
     alert.hidden = !over;
@@ -299,7 +320,7 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
 
     swatches.replaceChildren();
     for (const z of collection.zones) {
-      const code = state.zoneColors[z];
+      const code = state.zoneColors![z];
       const col = code ? nuancier.get(code) : undefined;
       const btn = document.createElement('button');
       btn.type = 'button';
