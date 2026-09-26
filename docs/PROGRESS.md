@@ -567,3 +567,9 @@ D41 (sync local), D42 (admin ZIP), D43 (cache images), D44 (import T47), D45 (pr
 - Import PNG/SVG : PNG > 2 Mo plafonné via pipeline tiles (1024 px).
 - Autosave IndexedDB omet les assets > 4 Mo (message à l’écran).
 - Lien de partage impossible avec images importées (fichier .json obligatoire).
+
+### Contrôle visuel bascule À plat (hors TASKS)
+- `visuel-viewer-flat-off.png` : visionneuse publique, chaussette 3D (bord-côte marine, tige crème, talon terracotta, pointe noire) ; barre avec Décor et **À plat** décochés.
+- `visuel-viewer-flat-on.png` : case **À plat** cochée ; grille 2D (bord-côte bleu, tige motif points, repères zones, « Survolez une maille. »).
+
+Vérification T49 : `npm run verify` ✅ (52 e2e).
