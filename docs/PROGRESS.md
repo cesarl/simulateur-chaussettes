@@ -472,3 +472,10 @@ D36–D38.
 
 ### Blocages
 T18 — `config/sizes.json` en attente fabricant.
+
+## T41 — Filet de sécurité léger (empreintes) — 2026-09-26 12:16
+Statut : terminée
+Fait : `tests/unit/golden.test.ts` avec 4 empreintes FNV-1a de `StitchGrid` via la chaîne pure. Fixtures PNG dans `tests/fixtures/golden/`. Empreintes : `61919254`, `a7801712`, `14de87a4`, `cc408b99`.
+Vérification : vitest golden ✅ (4) ; typecheck ✅. Commit avant toute autre modif V6.
+Décisions : D39.
+Reste / risques : ne jamais modifier ce test pour le faire passer.
