@@ -225,4 +225,10 @@ Options : e2e Playwright pour les empreintes / fixtures PNG déjà pixelisées +
 Choix : PNG RGBA filtre 0 dans `tests/fixtures/golden/` (exemples publics + medina/lianes du catalogue mini, recolorés), lus via `decodePng` ; empreintes FNV-1a déjà fournies par `gridFingerprint`. Script `scripts/rasterize-golden-fixtures.mjs` pour régénérer (Playwright + encode filtre 0).
 Conséquence : 4 scénarios couvrent calepinage suite, préréglage medina, lianes reco + femme sans côte, quinconce+rot aléatoire ; le test ne doit jamais être retouché pour « passer ».
 
+## D40 — Source de motif `design.pattern` (T42)
+Contexte : préparer la composition libre sans toucher au calepinage carreaux.
+Options : remplacer `layout` / dualité parallèle hors design / champ `pattern` discriminant.
+Choix : `SockDesign.pattern = { kind:'carreaux' } | { kind:'composition', composition }` (défaut carreaux) ; `computePatternRgb` aiguille ; champ absent à la lecture projet/lien ⇒ carreaux. Copie de `reference/composition` vers `src/core/composition.ts` dès T42 pour que l’aiguillage compile (images branchées en T45).
+Conséquence : recompute, quantize, grille, 3D et exports inchangés ; golden T41 reste le filet.
+
 

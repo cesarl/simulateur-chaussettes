@@ -6,9 +6,18 @@
  */
 
 import type { CalepinageSpec, SeamPosition as CalepSeamPosition } from './calepinage';
+import type { Composition } from './composition';
 
 /** Couleur au format '#rrggbb' (minuscules). */
 export type Hex = string;
+
+/**
+ * Source du motif de la zone tricotée (T42).
+ * Défaut / champ absent dans les projets anciens : `carreaux` (calepinage inchangé).
+ */
+export type PatternSource =
+  | { kind: 'carreaux' }
+  | { kind: 'composition'; composition: Composition };
 
 /** Un carreau importé (PNG ou SVG), converti en image bitmap RGBA à l'import. */
 export interface TileAsset {
@@ -131,6 +140,8 @@ export interface SockDesign {
   zones: ZoneSettings;
   quantize: QuantizeSettings;
   decor: DecorSettings;
+  /** Source du motif ; absent dans les anciens projets ⇒ traité comme `carreaux`. */
+  pattern: PatternSource;
 }
 
 /** Frontière des mailles en 3D : droite (simple) ou en V (fidèle). Hors sérialisation projet. */

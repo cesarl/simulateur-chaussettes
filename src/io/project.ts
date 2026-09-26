@@ -9,7 +9,8 @@ import {
 } from '../core/calepinage';
 import type { ZoneColors } from '../core/collections';
 import { isLegacyLayoutKind, migrateLegacyKind } from '../core/presets';
-import type { SockDesign, TileAsset, SeamPosition, TileSizeMode, DecorMode, DecorSettings } from '../core/types';
+import type { SockDesign, TileAsset, SeamPosition, TileSizeMode, DecorMode, DecorSettings, PatternSource } from '../core/types';
+import { EMPTY_COMPOSITION, type Composition, type Layer, type AssetRef } from '../core/composition';
 import { base64ToBytes, bytesToBase64, decodePng, encodePng } from './pngCodec';
 
 /**
@@ -271,7 +272,59 @@ function readDesign(value: unknown): SockDesign {
       maxFloat: needNumber(quantize, 'maxFloat'),
     },
     decor,
+    pattern: readPattern(value.pattern),
   };
+}
+
+/** Champ `pattern` absent ou illisible ⇒ mode carreaux (anciens projets / liens). */
+function readPattern(value: unknown): PatternSource {
+  if (!isRecord(value)) return { kind: 'carreaux' };
+  if (value.kind === 'carreaux') return { kind: 'carreaux' };
+  if (value.kind !== 'composition') return { kind: 'carreaux' };
+  const composition = readComposition(value.composition);
+  return { kind: 'composition', composition };
+}
+
+function readAssetRef(value: unknown): AssetRef {
+  if (!isRecord(value)) throw new ProjectError('référence d’image illisible.');
+  if (value.kind === 'collection') {
+    return {
+      kind: 'collection',
+      collectionId: needString(value, 'collectionId'),
+      variation: needString(value, 'variation'),
+    };
+  }
+  if (value.kind === 'embarquee') {
+    return { kind: 'embarquee', assetId: needString(value, 'assetId') };
+  }
+  throw new ProjectError('référence d’image inconnue.');
+}
+
+function readLayer(value: unknown): Layer {
+  if (!isRecord(value)) throw new ProjectError('calque illisible.');
+  const gap = value.repeatAroundGap;
+  return {
+    id: needString(value, 'id'),
+    asset: readAssetRef(value.asset),
+    x: needNumber(value, 'x'),
+    y: needNumber(value, 'y'),
+    widthStitches: needNumber(value, 'widthStitches'),
+    rotation: needNumber(value, 'rotation'),
+    flipX: needBoolean(value, 'flipX'),
+    flipY: needBoolean(value, 'flipY'),
+    repeatAroundGap: gap === null || gap === undefined ? null : needNumber(value, 'repeatAroundGap'),
+    hidden: needBoolean(value, 'hidden'),
+    locked: needBoolean(value, 'locked'),
+  };
+}
+
+function readComposition(value: unknown): Composition {
+  if (!isRecord(value)) return { ...EMPTY_COMPOSITION };
+  const background =
+    typeof value.background === 'string' ? normalizeHex(value.background) : EMPTY_COMPOSITION.background;
+  const layersRaw = value.layers;
+  const layers = Array.isArray(layersRaw) ? layersRaw.map(readLayer) : [];
+  return { background, layers };
 }
 
 function readZoneColors(value: unknown): ZoneColors {

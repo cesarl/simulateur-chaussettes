@@ -6,6 +6,7 @@ import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
 import type {
   KnitFidelity,
   LayoutSettings,
+  PatternSource,
   QuantizeSettings,
   SockDesign,
   SockDimensions,
@@ -14,6 +15,7 @@ import type {
   DecorSettings,
 } from './core/types';
 import type { Preset } from './core/calepinage';
+import { EMPTY_COMPOSITION } from './core/composition';
 
 export type FootSide = 'droite' | 'gauche';
 
@@ -53,6 +55,7 @@ export interface DesignPatch {
   zones?: Partial<ZoneSettings>;
   quantize?: Partial<QuantizeSettings>;
   decor?: Partial<DecorSettings>;
+  pattern?: PatternSource;
 }
 
 export interface AppState {
@@ -185,6 +188,7 @@ export function defaultDesign(): SockDesign {
       maxFloat: MACHINE_LIMITS.maxFloat,
     },
     decor: defaultDecor(),
+    pattern: { kind: 'carreaux' },
   };
 }
 
@@ -342,7 +346,22 @@ function applyDesign(design: SockDesign, patch: DesignPatch): SockDesign {
     zones: patch.zones ? { ...design.zones, ...patch.zones } : design.zones,
     quantize: patch.quantize ? { ...design.quantize, ...patch.quantize } : design.quantize,
     decor: patch.decor ? { ...design.decor, ...patch.decor } : design.decor,
+    pattern: patch.pattern ?? design.pattern ?? { kind: 'carreaux' },
   };
+}
+
+/** Garantit un `pattern` valide (anciens snapshots sans le champ). */
+export function ensurePattern(design: SockDesign): SockDesign {
+  if (design.pattern?.kind === 'composition') {
+    return {
+      ...design,
+      pattern: {
+        kind: 'composition',
+        composition: design.pattern.composition ?? { ...EMPTY_COMPOSITION },
+      },
+    };
+  }
+  return { ...design, pattern: { kind: 'carreaux' } };
 }
 
 export function update(patch: StatePatch, options: UpdateOptions = {}): void {

@@ -1,8 +1,5 @@
-import * as THREE from 'three';
-import { checkFabrication } from './core/checks';
-import { yarnColors } from './core/collections';
-import { composeGrid, gridFingerprint } from './core/grid';
-import { layoutRaccord, samplePattern, seamMismatch } from './core/layout';
+import { layoutRaccord, seamMismatch } from './core/layout';
+import { computePatternRgb, normalizePatternSource } from './core/patternSource';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
@@ -32,7 +29,10 @@ import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
 import { createDecorController } from './render/decorController';
-
+import { yarnColors } from './core/collections';
+import { checkFabrication } from './core/checks';
+import { composeGrid, gridFingerprint } from './core/grid';
+import * as THREE from 'three';
 const viewportEl = document.getElementById('viewport');
 const panelEl = document.getElementById('panel');
 const appEl = document.getElementById('app');
@@ -363,17 +363,11 @@ function recompute(): void {
   let pattern: Uint8Array | null = null;
   patternPalette = [];
   patternCounts = [];
-  if (tiles.length > 0 && design.layout.tileIds.length > 0) {
-    const rgb = samplePattern(
-      tiles,
-      design.layout,
-      design.dimensions,
-      design.zones,
-      design.quantize.sampling,
-      calepPresets,
-    );
+  const rgb = computePatternRgb({ design, tiles, calepPresets });
+  if (rgb) {
     let quantizeSettings = design.quantize;
-    if (catalogue && activeCollectionId && zoneColors) {
+    const source = normalizePatternSource(design.pattern);
+    if (source.kind === 'carreaux' && catalogue && activeCollectionId && zoneColors) {
       const collection = catalogue.collections.find((c) => c.id === activeCollectionId);
       if (collection) {
         const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));

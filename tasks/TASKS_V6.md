@@ -28,7 +28,7 @@ Module de référence fourni et testé : `reference/composition/composition.ts` 
 
 **Critères** : [x] 4 empreintes enregistrées, test vert ; [x] commit **avant** toute autre modification de V6.
 
-### [ ] T42 — « Source de motif » (réorganisation invisible)
+### [x] T42 — « Source de motif » (réorganisation invisible)
 - Aujourd'hui `main.ts › recompute()` appelle directement `samplePattern(...)` (calepinage). Introduire une notion de **source de motif** dans l'état : `design.pattern = { kind: 'carreaux' } | { kind: 'composition', composition: Composition }` (défaut : `carreaux`). Les réglages carreaux existants restent où ils sont (`layout`, collection…) : on n'y touche pas.
 - `src/core/patternSource.ts` : `computePatternRgb(state) → Uint8ClampedArray` qui aiguille vers `samplePattern` (carreaux) ou `renderComposition` (composition). `recompute()` n'appelle plus que cette fonction ; tout ce qui suit (réduction des couleurs, zones, talon, pointe, grille, 3D, exports) est inchangé.
 - Projet .json et lien de partage : champ `pattern` absent ⇒ `carreaux` (anciens projets et anciens liens toujours valides).

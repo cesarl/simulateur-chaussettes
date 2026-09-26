@@ -479,3 +479,10 @@ Fait : `tests/unit/golden.test.ts` avec 4 empreintes FNV-1a de `StitchGrid` via 
 Vérification : vitest golden ✅ (4) ; typecheck ✅. Commit avant toute autre modif V6.
 Décisions : D39.
 Reste / risques : ne jamais modifier ce test pour le faire passer.
+
+## T42 — Source de motif — 2026-09-26 12:25
+Statut : terminée
+Fait : `design.pattern` (carreaux | composition), `src/core/patternSource.ts` (`computePatternRgb`), copie `src/core/composition.ts`, `recompute()` aiguillé. Projet/lien : `pattern` absent ⇒ carreaux. ARCHITECTURE mise à jour.
+Vérification : `npm run verify` ✅ (unitaires + 47 e2e). Golden T41 inchangé et vert.
+Décisions : D40.
+Reste / risques : images composition branchées en T45 ; UI mode composition en T46.

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addLayer, EMPTY_COMPOSITION, hitTest, isLinkShareable, layerCorners, moveLayer, renderComposition, updateLayer,
   type Composition, type RasterImage,
-} from '../../reference/composition/composition';
+} from '../../src/core/composition';
 
 const g = { needles: 40, rows: 40, stitchesPerCm: 10, rowsPerCm: 10 }; // mailles carrées pour lire facilement
 // image 2×2 : HG rouge, HD vert, BG bleu, BD transparent

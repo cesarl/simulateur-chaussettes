@@ -15,10 +15,12 @@
         ▼
   TileAsset[] ──────────────┐
                             │
-  SockDesign (réglages) ────┤
+  SockDesign (réglages) ────┤  design.pattern = carreaux | composition
                             ▼
-  core/grid.ts        buildZoneMap(dims, zones)        → quelle zone pour chaque maille
-  core/layout.ts      samplePattern(tiles, layout, …)   → couleur RGB de chaque maille des zones motif
+  core/patternSource.ts computePatternRgb(...)  → RVB zone motif
+       ├─ carreaux     → layout.samplePattern
+       └─ composition  → composition.renderComposition
+                            ▼
   core/quantize.ts    quantize(colors, settings)        → palette + index par maille
   core/grid.ts        composeGrid(...)                  → StitchGrid (palette + colorIndex + zone)
   core/checks.ts      analyse(grid, limits)             → alertes (couleurs/rang, flottés, raccord)

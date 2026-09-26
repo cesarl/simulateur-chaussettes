@@ -3,6 +3,7 @@
  * Format JSON compact (diff vs défaut) — sans images lourdes ni mode dev.
  */
 import type { ZoneColors } from '../core/collections';
+import { normalizePatternSource } from '../core/patternSource';
 import type { SockDesign, TileAsset } from '../core/types';
 import { defaultDesign, getState, type AppState } from '../state';
 import { encodeShare, decodeShare, SHARE_SOFT_LIMIT, type Json } from './shareLink';
@@ -30,6 +31,7 @@ export function designToShareJson(state: AppState = getState()): ShareDesignJson
     zones: design.zones,
     quantize: design.quantize,
     decor: design.decor,
+    pattern: normalizePatternSource(design.pattern),
   });
 }
 
@@ -45,6 +47,7 @@ export function defaultShareJson(): ShareDesignJson {
     zones: design.zones,
     quantize: design.quantize,
     decor: design.decor,
+    pattern: normalizePatternSource(design.pattern),
   });
 }
 
@@ -143,6 +146,11 @@ export function shareJsonToApp(raw: ShareDesignJson): Omit<ParsedShare, 'tiles'>
     zones: { ...base.zones, ...(zones ?? {}) } as SockDesign['zones'],
     quantize: { ...base.quantize, ...(quantize ?? {}) } as SockDesign['quantize'],
     decor: { ...base.decor, ...(decor ?? {}) } as SockDesign['decor'],
+    pattern: normalizePatternSource(
+      root.pattern && typeof root.pattern === 'object' && !Array.isArray(root.pattern)
+        ? (root.pattern as SockDesign['pattern'])
+        : undefined,
+    ),
   };
 
   const id = collection && (collection.id === null || typeof collection.id === 'string')
