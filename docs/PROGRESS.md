@@ -573,3 +573,8 @@ D41 (sync local), D42 (admin ZIP), D43 (cache images), D44 (import T47), D45 (pr
 - `visuel-viewer-flat-on.png` : case **À plat** cochée ; grille 2D (bord-côte bleu, tige motif points, repères zones, « Survolez une maille. »).
 
 Vérification T49 : `npm run verify` ✅ (52 e2e).
+
+## Fix CI — project.spec timeout — 2026-09-26 15:00
+Statut : terminée
+Fait : e2e projet — timeout 120 s, `saveAs` fiable, purge IndexedDB avant rechargement (évite course autosave homme vs ouverture femme), attentes ready/hash élargies. Golden T41 inchangé.
+Vérification : `npm run verify` ✅ (52 e2e).
