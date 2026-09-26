@@ -58,7 +58,7 @@ import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
 import { mountFlatGizmos } from './ui/flatGizmos';
 import { mountCompositionEditor } from './ui/compositionEditor';
-import { mountPanel, renderChecks, renderStatus, type PanelApi } from './ui/panel';
+import { mountPanel, renderChecks, renderStackPaletteGuard, renderStatus, type PanelApi } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
 import { mountSplitters } from './ui/splitters';
@@ -68,7 +68,15 @@ import { mountOptionsTabs } from './ui/optionsTabs';
 import { mountProjectBar } from './ui/projectBar';
 import { createDecorController } from './render/decorController';
 import { checkFabrication } from './core/checks';
+import { countIsolatedStitches } from './core/compositionAids';
 import { composeGrid, gridFingerprint, rowRanges } from './core/grid';
+import { motifRows } from './core/layout';
+import {
+  analyzeStackPaletteGuard,
+  firstFloatLayerHint,
+  firstIsolatedLayerHint,
+  reduceStackPaletteQuantize,
+} from './core/stackPaletteGuard';
 import * as THREE from 'three';
 
 const panelEl = document.getElementById('panel');
@@ -751,7 +759,41 @@ function recompute(): void {
   const layout = editingLayoutSettings(design, tiles);
   const report = checkFabrication(grid, layout, design.zones, MACHINE_LIMITS, design.quantize.maxFloat);
   flat.setFloatMask(report.floatMask);
-  renderChecks(report, null);
+
+  const floatLayerHint =
+    !report.floatsOk && stackOwner
+      ? firstFloatLayerHint(report.floatMask, grid, design.zones, stackOwner, design.layers)
+      : null;
+
+  let checkDetail: { tooFine: boolean; isolatedCount: number; layerHint?: string | null } | null = null;
+  if (pattern) {
+    const motifH = motifRows(design.dimensions, design.zones);
+    const isolated = countIsolatedStitches(pattern, design.dimensions.needles, motifH);
+    if (isolated.isolatedCount > 0) {
+      const layerHint = stackOwner
+        ? firstIsolatedLayerHint(pattern, design.dimensions.needles, motifH, stackOwner, design.layers)
+        : null;
+      checkDetail = { tooFine: isolated.tooFine, isolatedCount: isolated.isolatedCount, layerHint };
+    }
+  }
+
+  renderChecks(report, checkDetail, { floatLayerHint });
+
+  if (rgb) {
+    const guard = analyzeStackPaletteGuard(
+      design,
+      { motifRgb, images: compositionImages, keyColors },
+      rgb,
+      MACHINE_LIMITS,
+    );
+    renderStackPaletteGuard(guard, () => {
+      const patch = reduceStackPaletteQuantize(rgb, MACHINE_LIMITS);
+      update({ design: { quantize: { ...getState().design.quantize, ...patch } } });
+    });
+  } else {
+    renderStackPaletteGuard(null, () => undefined);
+  }
+
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
   computeId += 1;

@@ -82,7 +82,24 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
   resetLayer.dataset.testid = 'reset-layer';
   resetLayer.textContent = 'Réinitialiser ce calque';
   resetLayer.addEventListener('click', () => resetSelectedLayer());
-  header.append(title, resetLayer);
+  const jacquardGuide = document.createElement('p');
+  jacquardGuide.className = 'hint layer-jacquard-guide';
+  const guideBtn = document.createElement('button');
+  guideBtn.type = 'button';
+  guideBtn.className = 'help';
+  guideBtn.textContent = '?';
+  guideBtn.dataset.testid = 'help-layer-jacquard';
+  const guideText =
+    'Préférez des dessins en aplats (SVG) ; les photos passent mal en 4 à 6 couleurs de fil.';
+  guideBtn.title = guideText;
+  guideBtn.setAttribute('aria-label', guideText);
+  guideBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    window.alert(guideText);
+  });
+  jacquardGuide.append('Conseil jacquard ', guideBtn);
+  header.append(title, resetLayer, jacquardGuide);
 
   const source = document.createElement('div');
   source.className = 'layer-source';

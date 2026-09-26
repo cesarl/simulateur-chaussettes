@@ -694,3 +694,14 @@ Contrôle visuel — `docs/captures/v7/visuel-T57-bibliotheque-dialogue.png` (co
 - Section **SIGNATURE** : grille de vignettes (Medina terracotta/bleu, Fleurs, Continuum, etc.) avec libellés tronqués et petit bouton ▾ pour les variations en calque Image.
 Décisions : aucune nouvelle.
 Reste / risques : garde-fous multi-calques → T58.
+
+## T58 — Garde-fous jacquard multi-calques — 2026-09-26 23:55
+Statut : terminée
+Fait :
+- `src/core/stackPaletteGuard.ts` : couleurs par calque, bandeau si palette « d’après les calques » > `MACHINE_LIMITS.maxColorsTotal`, réduction aux N fils les plus présents dans le RVB empilé ; indices `owner` pour libellés flottés / mailles isolées.
+- `src/ui/panel.ts` : bandeau `stack-palette-banner` + bouton « Réduire à N couleurs » ; pastilles contrôles enrichies.
+- `src/main.ts` : branchement recalcul ; `src/ui/layerOptions.ts` : bulle « ? » conseil jacquard.
+- `tests/unit/stack-palette-guard.test.ts` : 3 Motifs × 2 couleurs + Fond.
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (157 tests unitaires).
+Décisions : aucune nouvelle.
+Reste / risques : bilan V7 → T59.

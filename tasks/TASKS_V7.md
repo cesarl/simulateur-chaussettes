@@ -258,14 +258,14 @@ Bouton « Bibliothèque » dans la barre du projet, et boutons « + Motif » / �
   - importer un PNG de test → un calque Image, dont la vue 2D montre les couleurs.
 - [x] Capture du dialogue, décrite.
 
-### [ ] T58 — Garde-fous jacquard avec plusieurs calques
+### [x] T58 — Garde-fous jacquard avec plusieurs calques
 
 - La palette automatique réunit les couleurs de tous les calques visibles. **Au-delà du maximum de couleurs de la machine**, un bandeau le dit, avec la liste des couleurs et le calque d'où vient chacune, plus le bouton « Réduire à N couleurs » (qui passe en palette manuelle avec les N plus présentes).
 - Contrôles existants (flottés, mailles isolées) : inchangés. Ils indiquent en plus le calque concerné quand c'est possible, via `owner`.
 - Conseils (bulle « ? » de V6) : repris dans l'onglet « Calque ».
 
 **Critères**
-- [ ] Test unitaire : 3 calques Motif de 2 couleurs chacun, plus le Fond → le bandeau propose la réduction, et la réduction donne exactement N couleurs.
+- [x] Test unitaire : 3 calques Motif de 2 couleurs chacun, plus le Fond → le bandeau propose la réduction, et la réduction donne exactement N couleurs.
 
 ### [ ] T59 — Bilan V7
 

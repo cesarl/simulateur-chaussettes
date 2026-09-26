@@ -1,4 +1,5 @@
 import type { FabricationReport } from '../core/checks';
+import type { StackPaletteGuardResult } from '../core/stackPaletteGuard';
 import type { Rot } from '../core/calepinage';
 import { tileRowsFor } from '../core/calepinage';
 import { clampLegRows, defaultDimensions, SIZE_PRESETS, totalRows } from '../core/sizes';
@@ -425,7 +426,12 @@ function paintPill(testId: string, ok: boolean, text: string): void {
   item.textContent = text;
 }
 
-export function renderChecks(report: FabricationReport, detail?: { tooFine: boolean; isolatedCount: number } | null): void {
+export function renderChecks(
+  report: FabricationReport,
+  detail?: { tooFine: boolean; isolatedCount: number; layerHint?: string | null } | null,
+  hints?: { floatLayerHint?: string | null },
+): void {
+  const layerSuffix = (name: string | null | undefined): string => (name ? ` · calque ${name}` : '');
   paintPill(
     'check-colors',
     report.totalOk,
@@ -441,7 +447,9 @@ export function renderChecks(report: FabricationReport, detail?: { tooFine: bool
   paintPill(
     'check-floats',
     report.floatsOk,
-    report.floatsOk ? `Flottés : aucun au-dessus de ${report.maxFloat}` : `Flottés : ${report.floatCount}`,
+    report.floatsOk
+      ? `Flottés : aucun au-dessus de ${report.maxFloat}`
+      : `Flottés : ${report.floatCount}${layerSuffix(hints?.floatLayerHint)}`,
   );
   paintPill(
     'check-seam',
@@ -458,11 +466,49 @@ export function renderChecks(report: FabricationReport, detail?: { tooFine: bool
         'check-detail',
         !detail.tooFine,
         detail.tooFine
-          ? `Détails : ${detail.isolatedCount} mailles isolées (trop fins pour le jacquard)`
+          ? `Détails : ${detail.isolatedCount} mailles isolées (trop fins pour le jacquard)${layerSuffix(detail.layerHint)}`
           : 'Détails : pas de mailles isolées problématiques',
       );
     }
   }
+}
+
+let stackPaletteReduceHandler: (() => void) | null = null;
+
+export function renderStackPaletteGuard(
+  guard: StackPaletteGuardResult | null,
+  onReduce: () => void,
+): void {
+  stackPaletteReduceHandler = onReduce;
+  const root = document.querySelector('[data-testid="stack-palette-banner"]');
+  if (!(root instanceof HTMLElement)) return;
+  const list = root.querySelector('[data-testid="stack-palette-list"]');
+  const btn = root.querySelector('[data-testid="stack-palette-reduce"]');
+  if (!(list instanceof HTMLElement) || !(btn instanceof HTMLButtonElement)) return;
+  if (!guard?.showBanner) {
+    root.hidden = true;
+    return;
+  }
+  root.hidden = false;
+  const intro = root.querySelector('[data-testid="stack-palette-intro"]');
+  if (intro instanceof HTMLElement) {
+    intro.textContent = `${guard.entries.length} couleurs de fil dépassent la limite machine (${guard.machineMax}).`;
+  }
+  list.replaceChildren();
+  for (const entry of guard.entries) {
+    const row = document.createElement('p');
+    row.className = 'stack-palette-row';
+    const chip = document.createElement('i');
+    chip.className = 'stack-palette-chip';
+    chip.style.background = entry.hex;
+    chip.title = entry.hex;
+    const label = document.createElement('span');
+    label.textContent = `${entry.hex} · ${entry.layerName}`;
+    row.append(chip, label);
+    list.appendChild(row);
+  }
+  btn.textContent = `Réduire à ${guard.machineMax} couleurs`;
+  btn.disabled = false;
 }
 
 function isViewId(value: string): value is ViewId {
@@ -1235,7 +1281,30 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   swatches = document.createElement('div');
   swatches.className = 'swatches';
   swatches.dataset.testid = 'pattern-palette';
-  pixels.append(sampling.root, maxColors.root, paletteMode.root, despeckle.root, manual, swatches);
+
+  const stackPaletteBanner = document.createElement('div');
+  stackPaletteBanner.className = 'stack-palette-banner tile-error';
+  stackPaletteBanner.dataset.testid = 'stack-palette-banner';
+  stackPaletteBanner.hidden = true;
+  const stackIntro = document.createElement('p');
+  stackIntro.dataset.testid = 'stack-palette-intro';
+  const stackList = document.createElement('div');
+  stackList.dataset.testid = 'stack-palette-list';
+  const stackReduce = document.createElement('button');
+  stackReduce.type = 'button';
+  stackReduce.dataset.testid = 'stack-palette-reduce';
+  stackReduce.addEventListener('click', () => stackPaletteReduceHandler?.());
+  stackPaletteBanner.append(stackIntro, stackList, stackReduce);
+
+  pixels.append(
+    sampling.root,
+    maxColors.root,
+    paletteMode.root,
+    despeckle.root,
+    stackPaletteBanner,
+    manual,
+    swatches,
+  );
 
   const zones = details('Zones', 'section-zones', {
     resetId: 'reset-zones',
