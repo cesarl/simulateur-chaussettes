@@ -363,6 +363,9 @@ export function editingLayoutSettings(
   let tileIds: string[] = [];
   if (motif?.source.kind === 'importes') {
     tileIds = motif.source.tileIds.length ? [...motif.source.tileIds] : tiles.map((t) => t.id);
+  } else if (motif?.source.kind === 'collection') {
+    // Miroir V6 : les carreaux chargés de la collection apparaissent dans layout.tileIds.
+    tileIds = tiles.map((t) => t.id);
   }
   return { ...layout, tileIds };
 }

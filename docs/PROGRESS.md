@@ -599,3 +599,15 @@ Fait : projet JSON `version: 3` (lecture 1/2/3, migration V1/composition → cal
 Vérification : unitaires ✅ (141) ; e2e liens-reels ✅ (4). `npm run verify` en cours.
 Décisions : aucune nouvelle (suite D47/D48)
 Reste / risques : e2e composition / modes carreaux à adapter ou retirer si cassés par V7.
+
+## T52 — verify jalon A — adaptations e2e — 2026-09-26 19:58
+Statut : en cours
+Fait : e2e composition (`composition-aids`, `composition-editor`, `composition-share`) **supprimés** (mode remplacé par calques Image). `editingLayoutSettings` expose les tileIds de collection (miroir V6). checks.spec force la taille libre avant décalage.
+Vérification : `npm run verify` relancé.
+
+## T52 — Projet v3 + verify jalon A — 2026-09-26 20:05
+Statut : terminée
+Fait : projet v3 ; e2e `liens-reels` ; e2e composition V6 **supprimés** (mode retiré) ; miroir `layout.tileIds` pour collections ; checks en taille libre. `npm run verify` ✅ (141 unitaires, 53 e2e).
+Vérification : verify complet vert.
+Décisions : D48 (suite) — e2e composition retirés, listés ici.
+Reste / risques : Jalon B (T53–T59) UI calques.
