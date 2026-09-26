@@ -219,4 +219,10 @@ Contexte : hors `?dev`, l’utilisateur doit pouvoir afficher/masquer le décor 
 Choix : case à cocher « Décor » dans `viewerBar` (`viewer-decor-toggle`) ; on ↔ dernier mode non-aucun (défaut `coin`) ; off ↔ `aucun` ; mémorisé via `design.decor.mode` (IndexedDB + lien `#p=` déjà en place).
 Conséquence : pas de nouvel état parallèle ; le panneau `?dev` et la visionneuse restent synchronisés.
 
+## D39 — Empreintes golden via PNG pré-rasterisés (T41)
+Contexte : la chaîne carreaux doit être figée avant V6 ; la pixelisation SVG dépend du DOM (interdit en Vitest node).
+Options : e2e Playwright pour les empreintes / fixtures PNG déjà pixelisées + chaîne pure / images synthétiques seules.
+Choix : PNG RGBA filtre 0 dans `tests/fixtures/golden/` (exemples publics + medina/lianes du catalogue mini, recolorés), lus via `decodePng` ; empreintes FNV-1a déjà fournies par `gridFingerprint`. Script `scripts/rasterize-golden-fixtures.mjs` pour régénérer (Playwright + encode filtre 0).
+Conséquence : 4 scénarios couvrent calepinage suite, préréglage medina, lianes reco + femme sans côte, quinconce+rot aléatoire ; le test ne doit jamais être retouché pour « passer ».
+
 

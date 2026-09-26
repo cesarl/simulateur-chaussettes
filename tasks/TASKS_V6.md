@@ -17,7 +17,7 @@ Module de référence fourni et testé : `reference/composition/composition.ts` 
 
 ## Jalon A — sécurité et fondations (aucun changement visible)
 
-### [ ] T41 — Filet de sécurité léger (4 projets de référence)
+### [x] T41 — Filet de sécurité léger (4 projets de référence)
 - `tests/unit/golden.test.ts` : calcule l'empreinte (hash simple FNV-1a) de la `StitchGrid` pour **4 projets carreaux** couvrant l'essentiel, **par la chaîne pure** (sans navigateur ni e2e) :
   1. carreaux d'exemple, calepinage « à la suite » 3 motifs, homme, bord-côte ;
   2. collection `medina` du catalogue de test (`tests/fixtures/configurateur-mini`), préréglage `damier_4_random` graine 7, couleurs d'origine ;
@@ -26,7 +26,7 @@ Module de référence fourni et testé : `reference/composition/composition.ts` 
 - Les empreintes attendues sont **enregistrées une fois** (valeurs actuelles, avant toute modification) dans le test. Ensuite ce test ne doit **jamais** être modifié pour « faire passer » : s'il casse, c'est le code qu'on corrige.
 - Si une partie de la chaîne dépend du DOM (pixelisation des SVG), utiliser des carreaux déjà pixelisés en fixtures PNG (lus avec `src/io/pngCodec.ts`) ou des images synthétiques générées dans le test.
 
-**Critères** : [ ] 4 empreintes enregistrées, test vert ; [ ] commit **avant** toute autre modification de V6.
+**Critères** : [x] 4 empreintes enregistrées, test vert ; [x] commit **avant** toute autre modification de V6.
 
 ### [ ] T42 — « Source de motif » (réorganisation invisible)
 - Aujourd'hui `main.ts › recompute()` appelle directement `samplePattern(...)` (calepinage). Introduire une notion de **source de motif** dans l'état : `design.pattern = { kind: 'carreaux' } | { kind: 'composition', composition: Composition }` (défaut : `carreaux`). Les réglages carreaux existants restent où ils sont (`layout`, collection…) : on n'y touche pas.
