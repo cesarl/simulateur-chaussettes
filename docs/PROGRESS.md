@@ -645,4 +645,22 @@ Reste / risques :
 - **9 e2e restent rouges, et ils l’étaient déjà avant T54** : vérifié en rejouant les mêmes fichiers sur le commit T53 (`6b3e9d2`) dans un worktree séparé → mêmes 9 échecs. Ils testent la coquille V6 et doivent être adaptés à la disposition T53 : `flat`, `multi-calepinage`, `palettes` (captures), `seam` (clic sur « À plat », bouton masqué en double panneau) ; `project` (`project-save` existe maintenant deux fois : barre projet + panneau) ; `scroll` ×2 (le panneau d’options ne déborde plus à 1400×900 ni 1100×800) ; `ui` (la zone 3D ne fait plus 700 px de large) ; `viewer-flat` (la case « À plat » démarre cochée). Total suite : 50 ✅ / 9 ❌ (59 tests) avant **et** après T54.
 - Sélectionner un calque déclenche un recalcul complet (`recompute` est abonné à tout changement d’état) : avec 12 calques et des images, le clic sur une carte prend un temps visible. À optimiser en T56 (recalcul seulement si le rendu change).
 - La palette d’un design migré (palette exacte, `paletteFromLayers: false`) n’intègre pas automatiquement les couleurs d’un calque ajouté → T58.
-- Options du calque (onglet « Calque ») toujours le panneau V6 monolithique → T55 ; poignées 2D → T56 ; Bibliothèque complète → T57.
+- Poignées 2D → T56 ; Bibliothèque complète → T57.
+
+## T55 — Options du calque sélectionné — 2026-09-26 22:55
+Statut : terminée
+Fait :
+- `src/ui/layerOptions.ts` : en-tête (nom + « Réinitialiser ce calque »), source du calque, **Fond** (nuancier fils + couleur libre), **Motif** étendue (toute / bande, curseurs du rang / au rang, lecture en cm), **Image** (aperçu, remplacement, miroirs, frise + écart, valeurs numériques repliées), **Couleurs transparentes** (pastilles `layerKeyColors`, damier barré si transparente).
+- `src/ui/panel.ts` : volet « Calque » = options par type ; `motif-options` réutilise `collectionPicker`, `palettePanel`, calepinage et carreaux importés via `editingMotif()` ; onglets **Chaussette** (taille, dimensions, zones, gros pixels, contrôles, palette avec « Automatique d'après les calques »), **Décor** et **Export** masquent les autres volets.
+- `src/styles.css` : `[hidden]` sur `.field` / `.row` / `.layer-source` force `display: none` (évite que `display:flex` annule `hidden`).
+- Tests unitaires `tests/unit/layer-options.test.ts` ; e2e `tests/e2e/calque-options.spec.ts` (transparence + bande à la souris, captures des trois types).
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (156 unitaires) ; `npm run build` ✅ ; e2e `calque-options.spec.ts` ✅ (3).
+Contrôles visuels (panneau `#panel`, images ouvertes) :
+- `docs/captures/v7/visuel-T55-options-motif.png` — onglet Calque, calque « Motif · Medina… » : en-tête + source collection ; sections Collection (recherche, vignettes SIGNATURE, Medina sélectionnée), Couleurs (4 fils), Calepinage et réglages motif visibles ; pas de section Fond ni Image.
+- `docs/captures/v7/visuel-T55-options-fond.png` — calque Fond : seule la section « Couleur du fond » (texte d’aide, sélecteur libre beige, grille de pastilles fils bleu/vert/brun) ; pas de motif ni transparence.
+- `docs/captures/v7/visuel-T55-options-image.png` — calque Image damier : aperçu carré, « Remplacer l'image… », miroir horizontal coché, frise décochée, « Valeurs numériques » replié, trois pastilles transparentes (noir, crème, terracotta).
+- `docs/captures/v7/visuel-T55-transparence.png` — bas du volet Motif Dunes jaune/blanc : étendue « Toute la chaussette », pastille blanche en damier barré (transparente), pastille jaune pleine ; pied de panneau avec durée de calcul.
+- `docs/captures/v7/visuel-T55-bande.png` — étendue « Bande de rangs », curseurs 0→66 rangs, libellé « 0,0 cm à 6,6 cm » ; deux pastilles couleurs du motif.
+- `docs/captures/v7/visuel-T55-options-chaussette.png` — onglet Chaussette : Dimensions (Homme, curseurs tige/talon/pied/pointe), Zones (bord-côte, couleurs talon), pas le volet Calque.
+Décisions : aucune nouvelle (réutilisation panneau V6 branché sur calque, D48/D50).
+Reste / risques : poignées 2D et vrai rendu grille → T56 ; bibliothèque enrichie → T57 ; e2e legacy V6 (9 rouges listés en T54) toujours à adapter.

@@ -177,7 +177,7 @@ La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 ×
   - replier puis déplier.
 - [x] Capture du dock avec 3 puis 12 calques, décrite.
 
-### [ ] T55 — Options du calque sélectionné
+### [x] T55 — Options du calque sélectionné
 
 L'onglet « Calque » montre les options **du type** de calque sélectionné. On réutilise les réglages existants de `panel.ts`, `collectionPicker.ts`, `palettePanel.ts` et `calepGallery.ts`, branchés sur le calque au lieu de l'état global.
 
@@ -206,8 +206,8 @@ L'onglet « Calque » montre les options **du type** de calque sélectionné. On
   - **Décor** et **Export** : sections actuelles.
 
 **Critères**
-- [ ] e2e `calque-options.spec.ts`, à la souris : choisir un Motif jaune et blanc, rendre le blanc transparent → dans la vue 2D, une maille qui était blanche prend la couleur du Fond ; limiter ce motif à une bande → hors de la bande, on voit le Fond.
-- [ ] Capture de l'onglet pour chacun des trois types, décrite.
+- [x] e2e `calque-options.spec.ts`, à la souris : choisir un Motif jaune et blanc, rendre le blanc transparent → dans la vue 2D, une maille qui était blanche prend la couleur du Fond ; limiter ce motif à une bande → hors de la bande, on voit le Fond.
+- [x] Capture de l'onglet pour chacun des trois types, décrite.
 
 ### [ ] T56 — Vue 2D : vrai rendu et poignées
 

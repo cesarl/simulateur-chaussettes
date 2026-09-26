@@ -819,6 +819,10 @@ dialog.library.busy { cursor: progress; }
 dialog.library .hint { margin: 8px 12px 0; font-size: 11px; color: var(--muted); }
 
 /* ------------------------------------------------ Options du calque (T55) */
+/* `display: flex` annule l'attribut `hidden` : un réglage masqué doit disparaître. */
+.field[hidden],
+.row[hidden],
+.layer-source[hidden] { display: none; }
 .options-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 4px; }
 .options-top .history-bar,
 .options-top .share-row { margin: 0; }
