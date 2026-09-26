@@ -493,3 +493,11 @@ Fait : `collections-locales/`, sync `--local` (défaut si dossier présent) et `
 Vérification : vitest collections + golden + pattern-source ✅ ; typecheck ✅.
 Décisions : D41.
 Reste / risques : admin en T44.
+
+## T44 — Admin collections locales — 2026-09-26 12:50
+Statut : terminée
+Fait : `src/core/svgZones.ts`, `admin.html` + `src/admin.ts` (FS Access ou ZIP), lien « Gérer mes collections » en bas du panneau, ZIP store sans dépendance. E2e : 2 SVG → zip avec zone-N.
+Contrôle visuel `visuel-t44-admin.png` : fond beige ; avant/après côte à côte (carré orange + cercle crème) ; listes zone-1/zone-2 vers codes nuancier ; bouton Enregistrer ; message ZIP téléchargé.
+Vérification : `npm run verify` ✅ (120 unitaires, 48 e2e). Fin jalon B.
+Décisions : D42.
+Reste / risques : composition libre T45+.

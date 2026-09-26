@@ -13,6 +13,7 @@ export default defineConfig({
       input: {
         main: resolve(root, 'index.html'),
         sockDemo: resolve(root, 'sock-demo.html'),
+        admin: resolve(root, 'admin.html'),
       },
     },
   },

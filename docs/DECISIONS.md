@@ -238,3 +238,9 @@ Contexte : César veut ajouter des collections sans passer par le simulateur de 
 Options : catalogue séparé / fusion dans public/carreaux / CDN.
 Choix : dossier `collections-locales/` même format ; sync complète fusionne (locale gagne) ; `npm run sync:local` met à jour seulement les locales. PNG : `zones: []`, pas de recoloration, quantize auto + hint UI.
 Conséquence : une seule source runtime (`public/carreaux/`) ; catégorie « Mes collections ».
+
+## D42 — Admin collections : ZIP store sans dépendance (T44)
+Contexte : Firefox/Safari n’ont pas File System Access ; il faut un export dossier.
+Options : jszip / fflate / ZIP store maison.
+Choix : `src/io/zipStore.ts` (méthode store, CRC32) + mode dossier Chrome/Edge. Entrée Vite `admin.html`. Zones SVG pures dans `svgZones.ts`.
+Conséquence : aucune nouvelle dépendance npm ; e2e valide le ZIP téléchargé.

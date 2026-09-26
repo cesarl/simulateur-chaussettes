@@ -37,16 +37,16 @@ Module de référence fourni et testé : `reference/composition/composition.ts` 
 
 ## Jalon B — collections locales et outil d'administration
 
-### [~] T43 — Collections locales fusionnées par la synchronisation
+### [x] T43 — Collections locales fusionnées par la synchronisation
 - Dossier `collections-locales/` à la racine, **même format que le simulateur de carreaux** : `collections-locales/collections.json` (tableau de collections, mêmes champs : `id`, `nom`, `format`, `variations`, `layouts`, `defaut_layout`, `category`, `colors`, `artist_recommendations`…) et `collections-locales/svg/<ID>-VAR<n>.svg` **ou** `.png`.
 - `scripts/sync-carreaux.mjs` : ajouter une seconde source facultative `--local collections-locales` (par défaut si le dossier existe). Fusion : les collections locales s'ajoutent ; en cas d'identifiant identique, **la locale gagne** (avertissement dans le rapport). Nouveau champ `source: 'carreaux' | 'locale'` dans le catalogue. Les PNG sont copiés tels quels (variation `file` en `.png`, `zones: []`).
 - Nouvelle commande `npm run sync:local` = synchronisation **sans** le simulateur de carreaux (ne met à jour que la partie locale, garde le reste du catalogue existant).
 - Côté application : une collection PNG n'a pas de zones → pas de recoloration ; ses couleurs de fil viennent de la réduction de couleurs automatique (k-means, N réglable) ; le panneau Couleurs l'indique (« couleurs figées : image PNG »).
 - Tests : étendre `tests/unit/collections.test.ts` avec une mini collection locale (1 SVG + 1 PNG) dans `tests/fixtures/collections-locales-mini/`.
 
-**Critères** : [ ] tests verts ; [ ] une collection locale apparaît dans le sélecteur avec la catégorie « Mes collections ».
+**Critères** : [x] tests verts ; [x] une collection locale apparaît dans le sélecteur avec la catégorie « Mes collections ».
 
-### [ ] T44 — Outil d'administration des collections (mode dev, local)
+### [x] T44 — Outil d'administration des collections (mode dev, local)
 Page `admin.html` (entrée Vite séparée, accessible seulement en mode dev ; lien « Gérer mes collections » en bas du panneau).
 - **Ouvrir le dossier** `collections-locales/` avec l'API File System Access (`showDirectoryPicker`, Chrome/Edge). Sinon (Firefox/Safari) : mode « téléchargement » qui produit un .zip à décompresser dans le dossier.
 - Liste des collections locales ; **Nouvelle collection** : nom (→ identifiant en majuscules sans accents), format (10×10, 15×15, 20×20), catégorie, glisser-déposer des fichiers SVG/PNG (ordre = VAR1, VAR2…, réordonnables), calepinages proposés (cases à cocher parmi la bibliothèque) et calepinage par défaut.
@@ -55,7 +55,7 @@ Page `admin.html` (entrée Vite séparée, accessible seulement en mode dev ; li
 - **Enregistrer** : écrit `collections.json` + fichiers dans `svg/`, puis affiche « Lancez `npm run sync:local` puis committez ». Validation avant écriture (identifiant unique, au moins une variation, codes nuancier connus).
 - Traitement pur des SVG dans `src/core/svgZones.ts` (tests unitaires sur 2 SVG : un avec attributs `fill`, un avec classes CSS). Le DOM n'est utilisé que dans la page.
 
-**Critères** : [ ] tests unitaires `svgZones` verts ; [ ] e2e court : créer une collection de 2 SVG en mode téléchargement → le .zip contient `collections.json` et 2 SVG avec des groupes `zone-N` ; [ ] captures de la page d'admin décrites dans `PROGRESS.md` ; [ ] `npm run verify` complet vert (fin du jalon B).
+**Critères** : [x] tests unitaires `svgZones` verts ; [x] e2e court : créer une collection de 2 SVG en mode téléchargement → le .zip contient `collections.json` et 2 SVG avec des groupes `zone-N` ; [x] captures de la page d'admin décrites dans `PROGRESS.md` ; [x] `npm run verify` complet vert (fin du jalon B).
 
 ## Jalon C — composition libre
 

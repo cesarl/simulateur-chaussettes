@@ -1570,4 +1570,13 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
   leave.textContent = 'Quitter le mode dev';
   leave.addEventListener('click', () => actions.leaveDev());
   host.appendChild(leave);
+
+  const adminLink = document.createElement('a');
+  adminLink.href = './admin.html';
+  adminLink.dataset.testid = 'admin-collections-link';
+  adminLink.className = 'leave-dev';
+  adminLink.textContent = 'Gérer mes collections';
+  adminLink.style.display = 'block';
+  adminLink.style.marginTop = '0.5rem';
+  host.appendChild(adminLink);
 }

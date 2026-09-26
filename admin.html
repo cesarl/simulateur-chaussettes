@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin collections locales — César Bazaar</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <style>
+      body.admin { max-width: 960px; margin: 0 auto; padding: 1.5rem; background: #f7f4ef; color: #1d1d1b; font-family: "Source Sans 3", system-ui, sans-serif; }
+      body.admin h1 { font-family: "Fraunces", Georgia, serif; font-weight: 600; }
+      .admin-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+      .admin-list { display: grid; gap: 0.5rem; }
+      .admin-card { background: #fff; border: 1px solid #ddd5c8; padding: 0.75rem 1rem; }
+      .admin-form label { display: block; margin: 0.5rem 0 0.2rem; font-size: 0.9rem; }
+      .admin-form input, .admin-form select { width: 100%; max-width: 28rem; }
+      .zone-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+      .zone-preview img, .zone-preview object { width: 100%; background: #eeeae4; border: 1px solid #ccc; }
+      .file-list { list-style: none; padding: 0; }
+      .file-list li { display: flex; gap: 0.5rem; align-items: center; margin: 0.25rem 0; }
+      .hint { color: #5a5348; font-size: 0.9rem; }
+      .ok { color: #2a6b3c; }
+      .err { color: #a33; }
+    </style>
+  </head>
+  <body class="admin">
+    <p><a href="./index.html?dev=1" data-testid="admin-back">← Retour au simulateur</a></p>
+    <h1 data-testid="admin-title">Gérer mes collections</h1>
+    <p class="hint">Usage local (César). Enregistre dans <code>collections-locales/</code> puis <code>npm run sync:local</code>.</p>
+    <div class="admin-actions">
+      <button type="button" data-testid="admin-open-dir">Ouvrir le dossier</button>
+      <button type="button" data-testid="admin-download-mode">Mode téléchargement (.zip)</button>
+      <button type="button" data-testid="admin-new">Nouvelle collection</button>
+    </div>
+    <p class="hint" data-testid="admin-mode-label">Mode : non connecté</p>
+    <div class="admin-list" data-testid="admin-list"></div>
+    <div id="admin-editor" hidden></div>
+    <p class="hint" data-testid="admin-status"></p>
+    <script type="module" src="/src/admin.ts"></script>
+  </body>
+</html>
