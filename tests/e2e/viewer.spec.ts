@@ -24,6 +24,8 @@ test('visionneuse par défaut : pas de panneau, canvas plein écran', async ({ p
   await expect(page.getByTestId('panel')).toBeHidden();
   await expect(page.getByTestId('viewer-bar')).toBeVisible();
   await expect(page.getByTestId('viewer-copy-link')).toBeVisible();
+  // Bascule À plat dans la barre visionneuse (comme le décor)
+  await expect(page.getByTestId('viewer-flat-toggle')).toBeVisible();
   await expect(page.getByTestId('view-flat')).toBeHidden();
 
   const metrics = await page.evaluate(() => {

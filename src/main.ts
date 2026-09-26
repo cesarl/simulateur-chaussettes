@@ -78,6 +78,8 @@ const viewer = mountViewerBar(viewport, {
     publish();
   },
   onCopyLink: () => copyShareLink(),
+  onFlat: (flatMode) => flat.setFlat(flatMode),
+  isFlat: () => flat.isFlat(),
 });
 
 const shareHint = document.createElement('p');

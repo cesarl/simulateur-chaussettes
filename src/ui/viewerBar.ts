@@ -23,6 +23,8 @@ export function mountViewerBar(
   options: {
     onView: (view: ViewName) => void;
     onCopyLink: () => void | Promise<void>;
+    onFlat?: (flat: boolean) => void;
+    isFlat?: () => boolean;
   },
 ): ViewerBarHandle {
   const bar = document.createElement('div');
@@ -71,6 +73,20 @@ export function mountViewerBar(
     }
   });
 
+  const flatLabel = document.createElement('label');
+  flatLabel.className = 'viewer-decor';
+  flatLabel.dataset.testid = 'viewer-flat';
+  const flatCheck = document.createElement('input');
+  flatCheck.type = 'checkbox';
+  flatCheck.dataset.testid = 'viewer-flat-toggle';
+  flatCheck.setAttribute('aria-label', 'Afficher la vue à plat');
+  const flatText = document.createElement('span');
+  flatText.textContent = 'À plat';
+  flatLabel.append(flatCheck, flatText);
+  flatCheck.addEventListener('change', () => {
+    options.onFlat?.(flatCheck.checked);
+  });
+
   const copy = document.createElement('button');
   copy.type = 'button';
   copy.dataset.testid = 'viewer-copy-link';
@@ -79,7 +95,7 @@ export function mountViewerBar(
     void options.onCopyLink();
   });
 
-  bar.append(title, views, decorLabel, copy);
+  bar.append(title, views, decorLabel, flatLabel, copy);
   viewport.appendChild(bar);
 
   function refresh(): void {
@@ -94,6 +110,9 @@ export function mountViewerBar(
     const on = design.decor.mode !== 'aucun';
     if (on) lastActiveDecorMode = design.decor.mode;
     if (document.activeElement !== decorCheck) decorCheck.checked = on;
+    if (document.activeElement !== flatCheck && options.isFlat) {
+      flatCheck.checked = options.isFlat();
+    }
   }
 
   refresh();

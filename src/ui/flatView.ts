@@ -27,6 +27,9 @@ export interface FlatHandle {
   setFloatMask: (mask: Uint8Array | null) => void;
   centerOf: (col: number, row: number) => { x: number; y: number } | null;
   setDevTools: (visible: boolean) => void;
+  /** Affiche la vue à plat (true) ou la 3D (false). */
+  setFlat: (flat: boolean) => void;
+  isFlat: () => boolean;
 }
 
 export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): FlatHandle {
@@ -315,9 +318,15 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
     },
     centerOf,
     setDevTools(visible: boolean) {
+      // En visionneuse : bascule via la barre (comme le décor). En ?dev : switcher coin.
       switcher.hidden = !visible;
       shortcuts.hidden = !visible;
-      if (!visible) setMode(false);
+    },
+    setFlat(flat: boolean) {
+      setMode(flat);
+    },
+    isFlat() {
+      return !layer.hidden;
     },
   };
 }
