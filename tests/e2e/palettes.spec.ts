@@ -124,12 +124,10 @@ test('captures deux palettes de la même collection', async ({ page }) => {
       path.join(root, 'test-results', `visuel-T31-${tag}-3d.png`),
       Buffer.from(view3d.replace(/^data:image\/png;base64,/, ''), 'base64'),
     );
-    await page.getByTestId('view-flat').click();
     await expect(page.getByTestId('flat-canvas')).toBeVisible();
     await page.getByTestId('flat-canvas').screenshot({
       path: path.join(root, 'test-results', `visuel-T31-${tag}-plat.png`),
     });
-    await page.getByTestId('view-3d').click();
   }
 
   await capturePair('lianes-defaut');

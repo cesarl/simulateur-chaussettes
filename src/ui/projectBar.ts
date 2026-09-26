@@ -36,13 +36,13 @@ export function mountProjectBar(
 
   const openBtn = document.createElement('button');
   openBtn.type = 'button';
-  openBtn.dataset.testid = 'project-open';
+  openBtn.dataset.testid = 'bar-project-open';
   openBtn.textContent = 'Ouvrir';
   openBtn.disabled = true;
 
   const saveBtn = document.createElement('button');
   saveBtn.type = 'button';
-  saveBtn.dataset.testid = 'project-save';
+  saveBtn.dataset.testid = 'bar-project-save';
   saveBtn.textContent = 'Enregistrer';
   saveBtn.disabled = true;
 

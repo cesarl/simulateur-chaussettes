@@ -198,8 +198,8 @@ function applyShellMode(dev: boolean): void {
   panel.hidden = !dev;
   projectBar.hidden = !dev;
   layersDock.hidden = !dev;
-  viewer.setVisible(!dev);
-  flat.setDevTools(dev);
+  // Reparenter la vue à plat AVANT d’afficher la barre visionneuse
+  // (sinon isFlat() est encore true et la case « À plat » reste cochée).
   if (dev) {
     flat.setHosts({
       canvasHost: view2d,
@@ -215,6 +215,8 @@ function applyShellMode(dev: boolean): void {
       dualPane: false,
     });
   }
+  flat.setDevTools(dev);
+  viewer.setVisible(!dev);
   handle.requestRender();
 }
 

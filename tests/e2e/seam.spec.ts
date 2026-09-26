@@ -43,9 +43,8 @@ test('raccord dos puis intérieur : captures dos et profil intérieur', async ({
   await captureView(page, 'dos', 'test-results/visuel-T37-raccord-interieur-vue-dos.png');
   await captureView(page, 'profil-interieur', 'test-results/visuel-T37-raccord-interieur-vue-interieur.png');
 
-  await page.getByTestId('view-flat').click();
   await expect(page.getByTestId('flat-canvas')).toBeVisible();
-  await page.getByTestId('viewport').screenshot({ path: 'test-results/visuel-T37-raccord-plat.png' });
+  await page.getByTestId('view2d').screenshot({ path: 'test-results/visuel-T37-raccord-plat.png' });
 
   expect(errors).toEqual([]);
 });

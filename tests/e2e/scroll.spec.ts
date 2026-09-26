@@ -21,12 +21,12 @@ async function assertSingleScrollbar(page: Page): Promise<void> {
   await expandAllSections(page);
   const metrics = await page.evaluate(() => {
     const se = document.scrollingElement!;
-    const panel = document.querySelector<HTMLElement>('#panel')!;
+    const body = document.querySelector<HTMLElement>('#panel-body') ?? document.querySelector<HTMLElement>('#panel')!;
     return {
       scrollHeight: se.scrollHeight,
       innerHeight: window.innerHeight,
-      panelScrollHeight: panel.scrollHeight,
-      panelClientHeight: panel.clientHeight,
+      panelScrollHeight: body.scrollHeight,
+      panelClientHeight: body.clientHeight,
     };
   });
   expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.innerHeight);

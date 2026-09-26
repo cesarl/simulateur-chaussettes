@@ -218,8 +218,9 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
 
   function applyToolsVisibility(): void {
     // En double panneau : pas de bascule 3D/plat (les deux sont visibles).
+    // Les raccourcis caméra restent visibles dans la barre d’outils.
     switcher.hidden = dualPane || !toolsVisible;
-    shortcuts.hidden = dualPane || !toolsVisible;
+    shortcuts.hidden = !toolsVisible;
   }
 
   function setMode(flat: boolean): void {

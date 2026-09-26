@@ -124,6 +124,7 @@ export function mountViewerBar(
     root: bar,
     setVisible(visible: boolean) {
       bar.hidden = !visible;
+      if (visible) refresh();
     },
   };
 }
