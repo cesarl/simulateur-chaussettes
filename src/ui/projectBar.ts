@@ -4,7 +4,7 @@ import { getState, redo, subscribe, undo } from '../state';
 
 export function mountProjectBar(
   host: HTMLElement,
-  actions: { copyShareLink: () => void | Promise<void> },
+  actions: { copyShareLink: () => void | Promise<void>; openLibrary?: () => void },
 ): { sync: () => void } {
   host.replaceChildren();
   const body = document.createElement('div');
@@ -50,7 +50,11 @@ export function mountProjectBar(
   libBtn.type = 'button';
   libBtn.dataset.testid = 'project-library';
   libBtn.textContent = 'Bibliothèque';
-  libBtn.disabled = true;
+  if (actions.openLibrary) {
+    libBtn.addEventListener('click', () => actions.openLibrary?.());
+  } else {
+    libBtn.disabled = true;
+  }
 
   body.append(title, undoBtn, redoBtn, copy, openBtn, saveBtn, libBtn);
   host.appendChild(body);

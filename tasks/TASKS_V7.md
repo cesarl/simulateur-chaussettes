@@ -157,7 +157,7 @@ La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 ×
   - le rapport largeur/hauteur du canvas 3D est égal à `camera.aspect` à 1 % près, **après avoir déplacé le séparateur à la souris** et après redimensionnement de la fenêtre.
 - [x] Capture de l'écran entier aux deux tailles, ouverte et décrite.
 
-### [ ] T54 — Liste des calques (dock du bas)
+### [x] T54 — Liste des calques (dock du bas)
 
 - Une **carte** par calque, en ligne : vignette (rendu réel du calque seul), nom, œil (masquer), cadenas.
   - Ordre : **dessus à gauche → dessous à droite** ; le Fond est fixé à droite, sans œil ni glisser. Libellés discrets « dessus » et « dessous » aux extrémités.
@@ -169,13 +169,13 @@ La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 ×
 - Clavier, quand le focus est dans le dock : ↑ / ↓ pour sélectionner, Suppr pour supprimer (pas le Fond), Ctrl+D pour dupliquer, H pour masquer.
 
 **Critères**
-- [ ] e2e `calques-dock.spec.ts`, **à la souris** :
+- [x] e2e `calques-dock.spec.ts`, **à la souris** :
   - ajouter 2 Motifs et 1 Image ;
   - glisser la carte du bas vers le haut : l'ordre de la pile change et la couleur d'une maille témoin de la vue 2D change ;
   - masquer puis démasquer ;
   - avec 16 calques, `dock.scrollWidth <= dock.clientWidth` ;
   - replier puis déplier.
-- [ ] Capture du dock avec 3 puis 12 calques, décrite.
+- [x] Capture du dock avec 3 puis 12 calques, décrite.
 
 ### [ ] T55 — Options du calque sélectionné
 

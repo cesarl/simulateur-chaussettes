@@ -117,8 +117,16 @@ function tilesForMotifLayer(layer: MotifLayer, projectTiles: readonly TileAsset[
     const byId = new Map(projectTiles.map((t) => [t.id, t]));
     return ids.map((id) => byId.get(id)).filter((t): t is TileAsset => !!t);
   }
-  // Collection : les carreaux doivent déjà être dans `projectTiles` (chargés par main).
-  return [...projectTiles];
+  // Collection : les carreaux sont dans `projectTiles`, nommés « <collection>-<variation> »
+  // (plusieurs collections peuvent cohabiter, une par calque Motif).
+  return collectionTiles(layer.source.collectionId, projectTiles);
+}
+
+/** Carreaux d’une collection parmi les carreaux du projet (repli : tous, comportement V6). */
+export function collectionTiles(collectionId: string, projectTiles: readonly TileAsset[]): TileAsset[] {
+  const prefix = `${collectionId.toLowerCase()}-`;
+  const own = projectTiles.filter((t) => t.name.toLowerCase().startsWith(prefix));
+  return own.length > 0 ? own : [...projectTiles];
 }
 
 /**

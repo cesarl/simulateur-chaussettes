@@ -14,6 +14,7 @@ import {
   newFondLayer,
   newImageLayer,
   newMotifLayer,
+  nextLayerId,
   normalizeStack,
   primaryMotifLayer,
   removeStackLayer,
@@ -26,6 +27,7 @@ import {
   updateStackLayer,
 } from './core/layers';
 import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
+import { collectionTiles } from './core/stackCompute';
 import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
 import type {
   DecorSettings,
@@ -42,6 +44,12 @@ import { V1_SHARE_DEFAULTS } from './core/layers';
 
 export type FootSide = 'droite' | 'gauche';
 export type { SockDesignV2 };
+
+/** Nombre maximal de calques (Fond compris) : au-delà, le dock ne tient plus sur une ligne. */
+export const MAX_LAYERS = 16;
+
+/** Message affiché quand l’ajout est refusé. */
+export const MAX_LAYERS_MESSAGE = '16 calques au maximum';
 
 /** Sections projet réinitialisables (hors calques). */
 export type DesignSection = 'dimensions' | 'quantize' | 'zones' | 'decor';
@@ -365,7 +373,7 @@ export function editingLayoutSettings(
     tileIds = motif.source.tileIds.length ? [...motif.source.tileIds] : tiles.map((t) => t.id);
   } else if (motif?.source.kind === 'collection') {
     // Miroir V6 : les carreaux chargés de la collection apparaissent dans layout.tileIds.
-    tileIds = tiles.map((t) => t.id);
+    tileIds = collectionTiles(motif.source.collectionId, tiles).map((t) => t.id);
   }
   return { ...layout, tileIds };
 }
@@ -519,35 +527,64 @@ export function redo(): boolean {
 }
 
 // --------------------------------------------------------------------------- actions calques
+/** Sélection : pas d’étape d’annulation (annuler doit défaire une modification, pas un clic). */
 export function selectLayer(id: string | null): void {
-  update({ selectedLayerId: id });
+  update({ selectedLayerId: id }, { skipHistory: true });
 }
 
-export function addMotifLayer(source: MotifSource, layout: MotifLayout = defaultMotifLayout(), name?: string): string {
-  const id = `motif-${Date.now().toString(36)}`;
+/** Vrai s’il reste de la place pour un calque de plus. */
+export function canAddLayer(design: SockDesignV2 = state.design): boolean {
+  return design.layers.length < MAX_LAYERS;
+}
+
+function refuseAdd(): null {
+  update({ error: MAX_LAYERS_MESSAGE }, { skipHistory: true });
+  return null;
+}
+
+/**
+ * Ajoute un calque Motif au-dessus de la pile et le sélectionne.
+ * `tiles` remplace les carreaux du projet dans la même modification (une seule étape d’annulation).
+ * Renvoie null si la pile est pleine (message d’erreur posé dans l’état).
+ */
+export function addMotifLayer(
+  source: MotifSource,
+  layout: MotifLayout = defaultMotifLayout(),
+  name?: string,
+  tiles?: TileAsset[],
+): string | null {
+  if (!canAddLayer()) return refuseAdd();
+  const id = nextLayerId(state.design.layers, 'motif');
   const layer = newMotifLayer(id, source, layout, name ?? (source.kind === 'collection' ? source.collectionId : 'Motif'));
   const layers = addStackLayer(state.design.layers, layer);
-  // Réassigner un id stable via nextLayerId déjà fait dans newMotifLayer ; on normalise.
-  const normalized = normalizeStack(layers);
-  const added = normalized[normalized.length - 1]!;
-  update({ design: { layers: normalized }, selectedLayerId: added.id });
-  return added.id;
+  update({
+    design: { layers },
+    selectedLayerId: id,
+    ...(tiles ? { tiles } : {}),
+    error: null,
+  });
+  return id;
 }
 
-export function addImageLayer(asset: AssetRef, name = 'Image'): string {
+/** Ajoute un calque Image (et, si besoin, l’image embarquée du projet). */
+export function addImageLayer(asset: AssetRef, name = 'Image', assets?: EmbeddedAsset[]): string | null {
+  if (!canAddLayer()) return refuseAdd();
   const g = {
     needles: state.design.dimensions.needles,
     rows: Math.max(1, state.design.dimensions.legRows + (state.design.zones.patternOnFoot ? state.design.dimensions.footRows : 0)),
     stitchesPerCm: state.design.dimensions.stitchesPerCm,
     rowsPerCm: state.design.dimensions.rowsPerCm,
   };
-  const id = `image-${Date.now().toString(36)}`;
+  const id = nextLayerId(state.design.layers, 'image');
   const layer = newImageLayer(id, asset, g, name);
   const layers = addStackLayer(state.design.layers, layer);
-  const normalized = normalizeStack(layers);
-  const added = normalized[normalized.length - 1]!;
-  update({ design: { layers: normalized }, selectedLayerId: added.id });
-  return added.id;
+  update({
+    design: { layers },
+    selectedLayerId: id,
+    ...(assets ? { embeddedAssets: assets } : {}),
+    error: null,
+  });
+  return id;
 }
 
 export function removeLayer(id: string): void {
@@ -557,6 +594,10 @@ export function removeLayer(id: string): void {
 }
 
 export function duplicateLayer(id: string): void {
+  if (!canAddLayer()) {
+    refuseAdd();
+    return;
+  }
   const layers = duplicateStackLayer(state.design.layers, id);
   const copy = layers.find((l, i) => l.id !== id && layers[i - 1]?.id === id) ?? layers.find((l) => l.name.endsWith('(copie)'));
   update({ design: { layers }, selectedLayerId: copy?.id ?? state.selectedLayerId });

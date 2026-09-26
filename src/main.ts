@@ -5,7 +5,8 @@ import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
 import { createMotifRgbCache, computeStackRgb, stackPaletteIfEnabled } from './core/stackCompute';
-import { primaryMotifLayer, type SockDesignV2 } from './core/layers';
+import { primaryMotifLayer, renderStack, stackGauge, type SockDesignV2, type StackLayer } from './core/layers';
+import { assetKey } from './core/composition';
 import { yarnColors, isPngCollection } from './core/collections';
 import { runExports, renderPair } from './io/exportPng';
 import { loadCatalogue } from './io/catalogue';
@@ -47,6 +48,8 @@ import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
 import { mountSplitters } from './ui/splitters';
 import { mountLayersDock } from './ui/layersDock';
+import { mountLibrary } from './ui/library';
+import { mountOptionsTabs } from './ui/optionsTabs';
 import { mountProjectBar } from './ui/projectBar';
 import { createDecorController } from './render/decorController';
 import { checkFabrication } from './core/checks';
@@ -142,8 +145,10 @@ shareHint.dataset.testid = 'share-hint';
 shareHint.hidden = true;
 view3d.appendChild(shareHint);
 
-mountProjectBar(projectBar, { copyShareLink });
-mountLayersDock(layersDock);
+mountProjectBar(projectBar, {
+  copyShareLink,
+  openLibrary: () => library.open('collections'),
+});
 
 function showShareHint(message: string | null): void {
   if (!message) {
@@ -231,6 +236,88 @@ let compositionImagesReadyKey = '';
 const motifRgbCache = createMotifRgbCache();
 /** Owner par maille de la zone motif (sélection 2D). */
 let stackOwner: Int16Array | null = null; // sélection 2D (T56)
+/** Derniers pixels par calque Motif et couleurs de fil : vignettes du dock. */
+let lastMotifRgb = new Map<string, Uint8ClampedArray>();
+let lastKeyColors = new Map<string, readonly string[]>();
+
+/** Clé de cache d’une vignette : rien ne change tant que le calque et la jauge sont identiques. */
+function thumbKey(layer: StackLayer, design: SockDesignV2): string {
+  const ready =
+    layer.kind === 'motif'
+      ? lastMotifRgb.has(layer.id)
+      : layer.kind === 'image'
+        ? compositionImages.has(assetKey(layer.asset))
+        : true;
+  const fond = design.layers[0];
+  return JSON.stringify([
+    layer,
+    fond?.kind === 'fond' ? fond.color : '',
+    design.dimensions,
+    design.zones.patternOnFoot,
+    design.zones.cuffEnabled,
+    ready,
+  ]);
+}
+
+/** Vignette d’un calque : rendu réel de ce calque seul, posé sur le Fond. */
+function drawLayerThumb(layerId: string, canvas: HTMLCanvasElement): void {
+  const { design } = getState();
+  const layer = design.layers.find((l) => l.id === layerId);
+  const fond = design.layers[0];
+  if (!layer || !fond) return;
+  const key = thumbKey(layer, design);
+  if (canvas.dataset.thumbKey === key) return;
+  const gauge = stackGauge(design.dimensions, design.zones);
+  if (gauge.needles < 1 || gauge.rows < 1) return;
+  const solo: StackLayer[] = layer.kind === 'fond' ? [fond] : [fond, { ...layer, hidden: false }];
+  const { rgb } = renderStack({
+    layers: solo,
+    gauge,
+    motifRgb: lastMotifRgb,
+    images: compositionImages,
+    keyColors: lastKeyColors,
+    supersample: 1,
+  });
+  const source = document.createElement('canvas');
+  source.width = gauge.needles;
+  source.height = gauge.rows;
+  const sourceContext = source.getContext('2d');
+  const context = canvas.getContext('2d');
+  if (!sourceContext || !context) return;
+  const pixels = sourceContext.createImageData(gauge.needles, gauge.rows);
+  for (let i = 0, p = 0; p < pixels.data.length; i += 3, p += 4) {
+    pixels.data[p] = rgb[i] ?? 0;
+    pixels.data[p + 1] = rgb[i + 1] ?? 0;
+    pixels.data[p + 2] = rgb[i + 2] ?? 0;
+    pixels.data[p + 3] = 255;
+  }
+  sourceContext.putImageData(pixels, 0, 0);
+  // Cadrage « couvrant » depuis le haut de la tige, en millimètres réels : pas de motif déformé.
+  const mmPerStitch = 10 / design.dimensions.stitchesPerCm;
+  const mmPerRow = 10 / design.dimensions.rowsPerCm;
+  const boxRatio = canvas.width / Math.max(1, canvas.height);
+  let cropW = gauge.needles;
+  let cropH = gauge.rows;
+  if ((gauge.needles * mmPerStitch) / (gauge.rows * mmPerRow) > boxRatio) {
+    cropW = Math.max(1, Math.round((gauge.rows * mmPerRow * boxRatio) / mmPerStitch));
+  } else {
+    cropH = Math.max(1, Math.round(gauge.needles * mmPerStitch / boxRatio / mmPerRow));
+  }
+  const cropX = Math.max(0, Math.round((gauge.needles - cropW) / 2));
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingEnabled = true;
+  context.drawImage(source, cropX, 0, cropW, cropH, 0, 0, canvas.width, canvas.height);
+  canvas.dataset.thumbKey = key;
+}
+
+const optionsTabsEl = document.querySelector('[data-testid="options-tabs"]');
+const optionsTabs = mountOptionsTabs(optionsTabsEl instanceof HTMLElement ? optionsTabsEl : panel);
+const library = mountLibrary(document.body);
+const dock = mountLayersDock(layersDock, {
+  drawLayerThumb,
+  openLayerTab: () => optionsTabs.open('calque'),
+  openLibrary: (tab) => library.open(tab),
+});
 
 function imageLayersKey(design: SockDesignV2): string {
   return JSON.stringify(
@@ -514,6 +601,8 @@ function recompute(): void {
     cache: motifRgbCache,
   });
   stackOwner = owner;
+  lastMotifRgb = motifRgb;
+  lastKeyColors = keyColors;
 
   if (rgb) {
     let quantizeSettings = { ...design.quantize };
@@ -558,6 +647,8 @@ function recompute(): void {
   lastComputeMs = performance.now() - started;
   computeId += 1;
   compositionEditor.sync();
+  // Les vignettes du dock utilisent les pixels qui viennent d’être calculés.
+  dock.sync();
   publish();
 
   const tileCount = Math.max(1, layout.tileIds.length || tiles.length);

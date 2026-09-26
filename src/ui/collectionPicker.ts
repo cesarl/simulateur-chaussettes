@@ -36,7 +36,8 @@ function matchesQuery(c: Collection, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
-function calepinageForCollection(c: Collection) {
+/** Calepinage par défaut d’une collection (préréglage du catalogue s’il existe). */
+export function calepinageForCollection(c: Collection) {
   const id = c.calepinageParDefaut;
   if (!id) return { ...DEFAULT_CALEPINAGE };
   return {
