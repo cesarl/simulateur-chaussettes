@@ -20,6 +20,7 @@ test('ajuster la largeur ramène le décalage du raccord à zéro', async ({ pag
     const d = window.__SIM__?.design;
     return d != null && d.dimensions.needles % (d.layout.tileStitches + d.layout.gapStitches) !== 0;
   });
+  await page.getByTestId('tab-chaussette').click();
   await expect(page.getByTestId('check-seam')).toContainText(/décalage/i);
   await page.getByTestId('ctl-fit-seam').click();
   await expect(page.getByTestId('check-seam')).toContainText('tombe juste');

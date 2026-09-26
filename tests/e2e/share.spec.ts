@@ -61,9 +61,11 @@ test('lien de partage : collection modifiée → nouvel onglet → même chausse
     { timeout: 30_000 },
   );
 
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-heel-height').fill('92');
   await page.waitForFunction(() => window.__SIM__?.design.zones.heelHeightMm === 92);
 
+  await page.getByTestId('tab-calque').click();
   const calep = page.getByTestId('calep-collection-presets').getByTestId('calep-thumb-damier_4');
   if (await calep.count()) {
     const c0 = await page.evaluate(() => window.__SIM__?.computeId ?? 0);

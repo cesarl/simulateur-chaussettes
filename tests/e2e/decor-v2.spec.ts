@@ -50,6 +50,7 @@ test('décor v2 mats : Medina 20cm et RAMO 10cm (sol + mur)', async ({ page }) =
   await page.getByTestId('coll-item-medina').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15000 });
 
+  await page.getByTestId('tab-decor').click();
   await page.getByTestId('ctl-decor-mode').selectOption('sol');
   await waitDecorBuild(page, 'sol');
   const medinaSol = await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T40-medina-sol.png');
@@ -77,12 +78,14 @@ test('décor v2 mats : Medina 20cm et RAMO 10cm (sol + mur)', async ({ page }) =
   expect(medinaDefaults.groutColor.toLowerCase()).toBe('#f3f1ec');
 
   // RAMO 10 × 10
+  await page.getByTestId('tab-calque').click();
   await page.getByTestId('coll-search').fill('ramo');
   await page.getByTestId('coll-item-RAMO').scrollIntoViewIfNeeded();
   await page.getByTestId('coll-item-RAMO').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(8, { timeout: 15000 });
 
   // Réactiver le décor pour préremplir tileCm depuis le format
+  await page.getByTestId('tab-decor').click();
   await page.getByTestId('ctl-decor-mode').selectOption('aucun');
   await waitDecorBuild(page, 'aucun');
   await page.getByTestId('ctl-decor-mode').selectOption('sol');

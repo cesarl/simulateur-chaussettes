@@ -29,6 +29,7 @@ test('jauge verticale : carreaux sur le tour inchangés, encadré mis à jour', 
   expect(before.readout).toMatch(/5 carreaux sur le tour/);
 
   const rowsBefore = before.rows ?? 0;
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('section-machine').evaluate((el) => {
     if (el instanceof HTMLDetailsElement) el.open = true;
   });

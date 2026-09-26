@@ -46,6 +46,7 @@ test('visionneuse publique : bascule décor on/off', async ({ page }) => {
   await page.getByTestId('coll-search').fill('medina');
   await page.getByTestId('coll-item-medina').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15000 });
+  await page.getByTestId('tab-decor').click();
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
   await waitDecorBuild(page, 'coin');
   await page.getByTestId('leave-dev').click();

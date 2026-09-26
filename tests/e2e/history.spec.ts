@@ -25,6 +25,7 @@ test('reset section, undo, reset-all avec confirmation', async ({ page }) => {
   await page.getByTestId('calep-thumb-g-suite').click();
   await page.waitForFunction(() => window.__SIM__?.design.layout.calepinage.genere.ordre === 'suite');
 
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-heel-height').fill('95');
   await page.getByTestId('ctl-heel-height').blur();
   await page.waitForFunction(() => window.__SIM__?.design.zones.heelHeightMm === 95);
@@ -32,10 +33,11 @@ test('reset section, undo, reset-all avec confirmation', async ({ page }) => {
   await page.getByTestId('ctl-max-colors').fill('3');
   await page.waitForFunction(() => window.__SIM__?.design.quantize.maxColors === 3);
 
-  await expect(page.getByTestId('dirty-calepinage')).toBeVisible();
   await expect(page.getByTestId('dirty-zones')).toBeVisible();
   await expect(page.getByTestId('dirty-pixels')).toBeVisible();
 
+  await page.getByTestId('tab-calque').click();
+  await expect(page.getByTestId('dirty-calepinage')).toBeVisible();
   await page.getByTestId('reset-calepinage').click();
   await page.waitForFunction(() => window.__SIM__?.design.layout.calepinage.genere.ordre === 'unique');
   expect(await page.evaluate(() => window.__SIM__!.design.zones.heelHeightMm)).toBe(95);

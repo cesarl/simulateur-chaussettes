@@ -598,6 +598,12 @@ function showLegMessage(size: SizeId, message: HTMLElement): void {
   message.textContent = legWarned ? `La tige ne peut pas dépasser ${max} rangs.` : '';
 }
 
+/** Affiche ou masque la pastille « modifié » d’une section. */
+function paintDirty(section: HTMLElement, testId: string, dirty: boolean): void {
+  const badge = section.querySelector(`[data-testid="${testId}"]`);
+  if (badge instanceof HTMLElement) badge.hidden = !dirty;
+}
+
 function mountSettings(panes: Panes, actions: PanelActions): void {
   const design = getState().design;
   const initialLayout = editingLayoutSettings();
@@ -1653,18 +1659,12 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
     sync(state.design);
     if (document.activeElement !== fidelity.input) fidelity.input.value = state.knitFidelity;
     if (document.activeElement !== footSide.input) footSide.input.value = state.footSide;
-    const dirtyCalep = host.querySelector('[data-testid="dirty-calepinage"]');
-    if (dirtyCalep instanceof HTMLElement) dirtyCalep.hidden = !isMotifLayoutDirty(state.design);
-    const dirtyMap: Array<[string, 'dimensions' | 'quantize' | 'zones' | 'decor']> = [
-      ['dirty-dimensions', 'dimensions'],
-      ['dirty-pixels', 'quantize'],
-      ['dirty-zones', 'zones'],
-      ['dirty-decor', 'decor'],
-    ];
-    for (const [id, section] of dirtyMap) {
-      const el = host.querySelector(`[data-testid="${id}"]`);
-      if (el instanceof HTMLElement) el.hidden = !isSectionDirty(section, state.design);
-    }
+    // Chaque pastille « modifié » est cherchée dans sa section : elles sont réparties dans les volets.
+    paintDirty(layout, 'dirty-calepinage', isMotifLayoutDirty(state.design));
+    paintDirty(dimensions, 'dirty-dimensions', isSectionDirty('dimensions', state.design));
+    paintDirty(pixels, 'dirty-pixels', isSectionDirty('quantize', state.design));
+    paintDirty(zones, 'dirty-zones', isSectionDirty('zones', state.design));
+    paintDirty(decorSection, 'dirty-decor', isSectionDirty('decor', state.design));
     undoBtn.disabled = !canUndo();
     redoBtn.disabled = !canRedo();
   });

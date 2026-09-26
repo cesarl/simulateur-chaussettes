@@ -53,6 +53,7 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
   await page.getByTestId('coll-item-medina').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15000 });
 
+  await page.getByTestId('tab-decor').click();
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
   await waitDecorReady(page, 'coin');
 
@@ -131,10 +132,12 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
   await waitDecorReady(page, 'mur');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-medina-mur.png');
 
+  await page.getByTestId('tab-calque').click();
   await page.getByTestId('coll-search').fill('lianes');
   await page.getByTestId('coll-item-lianes').scrollIntoViewIfNeeded();
   await page.getByTestId('coll-item-lianes').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(2, { timeout: 15000 });
+  await page.getByTestId('tab-decor').click();
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
   await waitDecorReady(page, 'coin');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-lianes-coin.png');

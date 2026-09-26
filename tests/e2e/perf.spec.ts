@@ -21,6 +21,7 @@ test('dix changements rapides laissent le dernier réglage, sans erreur', async 
   await page.mouse.move(box.x + box.width / 2 + 90, box.y + box.height / 2 + 20, { steps: 6 });
   await page.mouse.up();
 
+  await page.getByTestId('tab-chaussette').click();
   const colors = page.getByTestId('ctl-max-colors');
   for (let step = 0; step < 10; step++) {
     await colors.fill(String(2 + (step % 7)));

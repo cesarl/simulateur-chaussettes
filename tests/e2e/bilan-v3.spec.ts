@@ -62,6 +62,7 @@ test('T28 captures bilan V3', async ({ page }) => {
 
   // 4. Talon bas
   const builds = await page.evaluate(() => window.__SIM__!.geometryBuilds);
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-heel-height').fill('40');
   await page.getByTestId('ctl-heel-height').blur();
   await page.waitForFunction(

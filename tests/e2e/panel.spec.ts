@@ -16,6 +16,7 @@ test('quinconce, 3 couleurs et taille femme se reflètent dans le simulateur', a
   await page.evaluate(() => window.__SIM__!.loadFixture('carreau-test-etoile.svg'));
   await expect(page.getByTestId('tile-thumb')).toHaveCount(1, { timeout: 15_000 });
   await page.getByTestId('calep-thumb-g-quinconce').click();
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-max-colors').fill('3');
   await page.getByTestId('ctl-size').selectOption('femme');
   await page.waitForFunction(() => {
@@ -38,6 +39,7 @@ test('décocher le bord-côte retire ses rangs', async ({ page }) => {
     height: window.__SIM__?.grid.height ?? 0,
     cuff: window.__SIM__?.design.dimensions.cuffRows ?? 0,
   }));
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-cuff-enabled').uncheck();
   await page.waitForFunction(
     ([height, cuff]) => {
@@ -57,6 +59,7 @@ test('une tige trop haute est ramenée au maximum', async ({ page }) => {
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   const max = await page.evaluate(() => window.__SIM__?.design.dimensions.legRows ?? 0);
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-leg-rows').fill(String(max + 80));
   await page.getByTestId('ctl-leg-rows').blur();
   await expect(page.getByTestId('ctl-leg-rows')).toHaveValue(String(max), { timeout: 10_000 });
