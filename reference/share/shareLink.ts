@@ -1,7 +1,8 @@
 /**
  * Lien de partage : tout le projet dans le hash de l'URL — sans serveur, sans fichier JSON.
  *
- *   https://…/#p=1.<données>
+ *   https://…/#p=2.<données>      (V7 : calques)
+ *   https://…/#p=1.<données>      (liens V1–V6 : toujours lus, défauts V1 figés)
  *
  * - On n'encode que ce qui DIFFÈRE des valeurs par défaut (liens courts).
  * - JSON → compression deflate (CompressionStream, natif navigateur et Node 18+) → base64url.
@@ -14,11 +15,13 @@
  */
 
 export const SHARE_PARAM = 'p';
-export const SHARE_VERSION = 1;
+export const SHARE_VERSION = 2;
+/** Versions de lien encore lues (les anciens liens partagés ne doivent jamais casser). */
+export const SHARE_VERSIONS_READ = [1, 2] as const;
 /** Au-delà, certaines messageries tronquent les liens : on prévient l'utilisateur. */
 export const SHARE_SOFT_LIMIT = 6000;
 
-type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
+export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
 
 // ------------------------------------------------------------------ diff / fusion
 const isObj = (v: unknown): v is Record<string, Json> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -72,11 +75,18 @@ export interface SharePayload {
   /** État du projet (réglages), tel que sérialisé par l'application (sans images lourdes). */
   design: Json;
   /** Carreaux importés à la main, uniquement s'ils tiennent dans le lien : { nom, svg } */
-  tiles?: Array<{ name: string; svg: string }>;
+  tiles?: SharedTile[];
+}
+
+/** Carreau SVG embarqué dans le lien ; `id` (V2) = id du carreau référencé par un calque Motif « importés ». */
+export interface SharedTile {
+  name: string;
+  svg: string;
+  id?: string;
 }
 
 export interface EncodeResult {
-  hash: string; // « #p=1.… »
+  hash: string; // « #p=2.… »
   length: number;
   tooLong: boolean;
 }
@@ -86,7 +96,7 @@ export async function encodeShare(payload: SharePayload, defaults: Json): Promis
   const compact: Record<string, Json> = {};
   const d = diff(payload.design, defaults);
   if (d !== undefined) compact.d = d;
-  if (payload.tiles?.length) compact.t = payload.tiles.map((t) => [t.name, t.svg]);
+  if (payload.tiles?.length) compact.t = payload.tiles.map((t) => (t.id ? [t.name, t.svg, t.id] : [t.name, t.svg]));
   const json = JSON.stringify(compact);
   const packed = await pipe(new TextEncoder().encode(json), new CompressionStream('deflate-raw'));
   const hash = `#${SHARE_PARAM}=${SHARE_VERSION}.${toBase64Url(packed)}`;
@@ -94,26 +104,36 @@ export async function encodeShare(payload: SharePayload, defaults: Json): Promis
 }
 
 export type DecodeResult =
-  | { ok: true; design: Json; tiles: Array<{ name: string; svg: string }> }
+  | { ok: true; version: number; design: Json; tiles: SharedTile[] }
   | { ok: false; reason: 'absent' | 'version' | 'illisible' };
 
-/** Lit le fragment (avec ou sans « # »). Ne lève jamais d'exception : un lien abîmé donne `ok: false`. */
-export async function decodeShare(hash: string, defaults: Json): Promise<DecodeResult> {
+/**
+ * Lit le fragment (avec ou sans « # »). Ne lève jamais d'exception : un lien abîmé donne `ok: false`.
+ * `defaults` : valeurs par défaut de la version DU LIEN (fonction de la version) — un lien V1 se
+ * fusionne sur les défauts V1 figés, jamais sur ceux de l'application actuelle.
+ */
+export async function decodeShare(hash: string, defaults: Json | ((version: number) => Json)): Promise<DecodeResult> {
   const params = new URLSearchParams(hash.replace(/^#/, ''));
   const raw = params.get(SHARE_PARAM);
   if (!raw) return { ok: false, reason: 'absent' };
   const dot = raw.indexOf('.');
   const version = Number(raw.slice(0, dot));
   if (dot < 0 || !Number.isInteger(version)) return { ok: false, reason: 'illisible' };
-  if (version > SHARE_VERSION) return { ok: false, reason: 'version' };
+  if (version > SHARE_VERSION || version < 1) return { ok: false, reason: 'version' };
   try {
     const bytes = await pipe(fromBase64Url(raw.slice(dot + 1)), new DecompressionStream('deflate-raw'));
     const compact = JSON.parse(new TextDecoder().decode(bytes)) as Record<string, Json>;
-    const design = merge(defaults, compact.d);
+    const base = typeof defaults === 'function' ? defaults(version) : defaults;
+    const design = merge(base, compact.d);
     const tiles = Array.isArray(compact.t)
-      ? (compact.t as Json[]).filter(Array.isArray).map((x) => ({ name: String((x as Json[])[0]), svg: String((x as Json[])[1]) }))
+      ? (compact.t as Json[]).filter(Array.isArray).map((x) => {
+          const a = x as Json[];
+          const t: SharedTile = { name: String(a[0]), svg: String(a[1]) };
+          if (typeof a[2] === 'string') t.id = a[2];
+          return t;
+        })
       : [];
-    return { ok: true, design: stripDev(design), tiles };
+    return { ok: true, version, design: stripDev(design), tiles };
   } catch {
     return { ok: false, reason: 'illisible' };
   }
