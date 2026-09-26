@@ -227,12 +227,75 @@ describe('projet JSON', () => {
       assets: [pngAsset, svgAsset, { ...pngAsset, id: 'unused', name: 'orphan.png' }],
     });
     const doc = JSON.parse(json) as { version: number; assets: Array<{ id: string }> };
-    expect(doc.version).toBe(2);
+    expect(doc.version).toBe(3);
     expect(doc.assets.map((a) => a.id).sort()).toEqual(['png1', 'svg1']);
     const back = await parseProject(json);
     expect(back.design.layers.filter((l) => l.kind === 'image')).toHaveLength(3);
     expect(back.assets).toHaveLength(2);
     expect(back.assets.find((a) => a.id === 'png1')?.mime).toBe('image/png');
     expect(back.assets.find((a) => a.id === 'svg1')?.data).toContain('<svg');
+  });
+});
+
+describe('T52 — versions projet et grille stable', () => {
+  it('V1, V2 composition migrée et V3 → relecture OK', async () => {
+    const tileA = tile();
+    const v1 = defaultDesignV1();
+    v1.name = 'Stable';
+    v1.layout.tileIds = [];
+    const fromV1 = await parseProject(
+      JSON.stringify({ version: 1, design: v1, tiles: [], collection: null }),
+    );
+    expect(fromV1.design.version).toBe(2);
+    expect(fromV1.design.layers.map((l) => l.kind)).toEqual(['fond', 'motif']);
+
+    const withTilesDesign = {
+      ...fromV1.design,
+      layers: fromV1.design.layers.map((l) =>
+        l.kind === 'motif'
+          ? { ...l, source: { kind: 'importes' as const, tileIds: ['carreau-a'] } }
+          : l,
+      ),
+    };
+    const v3json = await serializeProject(withTilesDesign, [tileA]);
+    const v3 = await parseProject(v3json);
+    expect(JSON.parse(v3json).version).toBe(3);
+    expect(v3.tiles[0]?.id).toBe('carreau-a');
+
+    // V2 ancien (composition dans SockDesign V1)
+    const v2comp = {
+      version: 2 as const,
+      design: {
+        ...v1,
+        pattern: {
+          kind: 'composition' as const,
+          composition: {
+            background: '#112233',
+            layers: [
+              {
+                id: 'L1',
+                asset: { kind: 'embarquee' as const, assetId: 'x' },
+                x: 10,
+                y: 10,
+                widthStitches: 20,
+                rotation: 0,
+                flipX: false,
+                flipY: false,
+                repeatAroundGap: null,
+                hidden: false,
+                locked: false,
+              },
+            ],
+          },
+        },
+      },
+      tiles: [],
+      collection: null,
+      assets: [],
+    };
+    const fromComp = await parseProject(JSON.stringify(v2comp));
+    expect(fromComp.design.layers[0]?.kind).toBe('fond');
+    expect((fromComp.design.layers[0] as { color: string }).color).toBe('#112233');
+    expect(fromComp.design.layers.some((l) => l.kind === 'image')).toBe(true);
   });
 });

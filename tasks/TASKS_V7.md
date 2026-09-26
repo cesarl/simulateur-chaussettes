@@ -98,7 +98,7 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
   - annuler ou rétablir un ajout de calque fonctionne.
 - [x] `golden.test.ts` et `layers.test.ts` verts sans modification.
 
-### [ ] T52 — Fichiers projet, sauvegarde auto et lien de partage
+### [x] T52 — Fichiers projet, sauvegarde auto et lien de partage
 
 - Projet `.json` en **version 3** : `{version: 3, design: SockDesignV2, tiles, assets}`.
   - La lecture accepte les versions 1, 2 et 3 : les versions 1 et 2 passent par `migrateDesignV1`, avec `collection` (métadonnées V4) → `V1Context`.
@@ -111,13 +111,13 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 - La sauvegarde automatique (IndexedDB) relit l'ancien format sans erreur.
 
 **Critères**
-- [ ] Tests unitaires :
+- [x] Tests unitaires :
   - projet V1 (fixture de `project.test.ts`), V2 avec composition et V3 → relus, même grille ;
   - le lien d'un design à 4 calques fait l'aller-retour exact.
-- [ ] e2e `liens-reels.spec.ts` : les deux liens réels (dans `layers.test.ts`) s'ouvrent en visionneuse, sans panneau, sans message d'erreur :
+- [x] e2e `liens-reels.spec.ts` : les deux liens réels (dans `layers.test.ts`) s'ouvrent en visionneuse, sans panneau, sans message d'erreur :
   - la 3D contient les deux couleurs de fil du lien ;
   - en dev, la liste des calques affiche « Fond » et un Motif nommé d'après la collection.
-- [ ] `npm run verify` complet vert (fin du jalon A).
+- [x] `npm run verify` complet vert (fin du jalon A).
 
 ---
 

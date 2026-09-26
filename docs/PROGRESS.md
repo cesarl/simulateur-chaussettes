@@ -592,3 +592,10 @@ Fait : `SockDesignV2` runtime (`state.ts`) : Fond + 1 Motif, actions calques, un
 Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (139, dont `golden` + `layers` + cache/undo T51). Empreintes liens réels inchangées.
 Décisions : D48
 Reste / risques : UI encore branchée sur le Motif « en cours » (pas le dock T54) ; e2e composition stub ; T52 finalise projet v3 + e2e liens réels + verify jalon A.
+
+## T52 — Projet v3, liens, e2e liens réels — 2026-09-26 19:48
+Statut : en cours (verify jalon A)
+Fait : projet JSON `version: 3` (lecture 1/2/3, migration V1/composition → calques, tiles/assets utilisés seulement). Lien `#p=2.` + lecture V1/V2. e2e `liens-reels.spec.ts` (Jardin / Palm) vert. share.spec adapté `#p=2.`.
+Vérification : unitaires ✅ (141) ; e2e liens-reels ✅ (4). `npm run verify` en cours.
+Décisions : aucune nouvelle (suite D47/D48)
+Reste / risques : e2e composition / modes carreaux à adapter ou retirer si cassés par V7.

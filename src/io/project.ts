@@ -21,8 +21,9 @@ import { base64ToBytes, bytesToBase64, decodePng, encodePng } from './pngCodec';
 
 /**
  * Projet JSON : réglages + carreaux en PNG base64.
- * v1 : design + tiles (+ collection).
- * v2 : v1 + assets embarqués (composition). Le champ pattern est dans design (absent ⇒ carreaux).
+ * v1 : design SockDesign V1 + tiles (+ collection).
+ * v2 : v1 + assets embarqués (composition) OU design déjà en calques (T51 transitoire).
+ * v3 : design SockDesignV2 (calques) + tiles + assets utilisés seulement.
  * La sauvegarde IndexedDB reprend le même document. Si IndexedDB manque, on ignore.
  */
 
@@ -69,7 +70,7 @@ export interface ProjectCollectionMeta {
 }
 
 interface ProjectDocument {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   design: SockDesign | SockDesignV2;
   tiles: StoredTile[];
   collection?: ProjectCollectionMeta | null;
@@ -377,8 +378,20 @@ export async function serializeProject(
   tiles: readonly TileAsset[],
   options: SerializeProjectOptions = {},
 ): Promise<string> {
+  // Carreaux référencés par un Motif « importés » (ou tous si aucun Motif importés — démo vide).
+  const usedTileIds = new Set<string>();
+  let hasImportMotif = false;
+  for (const layer of design.layers) {
+    if (layer.kind !== 'motif') continue;
+    if (layer.source.kind === 'importes') {
+      hasImportMotif = true;
+      for (const id of layer.source.tileIds) usedTileIds.add(id);
+    }
+  }
+  const tilesToStore = hasImportMotif ? tiles.filter((t) => usedTileIds.has(t.id)) : [...tiles];
+
   const stored: StoredTile[] = [];
-  for (const tile of tiles) {
+  for (const tile of tilesToStore) {
     const png = await encodePng(tile.rgba, tile.width, tile.height);
     stored.push({
       id: tile.id,
@@ -388,15 +401,15 @@ export async function serializeProject(
     });
   }
   const allAssets = options.assets ?? [];
-  const usedIds = new Set(
+  const usedAssetIds = new Set(
     design.layers
       .filter((l): l is Extract<StackLayer, { kind: 'image' }> => l.kind === 'image')
       .map((l) => (l.asset.kind === 'embarquee' ? l.asset.assetId : null))
       .filter((id): id is string => !!id),
   );
-  const assets = options.omitAssets ? [] : allAssets.filter((a) => usedIds.has(a.id));
+  const assets = options.omitAssets ? [] : allAssets.filter((a) => usedAssetIds.has(a.id));
   const document: ProjectDocument = {
-    version: 2,
+    version: 3,
     design,
     tiles: stored,
     collection: options.collection ?? null,
@@ -434,7 +447,9 @@ export async function parseProject(text: string): Promise<ParsedProject> {
   }
   if (!isRecord(parsed)) throw new ProjectError('contenu illisible.');
   const docVersion = parsed.version;
-  if (docVersion !== 1 && docVersion !== 2) throw new ProjectError('version non prise en charge.');
+  if (docVersion !== 1 && docVersion !== 2 && docVersion !== 3) {
+    throw new ProjectError('version non prise en charge.');
+  }
   if (!Array.isArray(parsed.tiles)) throw new ProjectError('carreaux manquants.');
   const tiles: TileAsset[] = [];
   for (const entry of parsed.tiles) {
@@ -461,7 +476,9 @@ export async function parseProject(text: string): Promise<ParsedProject> {
   const collection = readCollectionMeta(parsed.collection);
   const assetsRaw = parsed.assets;
   const assets =
-    docVersion === 2 && Array.isArray(assetsRaw) ? assetsRaw.map(readEmbeddedAsset) : [];
+    (docVersion === 2 || docVersion === 3) && Array.isArray(assetsRaw)
+      ? assetsRaw.map(readEmbeddedAsset)
+      : [];
 
   const rawDesign = parsed.design;
   let designV2: SockDesignV2;
