@@ -531,3 +531,39 @@ Contrôle visuel `visuel-t48-aides.png` : mode composition, bulle conseils, past
 Vérification : typecheck ✅ ; vitest composition-aids + golden ✅ ; e2e composition-aids + composition-editor ✅.
 Décisions : D46.
 Reste / risques : bilan T49.
+
+## T49 — Bilan V6 — 2026-09-26 14:20
+Statut : terminée
+Fait : README (collections locales, sync:local, admin, mode composition, projet v2, lien) ; Point pour César ci-dessous ; verify complet.
+Vérification : `npm run verify` (en cours / à confirmer).
+Décisions : D41–D46 à relire.
+Reste / risques : bascule À plat visionneuse (commit séparé hors TASKS_V6).
+
+## Point pour César — fin V6
+
+### Ce qui marche
+- Empreintes golden carreaux (T41) intactes.
+- Collections locales + `npm run sync:local` + page admin (ZIP / File System Access).
+- Mode composition : éditeur 2D + 3D, bibliothèque, import embarqué, projet v2, lien si bibliothèque seule.
+- Aides jacquard (détails isolés, aperçu gros pixels, guide).
+- Visionneuse : bascule décor **et** bascule 3D / À plat hors `?dev`.
+
+### Tester en 3 étapes
+1. `npm run dev` → ouvrir `/?dev`.
+2. Bascule **Composition** → Ajouter (bibliothèque) → déplacer / tourner ; **Copier le lien** → ouvrir sans `?dev` (même grille).
+3. Quitter le mode dev → cocher/décocher **Décor** et basculer **3D / À plat**.
+
+### Captures à relire
+- `/cursor/stores/self/media/visuel-t44-admin.png` — admin zones SVG
+- `/cursor/stores/self/media/visuel-t46-composition.png` — composition 2D + 3D
+- `/cursor/stores/self/media/visuel-t47-share-viewer.png` — visionneuse après lien
+- `/cursor/stores/self/media/visuel-t48-aides.png` — aides jacquard
+- `/cursor/stores/self/media/visuel-viewer-flat-on.png` / `off` — bascule À plat publique
+
+### Décisions à relire
+D41 (sync local), D42 (admin ZIP), D43 (cache images), D44 (import T47), D45 (projet v2 / lien), D46 (mailles isolées 2 %).
+
+### Limites connues
+- Import PNG/SVG : PNG > 2 Mo plafonné via pipeline tiles (1024 px).
+- Autosave IndexedDB omet les assets > 4 Mo (message à l’écran).
+- Lien de partage impossible avec images importées (fichier .json obligatoire).

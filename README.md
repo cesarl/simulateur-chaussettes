@@ -28,6 +28,7 @@ Par défaut : **visionneuse 3D plein écran** (barre discrète : vues + copier l
 | `npm run verify` | vérification complète : types + tests unitaires + build + tests navigateur |
 | `npm run test:watch` | tests unitaires en continu |
 | `npm run sync:carreaux` | copie collections / SVG / calepinages depuis le simulateur de carreaux (`public/carreaux/`) |
+| `npm run sync:local` | met à jour seulement les collections locales (`collections-locales/`) dans le catalogue |
 
 Premier lancement des tests navigateur : `npx playwright install chromium`.
 
@@ -45,7 +46,30 @@ Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites 
 6. **Couleurs** (mode collection) : bandes « Couleurs d’origine » / suggestions de l’artiste ; pastilles de zones → nuancier ; **Assortir bord-côte, talon et pointe**.
 7. **Dimensions** / **Zones** : taille, tige, talon d’aperçu (mm). **Décor** : aucun / sol / mur / sol + mur en carreaux de ciment (même motif ou autre collection).
 8. Pastille **modifié** + **Réinitialiser** ; **Tout réinitialiser** ; **Annuler / Rétablir** (Ctrl/Cmd+Z).
-9. Basculer sur **À plat** (mode dev) pour contrôler la grille (trait « raccord »). Dans **Exports**, cocher les vues puis **Exporter**. Raccourcis 3D : R / F / T / E / D / I.
+9. Basculer sur **À plat** (visionneuse ou mode dev) pour contrôler la grille (trait « raccord »). Dans **Exports**, cocher les vues puis **Exporter**. Raccourcis 3D (mode dev) : R / F / T / E / D / I.
+
+## Collections locales
+
+En plus du simulateur de carreaux, un dossier [`collections-locales/`](collections-locales/) permet d’ajouter des collections (SVG ou PNG) sans passer par le configurateur :
+
+```bash
+npm run sync:local    # fusionne collections-locales/ dans public/carreaux/ (la locale gagne en cas d’id identique)
+```
+
+Format : `collections-locales/collections.json` + `collections-locales/svg/<ID>-VAR<n>.svg|.png` (mêmes champs que le simulateur de carreaux). Dans l’UI, catégorie **Mes collections**.
+
+**Admin (mode dev)** : page [`admin.html`](admin.html) (lien « Gérer mes collections » en bas du panneau). Ouvre le dossier via File System Access (Chrome/Edge) ou exporte un ZIP à décompresser. Zones SVG automatiques (moulinette), palettes conseillées, puis `npm run sync:local` + commit.
+
+## Mode composition
+
+En haut du panneau (`?dev`) : bascule **Carreaux** / **Composition**.
+
+- **Composition** : vue à plat éditable à gauche + 3D à droite. Ajouter des images depuis la **bibliothèque** (collections) ou **importer** PNG/SVG (embarqués dans le projet `.json`). Déplacer, tourner, redimensionner, miroir ; clavier : flèches (Maj = 10), Suppr, Ctrl+D, [ ].
+- **Projet** : version 2 = réglages + `assets` embarqués (seulement les images utilisées). Les projets v1 restent lisibles.
+- **Lien de partage** : fonctionne si tous les calques viennent de la bibliothèque. Sinon le bouton est désactivé — envoyer le fichier projet `.json`.
+- Aides : pastille « détails trop fins », aperçu gros pixels, bulle « ? ».
+
+Le mode **Carreaux** (calepinage) reste strictement inchangé (empreintes golden T41).
 
 ## Collections du simulateur de carreaux
 

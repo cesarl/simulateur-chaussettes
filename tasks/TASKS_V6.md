@@ -95,7 +95,7 @@ Page `admin.html` (entrée Vite séparée, accessible seulement en mode dev ; li
 - Bouton « Aperçu gros pixels » sur le calque sélectionné (sa vignette pixelisée à la taille réelle en mailles).
 - Petit guide (bulle « ? ») : « Préférez des dessins en aplats (SVG) ; les photos passent mal en 4 à 6 couleurs de fil. »
 
-### [ ] T49 — Bilan V6
+### [x] T49 — Bilan V6
 - README : collections locales (dossier, `npm run sync:local`, page d'admin), mode composition (raccourcis, projet .json avec images, quand le lien fonctionne).
 - « Point pour César » dans `PROGRESS.md` : captures (admin, composition 2D + 3D, visionneuse), décisions à relire, limites connues.
 - `npm run verify` complet vert ; ouvrir la pull request `v6-composition` avec un résumé et les captures.
