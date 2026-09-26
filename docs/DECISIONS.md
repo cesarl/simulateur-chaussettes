@@ -264,3 +264,9 @@ Conséquence : composition bibliothèque partageable ; composition avec import �
 Contexte : détecter détails trop fins après réduction.
 Choix : même critère que le despeckle (maille dont les 4 voisins sont égaux et différents) ; seuil 2 % de mailles isolées. Pastille `check-detail` visible seulement en mode composition. Couleurs / flottés : contrôles existants inchangés.
 Conséquence : alerte lisible sans nouveau panneau.
+
+## D47 — Défauts de partage V1 figés = production main (T50)
+Contexte : les liens `#p=1.` déjà partagés fusionnent sur des défauts figés (`v1ShareDefaults.json`). Il faut vérifier qu’ils correspondent à `defaultDesign()` de la production (`main`).
+Options : A) garder le JSON tel quel si égal à main ; B) réécrire le JSON avec les valeurs de main en cas d’écart.
+Choix : A — comparaison champ à champ (layout hors `tileIds`, dimensions, zones, quantize) entre `git show main:src/state.ts` `defaultDesign()` résolu et `v1ShareDefaults.json` : **aucune différence**. Les champs `collection` et `pattern` du JSON sont des enveloppes de partage (absents du `SockDesign` nu de main) ; `decor` de main via `defaultDecor()` coïncide aussi.
+Conséquence : `v1ShareDefaults.json` reste intouchable ; `shareDefaultsFor(1)` et la lecture des liens réels restent valides. `SHARE_VERSION` passe à 2 (écriture `#p=2.`) ; lecture `#p=1.` et `#p=2.` conservée.

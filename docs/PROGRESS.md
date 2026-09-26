@@ -578,3 +578,10 @@ Vérification T49 : `npm run verify` ✅ (52 e2e).
 Statut : terminée
 Fait : e2e projet — timeout 120 s, `saveAs` fiable, purge IndexedDB avant rechargement (évite course autosave homme vs ouverture femme), attentes ready/hash élargies. Golden T41 inchangé.
 Vérification : `npm run verify` ✅ (52 e2e).
+
+## T50 — Filets de sécurité et module de référence — 2026-09-26 19:26
+Statut : terminée
+Fait : `src/core/layers.ts` + `v1ShareDefaults.json` copiés depuis `reference/layers/` (imports locaux seulement). `src/io/shareLink.ts` remplacé par la version 2 (`#p=2.` en écriture, lit `#p=1.` et `#p=2.`). `layers.test.ts` pointe vers `src/core/layers`. Assertions partage adaptées + test lecture `#p=1.`. Comparaison `defaultDesign()` de `main` vs `v1ShareDefaults.json` : identité (D47).
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (139 tests unitaires, dont `layers.test.ts` et `golden.test.ts`).
+Décisions : D47
+Reste / risques : l’UI et `state.ts` sont encore V6 ; T51 branche l’état sur les calques. Les e2e partage qui attendent `#p=1.` seront adaptés en T52.

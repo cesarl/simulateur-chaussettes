@@ -29,7 +29,7 @@ describe('intégration lien de partage', () => {
     }, { skipHistory: true });
 
     const built = await buildShareUrl(getState());
-    expect(built.hash.startsWith('#p=1.')).toBe(true);
+    expect(built.hash.startsWith('#p=2.')).toBe(true);
     expect(built.tooLong).toBe(false);
 
     const decoded = await decodeShareHash(built.hash);

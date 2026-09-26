@@ -59,14 +59,14 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 
 ## Jalon A — le modèle en calques, sans changement visible
 
-### [ ] T50 — Filets de sécurité et module de référence
+### [x] T50 — Filets de sécurité et module de référence
 
 - Copier `reference/layers/layers.ts` vers `src/core/layers.ts` et `v1ShareDefaults.json` vers `src/core/` (imports corrigés, rien d'autre). Faire pointer `tests/unit/layers.test.ts` vers `src/core/layers`.
 - Remplacer `src/io/shareLink.ts` par `reference/share/shareLink.ts` (version 2). Adapter les deux assertions `'#p=1.'` de `share.test.ts` et `share-integration.test.ts`, et ajouter un test : un hash `#p=1.` se lit toujours.
 - Vérifier avec `git show main:src/state.ts` que les valeurs de `defaultDesign()` en production sont celles de `v1ShareDefaults.json`, puisque les liens déjà partagés ont été faits en production. Noter le résultat dans `DECISIONS.md`. S'il y a une différence, **arrêter T50** : écrire la différence dans `PROGRESS.md` et continuer avec les défauts de `main` (c'est la production qui fait foi).
 
 **Critères**
-- [ ] `layers.test.ts`, `golden.test.ts` et tous les tests unitaires sont verts ; commit **avant** toute autre modification.
+- [x] `layers.test.ts`, `golden.test.ts` et tous les tests unitaires sont verts ; commit **avant** toute autre modification.
 
 ### [ ] T51 — État V2 : les calques remplacent `layout`, `pattern` et la collection active
 

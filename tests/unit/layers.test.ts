@@ -18,7 +18,7 @@ import { decodePng } from '../../src/io/pngCodec';
 import { decodeShareHash } from '../../src/io/shareState';
 import { defaultDesign, layoutFromTilesAround } from '../../src/state';
 import type { SockDesign, TileAsset } from '../../src/core/types';
-import { decodeShare, encodeShare } from '../../reference/share/shareLink';
+import { decodeShare, encodeShare } from '../../src/io/shareLink';
 import {
   addStackLayer,
   designFromShare,
@@ -49,7 +49,7 @@ import {
   type MotifLayer,
   type SockDesignV2,
   type StackLayer,
-} from '../../reference/layers/layers';
+} from '../../src/core/layers';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
