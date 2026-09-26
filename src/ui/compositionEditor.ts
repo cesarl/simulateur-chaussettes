@@ -1,0 +1,779 @@
+/**
+ * Éditeur de composition sur la vue à plat (T46).
+ * Canvas mailles + sélection/poignées + clavier ; 3D à droite via le viewport.
+ */
+import {
+  EMPTY_COMPOSITION,
+  addLayer,
+  assetKey,
+  hitTest,
+  layerCorners,
+  moveLayer,
+  updateLayer,
+  type Composition,
+  type RasterImage,
+} from '../core/composition';
+import { motifRows } from '../core/layout';
+import { getState, update } from '../state';
+import { Zone } from '../core/types';
+import { rowRanges } from '../core/grid';
+import { seamColumn } from '../core/calepinage';
+
+export interface CompositionEditorApi {
+  sync: () => void;
+  setImages: (images: Map<string, RasterImage>) => void;
+  destroy: () => void;
+}
+
+const BASE_W = 4;
+
+export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi {
+  const root = document.createElement('div');
+  root.className = 'comp-editor';
+  root.dataset.testid = 'comp-editor';
+  root.hidden = true;
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'comp-toolbar';
+  const addLib = document.createElement('button');
+  addLib.type = 'button';
+  addLib.dataset.testid = 'comp-add-library';
+  addLib.textContent = 'Ajouter (bibliothèque)';
+  const addImport = document.createElement('button');
+  addImport.type = 'button';
+  addImport.dataset.testid = 'comp-add-import';
+  addImport.textContent = 'Importer PNG/SVG';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.png,.svg,image/png,image/svg+xml';
+  fileInput.multiple = true;
+  fileInput.hidden = true;
+  fileInput.dataset.testid = 'comp-import-input';
+  const snapToggle = document.createElement('label');
+  snapToggle.className = 'comp-snap';
+  const snapInput = document.createElement('input');
+  snapInput.type = 'checkbox';
+  snapInput.checked = true;
+  snapInput.dataset.testid = 'comp-snap';
+  snapToggle.append(snapInput, document.createTextNode(' Aimantation'));
+  toolbar.append(addLib, addImport, fileInput, snapToggle);
+
+  const canvas = document.createElement('canvas');
+  canvas.dataset.testid = 'comp-canvas';
+  canvas.tabIndex = 0;
+
+  const layers = document.createElement('div');
+  layers.className = 'comp-layers';
+  layers.dataset.testid = 'comp-layers';
+
+  const inspector = document.createElement('div');
+  inspector.className = 'comp-inspector';
+  inspector.dataset.testid = 'comp-inspector';
+
+  const libPicker = document.createElement('div');
+  libPicker.className = 'comp-lib';
+  libPicker.dataset.testid = 'comp-lib-picker';
+  libPicker.hidden = true;
+
+  root.append(toolbar, canvas, layers, inspector, libPicker);
+  host.appendChild(root);
+
+  const splitter = document.createElement('div');
+  splitter.className = 'comp-splitter';
+  splitter.dataset.testid = 'comp-splitter';
+  splitter.title = 'Redimensionner';
+  host.appendChild(splitter);
+
+  let images = new Map<string, RasterImage>();
+  let selectedId: string | null = null;
+  let zoom = 1;
+  let panX = 20;
+  let panY = 20;
+  let dragging: { id: string; startX: number; startY: number; origX: number; origY: number } | null =
+    null;
+  let handleDrag:
+    | { kind: 'scale'; id: string; startDist: number; origW: number }
+    | { kind: 'rotate'; id: string; startAngle: number; origRot: number }
+    | null = null;
+  let panning = false;
+  let lastPan = { x: 0, y: 0 };
+  let debounce: ReturnType<typeof setTimeout> | undefined;
+  let splitRatio = 0.5;
+
+  function composition(): Composition {
+    const p = getState().design.pattern;
+    if (p?.kind === 'composition') return p.composition;
+    return EMPTY_COMPOSITION;
+  }
+
+  function gauge() {
+    const { design } = getState();
+    return {
+      needles: design.dimensions.needles,
+      rows: motifRows(design.dimensions, design.zones),
+      stitchesPerCm: design.dimensions.stitchesPerCm,
+      rowsPerCm: design.dimensions.rowsPerCm,
+    };
+  }
+
+  function setComposition(next: Composition): void {
+    update({ design: { pattern: { kind: 'composition', composition: next } } });
+  }
+
+  function stitchSize(): { sw: number; sh: number } {
+    const g = gauge();
+    const sw = BASE_W * zoom;
+    const sh = Math.max(1, Math.round(sw * (g.rowsPerCm / g.stitchesPerCm)));
+    return { sw, sh };
+  }
+
+  function draw(): void {
+    const state = getState();
+    const source = state.design.pattern;
+    root.hidden = source?.kind !== 'composition';
+    if (source?.kind !== 'composition') return;
+
+    const comp = source.composition;
+    const g = gauge();
+    const { sw, sh } = stitchSize();
+    const ranges = rowRanges(state.design.dimensions, state.design.zones);
+    const totalRows =
+      (state.design.zones.cuffEnabled ? state.design.dimensions.cuffRows : 0) +
+      state.design.dimensions.legRows +
+      state.design.dimensions.heelRows +
+      state.design.dimensions.footRows +
+      state.design.dimensions.toeRows;
+    const width = Math.ceil(panX + g.needles * sw + 40);
+    const height = Math.ceil(panY + totalRows * sh + 40);
+    canvas.width = Math.min(4000, Math.max(host.clientWidth || 600, width));
+    canvas.height = Math.min(6000, Math.max(400, height));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#ebe6dc';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Zones grisées hors motif
+    const motifStart = ranges.leg.start;
+    for (let row = 0; row < totalRows; row++) {
+      const y = panY + row * sh;
+      let zone: number = Zone.Empty;
+      if (row >= ranges.cuff.start && row < ranges.cuff.end) zone = Zone.Cuff;
+      else if (row >= ranges.leg.start && row < ranges.leg.end) zone = Zone.Leg;
+      else if (row >= ranges.heel.start && row < ranges.heel.end) zone = Zone.Heel;
+      else if (row >= ranges.foot.start && row < ranges.foot.end) zone = Zone.Foot;
+      else if (row >= ranges.toe.start && row < ranges.toe.end) zone = Zone.Toe;
+      if (zone === Zone.Cuff || zone === Zone.Heel || zone === Zone.Toe || zone === Zone.Empty) {
+        ctx.fillStyle = 'rgba(120,110,100,0.35)';
+        ctx.fillRect(panX, y, g.needles * sw, sh);
+      }
+    }
+
+    // Fond motif
+    ctx.fillStyle = comp.background;
+    ctx.fillRect(panX, panY + motifStart * sh, g.needles * sw, g.rows * sh);
+
+    // Calques (aperçu approximatif : rectangles colorés)
+    for (const layer of comp.layers) {
+      if (layer.hidden) continue;
+      const img = images.get(assetKey(layer.asset));
+      const corners = layerCorners(layer, img ?? { width: 1, height: 1 }, g);
+      ctx.save();
+      ctx.translate(panX, panY + motifStart * sh);
+      ctx.beginPath();
+      corners.forEach(([x, y], i) => {
+        const px = ((x % g.needles) + g.needles) % g.needles * sw;
+        const py = y * sh;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.fillStyle = layer.id === selectedId ? 'rgba(180,70,47,0.45)' : 'rgba(30,80,140,0.35)';
+      ctx.fill();
+      ctx.strokeStyle = layer.id === selectedId ? '#b5462f' : '#1f3a5f';
+      ctx.lineWidth = layer.id === selectedId ? 2 : 1;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Ligne de raccord
+    const seam = seamColumn(state.design.layout.seam, g.needles);
+    ctx.strokeStyle = '#b5462f';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(panX + seam * sw, panY);
+    ctx.lineTo(panX + seam * sw, panY + totalRows * sh);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Repères devant / dos / côtés (colonnes convention : dos=0, côtés=W/4 & 3W/4, devant=W/2… selon seam)
+    const markers: Array<{ col: number; label: string }> = [
+      { col: 0, label: 'dos' },
+      { col: Math.round(g.needles / 4), label: 'côté' },
+      { col: Math.round(g.needles / 2), label: 'devant' },
+      { col: Math.round((3 * g.needles) / 4), label: 'côté' },
+    ];
+    ctx.fillStyle = '#5a5048';
+    ctx.font = '11px sans-serif';
+    for (const m of markers) {
+      const x = panX + m.col * sw;
+      ctx.strokeStyle = 'rgba(90,80,72,0.35)';
+      ctx.beginPath();
+      ctx.moveTo(x, panY);
+      ctx.lineTo(x, panY + totalRows * sh);
+      ctx.stroke();
+      ctx.fillText(m.label, x + 2, panY + 12);
+    }
+
+    // Poignées du calque sélectionné
+    if (selectedId) {
+      const layer = comp.layers.find((l) => l.id === selectedId);
+      if (layer && !layer.hidden) {
+        const img = images.get(assetKey(layer.asset)) ?? { width: 1, height: 1 };
+        const corners = layerCorners(layer, img, g);
+        const pts = corners.map(([x, y]) => ({
+          px: panX + (((x % g.needles) + g.needles) % g.needles) * sw,
+          py: panY + (motifStart + y) * sh,
+        }));
+        for (const p of pts) {
+          ctx.fillStyle = '#fff';
+          ctx.strokeStyle = '#b5462f';
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(p.px - 4, p.py - 4, 8, 8);
+          ctx.strokeRect(p.px - 4, p.py - 4, 8, 8);
+        }
+        // Poignée de rotation au-dessus du centre
+        const cx = pts.reduce((s, p) => s + p.px, 0) / pts.length;
+        const cy = pts.reduce((s, p) => s + p.py, 0) / pts.length;
+        const rotY = Math.min(...pts.map((p) => p.py)) - 18;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, rotY);
+        ctx.strokeStyle = '#b5462f';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, rotY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#b5462f';
+        ctx.fill();
+      }
+    }
+
+    renderLayersPanel(comp);
+    renderInspector(comp);
+    applySplit();
+  }
+
+  function applySplit(): void {
+    const mode = getState().design.pattern?.kind === 'composition';
+    root.hidden = !mode;
+    splitter.hidden = !mode;
+    if (!mode) {
+      host.style.removeProperty('--comp-split');
+      return;
+    }
+    const pct = Math.round(splitRatio * 100);
+    host.style.setProperty('--comp-split', `${pct}%`);
+  }
+
+  function softSnap(x: number, y: number, needles: number): { x: number; y: number } {
+    if (!snapInput.checked) return { x, y };
+    const targets = [0, needles / 4, needles / 2, (3 * needles) / 4];
+    let sx = x;
+    for (const t of targets) {
+      if (Math.abs(x - t) <= 2) sx = t;
+    }
+    return { x: sx, y };
+  }
+
+  function renderInspector(comp: Composition): void {
+    inspector.replaceChildren();
+    const layer = comp.layers.find((l) => l.id === selectedId);
+    if (!layer) {
+      inspector.hidden = true;
+      return;
+    }
+    inspector.hidden = false;
+    const g = gauge();
+    const title = document.createElement('h3');
+    title.textContent = 'Calque sélectionné';
+    inspector.appendChild(title);
+
+    const addNum = (label: string, testid: string, value: number, onChange: (n: number) => void) => {
+      const row = document.createElement('label');
+      row.textContent = `${label} `;
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.value = String(Math.round(value * 10) / 10);
+      input.dataset.testid = testid;
+      input.addEventListener('change', () => onChange(Number(input.value)));
+      row.appendChild(input);
+      inspector.appendChild(row);
+    };
+
+    addNum('X (mailles)', 'comp-prop-x', layer.x, (n) =>
+      setComposition(updateLayer(comp, layer.id, { x: n })),
+    );
+    addNum('Y (rangs)', 'comp-prop-y', layer.y, (n) =>
+      setComposition(updateLayer(comp, layer.id, { y: n })),
+    );
+    addNum('Largeur (mailles)', 'comp-prop-w', layer.widthStitches, (n) =>
+      setComposition(updateLayer(comp, layer.id, { widthStitches: Math.max(1, n) })),
+    );
+    const widthCm = layer.widthStitches / g.stitchesPerCm;
+    const cm = document.createElement('p');
+    cm.className = 'hint';
+    cm.textContent = `≈ ${widthCm.toFixed(1)} cm`;
+    inspector.appendChild(cm);
+    addNum('Rotation (°)', 'comp-prop-rot', layer.rotation, (n) =>
+      setComposition(updateLayer(comp, layer.id, { rotation: n })),
+    );
+
+    const flips = document.createElement('div');
+    flips.className = 'row';
+    const mkFlip = (label: string, testid: string, key: 'flipX' | 'flipY') => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.testid = testid;
+      btn.textContent = label;
+      btn.classList.toggle('selected', layer[key]);
+      btn.addEventListener('click', () =>
+        setComposition(updateLayer(comp, layer.id, { [key]: !layer[key] })),
+      );
+      flips.appendChild(btn);
+    };
+    mkFlip('Miroir H', 'comp-flip-h', 'flipX');
+    mkFlip('Miroir V', 'comp-flip-v', 'flipY');
+    inspector.appendChild(flips);
+
+    const repeat = document.createElement('label');
+    repeat.textContent = 'Répéter autour ';
+    const gap = document.createElement('input');
+    gap.type = 'number';
+    gap.dataset.testid = 'comp-repeat-gap';
+    gap.value = layer.repeatAroundGap == null ? '' : String(layer.repeatAroundGap);
+    gap.placeholder = 'écart';
+    gap.addEventListener('change', () => {
+      const v = gap.value.trim() === '' ? null : Number(gap.value);
+      setComposition(updateLayer(comp, layer.id, { repeatAroundGap: v }));
+    });
+    repeat.appendChild(gap);
+    inspector.appendChild(repeat);
+  }
+
+  function renderLayersPanel(comp: Composition): void {
+    layers.replaceChildren();
+    const title = document.createElement('h3');
+    title.textContent = 'Calques';
+    layers.appendChild(title);
+    const bg = document.createElement('label');
+    bg.textContent = 'Fond ';
+    const bgInput = document.createElement('input');
+    bgInput.type = 'color';
+    bgInput.value = comp.background;
+    bgInput.dataset.testid = 'comp-bg-color';
+    bgInput.addEventListener('input', () => {
+      setComposition({ ...comp, background: bgInput.value });
+    });
+    bg.appendChild(bgInput);
+    layers.appendChild(bg);
+
+    [...comp.layers].reverse().forEach((layer, revIdx) => {
+      const idx = comp.layers.length - 1 - revIdx;
+      const row = document.createElement('div');
+      row.className = layer.id === selectedId ? 'comp-layer selected' : 'comp-layer';
+      row.dataset.testid = `comp-layer-${layer.id}`;
+      const name = document.createElement('span');
+      name.textContent = layer.asset.kind === 'collection'
+        ? `${layer.asset.collectionId}/${layer.asset.variation}`
+        : layer.id;
+      row.appendChild(name);
+      row.addEventListener('click', () => {
+        selectedId = layer.id;
+        draw();
+      });
+
+      const vis = document.createElement('button');
+      vis.type = 'button';
+      vis.dataset.testid = `comp-vis-${layer.id}`;
+      vis.textContent = layer.hidden ? 'masqué' : 'visible';
+      vis.title = 'Visibilité';
+      vis.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setComposition(updateLayer(comp, layer.id, { hidden: !layer.hidden }));
+      });
+      const lock = document.createElement('button');
+      lock.type = 'button';
+      lock.dataset.testid = `comp-lock-${layer.id}`;
+      lock.textContent = layer.locked ? 'verrou' : 'libre';
+      lock.title = 'Verrou';
+      lock.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setComposition(updateLayer(comp, layer.id, { locked: !layer.locked }));
+      });
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.dataset.testid = `comp-up-${layer.id}`;
+      up.textContent = '↑';
+      up.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setComposition(moveLayer(comp, layer.id, 'monter'));
+      });
+      const down = document.createElement('button');
+      down.type = 'button';
+      down.dataset.testid = `comp-down-${layer.id}`;
+      down.textContent = '↓';
+      down.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setComposition(moveLayer(comp, layer.id, 'descendre'));
+      });
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.dataset.testid = `comp-delete-${layer.id}`;
+      del.textContent = '✕';
+      del.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setComposition({ ...comp, layers: comp.layers.filter((l) => l.id !== layer.id) });
+        if (selectedId === layer.id) selectedId = null;
+      });
+      void idx;
+      row.append(vis, lock, up, down, del);
+      layers.appendChild(row);
+    });
+  }
+
+  function clientToStitch(clientX: number, clientY: number): { x: number; y: number } | null {
+    const rect = canvas.getBoundingClientRect();
+    const { sw, sh } = stitchSize();
+    const g = gauge();
+    const ranges = rowRanges(getState().design.dimensions, getState().design.zones);
+    const px = clientX - rect.left - panX;
+    const py = clientY - rect.top - panY - ranges.leg.start * sh;
+    if (py < 0 || py > g.rows * sh) return null;
+    return {
+      x: ((Math.floor(px / sw) % g.needles) + g.needles) % g.needles,
+      y: Math.floor(py / sh),
+    };
+  }
+
+  function handleAt(clientX: number, clientY: number): typeof handleDrag {
+    if (!selectedId) return null;
+    const comp = composition();
+    const layer = comp.layers.find((l) => l.id === selectedId);
+    if (!layer || layer.locked) return null;
+    const g = gauge();
+    const ranges = rowRanges(getState().design.dimensions, getState().design.zones);
+    const { sw, sh } = stitchSize();
+    const img = images.get(assetKey(layer.asset)) ?? { width: 1, height: 1 };
+    const corners = layerCorners(layer, img, g);
+    const rect = canvas.getBoundingClientRect();
+    const mx = clientX - rect.left;
+    const my = clientY - rect.top;
+    const pts = corners.map(([x, y]) => ({
+      px: panX + (((x % g.needles) + g.needles) % g.needles) * sw,
+      py: panY + (ranges.leg.start + y) * sh,
+    }));
+    for (const p of pts) {
+      if (Math.hypot(mx - p.px, my - p.py) <= 10) {
+        const cx = pts.reduce((s, q) => s + q.px, 0) / pts.length;
+        const cy = pts.reduce((s, q) => s + q.py, 0) / pts.length;
+        return {
+          kind: 'scale',
+          id: layer.id,
+          startDist: Math.max(1, Math.hypot(mx - cx, my - cy)),
+          origW: layer.widthStitches,
+        };
+      }
+    }
+    const cx = pts.reduce((s, p) => s + p.px, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.py, 0) / pts.length;
+    const rotY = Math.min(...pts.map((p) => p.py)) - 18;
+    if (Math.hypot(mx - cx, my - rotY) <= 10) {
+      return {
+        kind: 'rotate',
+        id: layer.id,
+        startAngle: Math.atan2(my - cy, mx - cx),
+        origRot: layer.rotation,
+      };
+    }
+    return null;
+  }
+
+  let spaceDown = false;
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !e.repeat) spaceDown = true;
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') spaceDown = false;
+  });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button === 2 || e.shiftKey || spaceDown) {
+      panning = true;
+      lastPan = { x: e.clientX, y: e.clientY };
+      return;
+    }
+    const handle = handleAt(e.clientX, e.clientY);
+    if (handle) {
+      handleDrag = handle;
+      canvas.setPointerCapture(e.pointerId);
+      return;
+    }
+    const st = clientToStitch(e.clientX, e.clientY);
+    if (!st) {
+      canvas.focus();
+      return;
+    }
+    const comp = composition();
+    const g = gauge();
+    // Fallback 1×1 si l’image n’est pas encore chargée : la géométrie approximative suffit pour sélectionner.
+    const hitImages = new Map<string, { width: number; height: number }>();
+    for (const layer of comp.layers) {
+      const key = assetKey(layer.asset);
+      hitImages.set(key, images.get(key) ?? { width: 1, height: 1 });
+    }
+    const hit = hitTest(comp, hitImages, g, st.x + 0.5, st.y + 0.5);
+    if (hit) {
+      selectedId = hit;
+      const layer = comp.layers.find((l) => l.id === hit)!;
+      if (!layer.locked) {
+        dragging = { id: hit, startX: st.x, startY: st.y, origX: layer.x, origY: layer.y };
+      }
+    } else {
+      selectedId = null;
+    }
+    draw();
+    canvas.focus();
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (panning) {
+      panX += e.clientX - lastPan.x;
+      panY += e.clientY - lastPan.y;
+      lastPan = { x: e.clientX, y: e.clientY };
+      draw();
+      return;
+    }
+    if (handleDrag) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const comp = composition();
+      const layer = comp.layers.find((l) => l.id === handleDrag!.id);
+      if (!layer) return;
+      const g = gauge();
+      const ranges = rowRanges(getState().design.dimensions, getState().design.zones);
+      const { sw, sh } = stitchSize();
+      const img = images.get(assetKey(layer.asset)) ?? { width: 1, height: 1 };
+      const corners = layerCorners(layer, img, g);
+      const pts = corners.map(([x, y]) => ({
+        px: panX + (((x % g.needles) + g.needles) % g.needles) * sw,
+        py: panY + (ranges.leg.start + y) * sh,
+      }));
+      const cx = pts.reduce((s, p) => s + p.px, 0) / pts.length;
+      const cy = pts.reduce((s, p) => s + p.py, 0) / pts.length;
+      if (handleDrag.kind === 'scale') {
+        const dist = Math.max(1, Math.hypot(mx - cx, my - cy));
+        const nextW = Math.max(2, Math.round((handleDrag.origW * dist) / handleDrag.startDist));
+        const next = updateLayer(comp, handleDrag.id, { widthStitches: nextW });
+        clearTimeout(debounce);
+        debounce = setTimeout(() => setComposition(next), 60);
+        update({ design: { pattern: { kind: 'composition', composition: next } } }, {
+          skipHistory: true,
+          coalesce: true,
+        });
+      } else {
+        const ang = Math.atan2(my - cy, mx - cx);
+        let deg = handleDrag.origRot + ((ang - handleDrag.startAngle) * 180) / Math.PI;
+        if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+        const next = updateLayer(comp, handleDrag.id, { rotation: deg });
+        clearTimeout(debounce);
+        debounce = setTimeout(() => setComposition(next), 60);
+        update({ design: { pattern: { kind: 'composition', composition: next } } }, {
+          skipHistory: true,
+          coalesce: true,
+        });
+      }
+      return;
+    }
+    if (!dragging) return;
+    const st = clientToStitch(e.clientX, e.clientY);
+    if (!st) return;
+    const dx = st.x - dragging.startX;
+    const dy = st.y - dragging.startY;
+    const snapped = softSnap(dragging.origX + dx, dragging.origY + dy, gauge().needles);
+    const next = updateLayer(composition(), dragging.id, {
+      x: snapped.x,
+      y: snapped.y,
+    });
+    clearTimeout(debounce);
+    debounce = setTimeout(() => setComposition(next), 60);
+    // aperçu local
+    update({ design: { pattern: { kind: 'composition', composition: next } } }, { skipHistory: true, coalesce: true });
+  });
+
+  canvas.addEventListener('pointerup', () => {
+    dragging = null;
+    handleDrag = null;
+    panning = false;
+  });
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoom = Math.max(1, Math.min(8, zoom + (e.deltaY > 0 ? -1 : 1)));
+    draw();
+  });
+
+  splitter.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const onMove = (ev: PointerEvent) => {
+      const rect = host.getBoundingClientRect();
+      splitRatio = Math.min(0.75, Math.max(0.25, (ev.clientX - rect.left) / rect.width));
+      applySplit();
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  });
+
+  canvas.addEventListener('keydown', (e) => {
+    const comp = composition();
+    if (!selectedId) return;
+    const step = e.shiftKey ? 10 : 1;
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setComposition(updateLayer(comp, selectedId, { x: (comp.layers.find((l) => l.id === selectedId)?.x ?? 0) - step }));
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setComposition(updateLayer(comp, selectedId, { x: (comp.layers.find((l) => l.id === selectedId)?.x ?? 0) + step }));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setComposition(updateLayer(comp, selectedId, { y: (comp.layers.find((l) => l.id === selectedId)?.y ?? 0) - step }));
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setComposition(updateLayer(comp, selectedId, { y: (comp.layers.find((l) => l.id === selectedId)?.y ?? 0) + step }));
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      setComposition({ ...comp, layers: comp.layers.filter((l) => l.id !== selectedId) });
+      selectedId = null;
+    } else if (e.key === 'd' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      const layer = comp.layers.find((l) => l.id === selectedId);
+      if (!layer) return;
+      const g = gauge();
+      const newId = `L${Date.now().toString(36)}`;
+      let next = addLayer(comp, layer.asset, g, newId);
+      next = updateLayer(next, newId, { ...layer, id: newId, x: layer.x + 5, y: layer.y + 5 });
+      setComposition(next);
+      selectedId = newId;
+    } else if (e.key === '[') {
+      setComposition(moveLayer(comp, selectedId, 'dessous'));
+    } else if (e.key === ']') {
+      setComposition(moveLayer(comp, selectedId, 'dessus'));
+    }
+  });
+
+  addLib.addEventListener('click', () => {
+    const cat = getState().catalogue;
+    libPicker.hidden = false;
+    libPicker.replaceChildren();
+    if (!cat) {
+      libPicker.textContent = 'Catalogue non disponible.';
+      return;
+    }
+    for (const c of cat.collections.filter((x) => x.variations.length)) {
+      for (const v of c.variations) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.testid = `comp-lib-${c.id}-${v.name}`;
+        btn.textContent = `${c.nom} · ${v.name}`;
+        btn.addEventListener('click', () => {
+          const g = gauge();
+          const newId = `L${Date.now().toString(36)}`;
+          let next = addLayer(composition(), { kind: 'collection', collectionId: c.id, variation: v.name }, g, newId);
+          next = updateLayer(next, newId, {
+            x: g.needles / 2,
+            y: g.rows / 3,
+            widthStitches: Math.round(g.needles / 4),
+          });
+          setComposition(next);
+          selectedId = newId;
+          libPicker.hidden = true;
+        });
+        libPicker.appendChild(btn);
+      }
+    }
+  });
+
+  addImport.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    // Import complet en T47 (assets) — pour T46 on ajoute une couche collection factice si possible
+    setStatusHint('Import fichier : enregistrez le projet (T47) pour garder les images embarquées. Utilisez la bibliothèque pour l’instant.');
+    fileInput.value = '';
+  });
+
+  function setStatusHint(msg: string): void {
+    let el = root.querySelector('[data-testid="comp-hint"]') as HTMLElement | null;
+    if (!el) {
+      el = document.createElement('p');
+      el.className = 'hint';
+      el.dataset.testid = 'comp-hint';
+      root.appendChild(el);
+    }
+    el.textContent = msg;
+  }
+
+  return {
+    sync: draw,
+    setImages: (imgs) => {
+      images = imgs;
+      draw();
+    },
+    destroy: () => {
+      root.remove();
+      splitter.remove();
+    },
+  };
+}
+
+/** Bascule Carreaux / Composition en tête de panneau. */
+export function mountPatternModeToggle(host: HTMLElement): { sync: () => void } {
+  const bar = document.createElement('div');
+  bar.className = 'pattern-mode';
+  bar.dataset.testid = 'pattern-mode';
+  const carreaux = document.createElement('button');
+  carreaux.type = 'button';
+  carreaux.dataset.testid = 'mode-carreaux';
+  carreaux.textContent = 'Carreaux';
+  const composition = document.createElement('button');
+  composition.type = 'button';
+  composition.dataset.testid = 'mode-composition';
+  composition.textContent = 'Composition';
+  bar.append(carreaux, composition);
+  host.prepend(bar);
+
+  carreaux.addEventListener('click', () => {
+    update({ design: { pattern: { kind: 'carreaux' } } });
+  });
+  composition.addEventListener('click', () => {
+    const cur = getState().design.pattern;
+    if (cur?.kind === 'composition') return;
+    update({
+      design: {
+        pattern: { kind: 'composition', composition: { ...EMPTY_COMPOSITION } },
+      },
+    });
+  });
+
+  function sync(): void {
+    const kind = getState().design.pattern?.kind ?? 'carreaux';
+    carreaux.setAttribute('aria-pressed', kind === 'carreaux' ? 'true' : 'false');
+    composition.setAttribute('aria-pressed', kind === 'composition' ? 'true' : 'false');
+    carreaux.classList.toggle('selected', kind === 'carreaux');
+    composition.classList.toggle('selected', kind === 'composition');
+    document.getElementById('app')?.classList.toggle('composition-mode', kind === 'composition');
+  }
+  sync();
+  return { sync };
+}

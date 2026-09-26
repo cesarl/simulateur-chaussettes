@@ -433,3 +433,65 @@ details.section summary { cursor: pointer; font-weight: 600; font-size: 14px; }
   display: inline-block;
   flex: 0 0 auto;
 }
+
+/* T46 — mode composition : éditeur à gauche, 3D à droite */
+#app.composition-mode #viewport {
+  display: grid;
+  grid-template-columns: var(--comp-split, 50%) 6px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  position: relative;
+}
+@media (max-width: 1279px) {
+  #app.composition-mode #viewport {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(200px, 1fr) 6px minmax(200px, 1fr);
+  }
+  #app.composition-mode .comp-splitter {
+    cursor: row-resize;
+  }
+}
+#app.composition-mode .comp-editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: #f0ebe3;
+  border-right: 1px solid var(--line);
+  z-index: 2;
+  grid-column: 1;
+  grid-row: 1;
+}
+#app.composition-mode .comp-editor[hidden] { display: none; }
+#app.composition-mode .comp-splitter {
+  grid-column: 2;
+  grid-row: 1;
+  background: var(--line);
+  cursor: col-resize;
+  z-index: 3;
+}
+#app.composition-mode .comp-splitter[hidden] { display: none; }
+.comp-editor { display: none; }
+.comp-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; align-items: center; }
+.comp-snap { font-size: 12px; display: flex; gap: 4px; align-items: center; }
+.comp-layers { padding: 8px; font-size: 13px; }
+.comp-layer { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: space-between; padding: 4px 6px; border: 1px solid var(--line); margin: 4px 0; background: #fff; cursor: pointer; }
+.comp-layer > span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.comp-layer.selected { outline: 2px solid var(--accent); }
+.comp-inspector { padding: 8px; border-top: 1px solid var(--line); font-size: 13px; display: grid; gap: 6px; }
+.comp-inspector label { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.comp-inspector input[type="number"] { width: 5.5rem; }
+.comp-lib { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; max-height: 160px; overflow: auto; }
+.pattern-mode { display: flex; gap: 6px; margin-bottom: 10px; }
+.pattern-mode button { flex: 1; }
+.pattern-mode button.selected,
+.pattern-mode button[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+#app.composition-mode #viewport > canvas,
+#app.composition-mode #viewport .flat-layer,
+#app.composition-mode #viewport .view-switch {
+  grid-column: 3;
+  grid-row: 1;
+}
+#app.composition-mode #viewport .share-hint {
+  grid-column: 3;
+}

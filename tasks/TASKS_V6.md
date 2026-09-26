@@ -67,7 +67,7 @@ Page `admin.html` (entrée Vite séparée, accessible seulement en mode dev ; li
 
 **Critères** : [x] tests verts ; [x] `golden.test.ts` inchangé et vert.
 
-### [ ] T46 — Éditeur 2D (vue à plat) + 3D côte à côte
+### [x] T46 — Éditeur 2D (vue à plat) + 3D côte à côte
 - Bascule en haut du panneau : **« Carreaux » / « Composition »**. En mode composition, la zone d'affichage montre **la vue à plat éditable à gauche et la 3D à droite** (redimensionnables par une poignée verticale ; sous 1280 px : l'une au-dessus de l'autre).
 - Vue à plat éditable (canvas, sur la grille de mailles au rapport réel) :
   - zones grisées non modifiables : bord-côte, talon, pointe ; repères devant / dos / côtés ; ligne du raccord ;
@@ -78,7 +78,7 @@ Page `admin.html` (entrée Vite séparée, accessible seulement en mode dev ; li
 - « Ajouter une image » : **bibliothèque** (collections : toutes les variations, recolorées avec la palette choisie) ou **import** PNG/SVG (plusieurs à la fois, glisser-déposer sur la vue à plat) ; une image importée est ajoutée aux « images du projet » (`EmbeddedAsset`) ; PNG > 2 Mo : redimensionné à 1024 px de côté.
 - La 3D se met à jour en direct pendant les déplacements (anti-rebond 60 ms ; aperçu approximatif pendant le glisser, calcul exact au relâcher si nécessaire).
 
-**Critères** : [ ] e2e court : mode composition → ajouter une image de la bibliothèque → la déplacer au clavier (flèche ×10) → l'empreinte de la grille change ; supprimer → grille = fond seul ; [ ] captures (vue à plat éditable + 3D) avec 2 calques dont un tourné, ouvertes et décrites.
+**Critères** : [x] e2e court : mode composition → ajouter une image de la bibliothèque → la déplacer au clavier (flèche ×10) → l'empreinte de la grille change ; supprimer → grille = fond seul ; [x] captures (vue à plat éditable + 3D) avec 2 calques dont un tourné, ouvertes et décrites.
 
 ### [ ] T47 — Projet avec images embarquées, lien quand c'est possible
 - Fichier projet (.json) : version 2 = version 1 + `pattern` + `assets: EmbeddedAsset[]` (seulement les images utilisées : `usedEmbeddedAssets`). Lecture des versions 1 et 2. Taille affichée avant l'enregistrement ; avertissement au-delà de 20 Mo.

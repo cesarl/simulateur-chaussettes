@@ -249,3 +249,8 @@ Conséquence : aucune nouvelle dépendance npm ; e2e valide le ZIP téléchargé
 Contexte : renderComposition a besoin de RasterImage ; SVG/PNG viennent du DOM.
 Choix : cache module `io/compositionImages.ts` (clé assetKey+couleurs+taille) ; recompute déclenche un chargement async une fois puis recalcule. Palette : zones SVG + fond + couleurs exactes PNG si ≤ N.
 Conséquence : premier frame peut être fond seul, puis motif dès images prêtes ; golden carreaux intact.
+
+## D44 — Éditeur composition MVP + import en T47 (T46)
+Contexte : T46 demande bibliothèque + import embarqué ; les `EmbeddedAsset` et projet v2 sont T47.
+Choix : bibliothèque collections pleinement branchée ; bouton Import présent mais renvoie vers T47 pour la persistance des images. Drag-and-drop fichier sur la vue à plat idem. Split vertical CSS + poignée ; aimantation douce désactivable.
+Conséquence : e2e T46 couvre le flux bibliothèque → clavier → supprimer ; l’import fichier est complété avec le projet v2.

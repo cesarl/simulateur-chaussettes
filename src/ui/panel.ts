@@ -27,6 +27,7 @@ import { tileCmFromFormat } from '../render/decorController';
 import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
 import { mountPalettePanel } from './palettePanel';
+import { mountPatternModeToggle } from './compositionEditor';
 import {
   details,
   makeCheckbox,
@@ -167,6 +168,8 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   catalogueHint.textContent = CATALOGUE_MISSING_MESSAGE;
   host.appendChild(catalogueHint);
 
+  const patternMode = mountPatternModeToggle(host);
+
   const shareRow = document.createElement('div');
   shareRow.className = 'row share-row';
   const copyLink = document.createElement('button');
@@ -262,9 +265,11 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): void {
   subscribe(() => {
     collectionPicker.sync();
     palettePanel.sync();
+    patternMode.sync();
   });
   collectionPicker.sync();
   palettePanel.sync();
+  patternMode.sync();
 
   panel.addEventListener('dragover', (event) => {
     event.preventDefault();

@@ -28,6 +28,7 @@ import { getState, subscribe, update, undo, redo, type DesignPatch } from './sta
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
+import { mountCompositionEditor } from './ui/compositionEditor';
 import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
@@ -66,6 +67,7 @@ let devMode = resolveDevMode(
 
 const handle = createScene(viewport);
 const flat = mountFlatView(viewport, () => handle.requestRender());
+const compositionEditor = mountCompositionEditor(viewport);
 const viewer = mountViewerBar(viewport, {
   onView: (view) => {
     frameCamera(view);
@@ -455,6 +457,7 @@ function recompute(): void {
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
   computeId += 1;
+  compositionEditor.sync();
   publish();
   const tileCount = Math.max(1, tiles.length || design.layout.tileIds.length);
 
@@ -472,6 +475,7 @@ function recompute(): void {
           if (token !== compositionLoadToken) return;
           compositionImages = imgs;
           compositionImagesReadyKey = readyKey;
+          compositionEditor.setImages(imgs);
           recompute();
         })
         .catch((err) => {
