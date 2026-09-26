@@ -59,13 +59,13 @@ Page `admin.html` (entrée Vite séparée, accessible seulement en mode dev ; li
 
 ## Jalon C — composition libre
 
-### [ ] T45 — Moteur de composition branché
+### [x] T45 — Moteur de composition branché
 - Copier `reference/composition/composition.ts` dans `src/core/composition.ts` ; `tests/unit/composition.test.ts` fourni doit passer (imports adaptés).
 - `computePatternRgb` (T42) : mode composition → images pixelisées (SVG de collection **recolorés avec la palette choisie**, SVG/PNG embarqués décodés), puis `renderComposition` ; gauge = aiguilles, rangs de motif (tige + pied si le motif continue), jauges.
 - Cache des images pixelisées par `assetKey` + couleurs + taille ; recalcul < 300 ms pour 5 calques sur 168 × 380 (sinon worker, comme T13).
 - Couleurs de fil en mode composition : couleurs de zones des SVG utilisés + fond + réduction de couleurs des PNG (N réglable, défaut 4) ; alerte si le total dépasse `maxColorsTotal`.
 
-**Critères** : [ ] tests verts ; [ ] `golden.test.ts` inchangé et vert.
+**Critères** : [x] tests verts ; [x] `golden.test.ts` inchangé et vert.
 
 ### [ ] T46 — Éditeur 2D (vue à plat) + 3D côte à côte
 - Bascule en haut du panneau : **« Carreaux » / « Composition »**. En mode composition, la zone d'affichage montre **la vue à plat éditable à gauche et la 3D à droite** (redimensionnables par une poignée verticale ; sous 1280 px : l'une au-dessus de l'autre).

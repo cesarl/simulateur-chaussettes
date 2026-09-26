@@ -501,3 +501,9 @@ Contrôle visuel `visuel-t44-admin.png` : fond beige ; avant/après côte à cô
 Vérification : `npm run verify` ✅ (120 unitaires, 48 e2e). Fin jalon B.
 Décisions : D42.
 Reste / risques : composition libre T45+.
+
+## T45 — Moteur composition branché — 2026-09-26 12:58
+Statut : terminée
+Fait : `compositionPalette`, cache `compositionImages`, `recompute` charge les rasters (SVG recolorés / PNG / embarqués) puis `renderComposition`. Perf 5 calques 168×380 < 300 ms. Golden inchangé.
+Vérification : typecheck ✅ ; vitest golden + composition-engine ✅.
+Décisions : D43.

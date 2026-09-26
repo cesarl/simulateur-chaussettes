@@ -1,8 +1,5 @@
-import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
-import type { CalepinageSpec } from './core/calepinage';
-import { tileRowsFor, tileWidthForCount } from './core/calepinage';
-import type { Catalogue, ZoneColors } from './core/collections';
-import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
+import { EMPTY_COMPOSITION, type EmbeddedAsset } from './core/composition';
+import type { Preset } from './core/calepinage';
 import type {
   KnitFidelity,
   LayoutSettings,
@@ -14,8 +11,11 @@ import type {
   ZoneSettings,
   DecorSettings,
 } from './core/types';
-import type { Preset } from './core/calepinage';
-import { EMPTY_COMPOSITION } from './core/composition';
+import { BUILTIN_PRESETS, BUILTIN_PRESET_WARNINGS, migrateLegacyKind } from './core/presets';
+import type { CalepinageSpec } from './core/calepinage';
+import { tileRowsFor, tileWidthForCount } from './core/calepinage';
+import type { Catalogue, ZoneColors } from './core/collections';
+import { defaultDimensions, MACHINE_LIMITS } from './core/sizes';
 
 export type FootSide = 'droite' | 'gauche';
 
@@ -80,6 +80,8 @@ export interface AppState {
   zoneColors: ZoneColors | null;
   /** Option de palette courante (`defaut`, `reco-1`…). */
   paletteOptionId: string | null;
+  /** Images embarquées du projet (composition) — T47. */
+  embeddedAssets: EmbeddedAsset[];
 }
 
 export interface StatePatch {
@@ -95,6 +97,7 @@ export interface StatePatch {
   activeCollectionId?: string | null;
   zoneColors?: ZoneColors | null;
   paletteOptionId?: string | null;
+  embeddedAssets?: EmbeddedAsset[];
 }
 
 export interface UpdateOptions {
@@ -206,6 +209,7 @@ function createInitial(): AppState {
     activeCollectionId: null,
     zoneColors: null,
     paletteOptionId: null,
+    embeddedAssets: [],
   };
 }
 
@@ -400,6 +404,7 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
     zoneColors: patch.zoneColors === undefined ? state.zoneColors : patch.zoneColors,
     paletteOptionId:
       patch.paletteOptionId === undefined ? state.paletteOptionId : patch.paletteOptionId,
+    embeddedAssets: patch.embeddedAssets ?? state.embeddedAssets,
   };
   notify();
 }

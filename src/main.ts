@@ -1,5 +1,8 @@
 import { layoutRaccord, seamMismatch } from './core/layout';
 import { computePatternRgb, normalizePatternSource } from './core/patternSource';
+import { compositionYarnColors } from './core/compositionPalette';
+import { assetKey, type RasterImage } from './core/composition';
+import { loadCompositionImages } from './io/compositionImages';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
@@ -29,7 +32,7 @@ import { mountPanel, renderChecks, renderStatus } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
 import { createDecorController } from './render/decorController';
-import { yarnColors, isPngCollection } from './core/collections';
+import { yarnColors, isPngCollection, zoneHex } from './core/collections';
 import { checkFabrication } from './core/checks';
 import { composeGrid, gridFingerprint } from './core/grid';
 import * as THREE from 'three';
@@ -127,6 +130,20 @@ let textureUpdates = 0;
 let surfaceKey = '';
 let sock: SockObject | null = null;
 const warnings: string[] = [];
+/** Images pixelisées pour le mode composition (cache module). */
+let compositionImages = new Map<string, RasterImage>();
+let compositionLoadToken = 0;
+let compositionImagesReadyKey = '';
+
+function compositionLayersKey(
+  layers: ReadonlyArray<{ asset: { kind: string }; hidden: boolean }>,
+  zoneColors: Record<string, string> | null,
+): string {
+  return JSON.stringify({
+    layers: layers.map((l) => l.asset),
+    zoneColors,
+  });
+}
 
 const decor = createDecorController(
   handle.scene,
@@ -359,15 +376,54 @@ function publish(): void {
 
 function recompute(): void {
   const started = performance.now();
-  const { design, tiles, calepPresets, catalogue, activeCollectionId, zoneColors } = getState();
+  const { design, tiles, calepPresets, catalogue, activeCollectionId, zoneColors, embeddedAssets } =
+    getState();
   let pattern: Uint8Array | null = null;
   patternPalette = [];
   patternCounts = [];
-  const rgb = computePatternRgb({ design, tiles, calepPresets });
+  const source = normalizePatternSource(design.pattern);
+  const rgb = computePatternRgb({
+    design,
+    tiles,
+    calepPresets,
+    compositionImages: source.kind === 'composition' ? compositionImages : undefined,
+  });
   if (rgb) {
     let quantizeSettings = design.quantize;
-    const source = normalizePatternSource(design.pattern);
-    if (source.kind === 'carreaux' && catalogue && activeCollectionId && zoneColors) {
+    if (source.kind === 'composition') {
+      const svgYarnHexes = new Map<string, string[]>();
+      if (catalogue && zoneColors) {
+        const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));
+        for (const layer of source.composition.layers) {
+          if (layer.asset.kind !== 'collection') continue;
+          const asset = layer.asset;
+          const key = assetKey(asset);
+          if (svgYarnHexes.has(key)) continue;
+          const coll = catalogue.collections.find((c) => c.id === asset.collectionId);
+          if (!coll || isPngCollection(coll)) continue;
+          const hexMap = zoneHex(zoneColors, nuancier);
+          svgYarnHexes.set(key, Object.values(hexMap));
+        }
+      }
+      const yarns = compositionYarnColors({
+        composition: source.composition,
+        svgYarnHexes,
+        rasterImages: compositionImages,
+        pngMaxColors: design.quantize.maxColors || 4,
+      });
+      quantizeSettings = {
+        ...design.quantize,
+        paletteMode: yarns.paletteMode,
+        palette: yarns.palette,
+        maxColors: yarns.maxColors,
+      };
+      if (yarns.overLimit) {
+        warnings.length = 0;
+        warnings.push(
+          `Composition : ${yarns.palette.length} couleurs dépassent la limite machine (${MACHINE_LIMITS.maxColorsTotal}).`,
+        );
+      }
+    } else if (catalogue && activeCollectionId && zoneColors) {
       const collection = catalogue.collections.find((c) => c.id === activeCollectionId);
       if (collection && !isPngCollection(collection) && Object.keys(zoneColors).length > 0) {
         const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));
@@ -401,6 +457,31 @@ function recompute(): void {
   computeId += 1;
   publish();
   const tileCount = Math.max(1, tiles.length || design.layout.tileIds.length);
+
+  // Précharge async des images composition (ne bloque pas le 1er rendu fond)
+  if (source.kind === 'composition') {
+    const readyKey = compositionLayersKey(source.composition.layers, zoneColors);
+    if (readyKey !== compositionImagesReadyKey) {
+      const token = ++compositionLoadToken;
+      void loadCompositionImages(source.composition.layers, {
+        zoneColors,
+        catalogue,
+        assets: embeddedAssets,
+      })
+        .then((imgs) => {
+          if (token !== compositionLoadToken) return;
+          compositionImages = imgs;
+          compositionImagesReadyKey = readyKey;
+          recompute();
+        })
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : 'Images de composition illisibles.';
+          update({ error: message }, { skipHistory: true });
+        });
+    }
+  } else {
+    compositionImagesReadyKey = '';
+  }
   const preset = resolvePreset(design.layout.calepinage, calepPresets);
   const mismatch = seamMismatch(design.layout, design.dimensions.needles, tileCount, preset);
   const raccordInfo = layoutRaccord(design.layout, design.dimensions.needles, tileCount, preset);

@@ -244,3 +244,8 @@ Contexte : Firefox/Safari n’ont pas File System Access ; il faut un export dos
 Options : jszip / fflate / ZIP store maison.
 Choix : `src/io/zipStore.ts` (méthode store, CRC32) + mode dossier Chrome/Edge. Entrée Vite `admin.html`. Zones SVG pures dans `svgZones.ts`.
 Conséquence : aucune nouvelle dépendance npm ; e2e valide le ZIP téléchargé.
+
+## D43 — Cache images composition (T45)
+Contexte : renderComposition a besoin de RasterImage ; SVG/PNG viennent du DOM.
+Choix : cache module `io/compositionImages.ts` (clé assetKey+couleurs+taille) ; recompute déclenche un chargement async une fois puis recalcule. Palette : zones SVG + fond + couleurs exactes PNG si ≤ N.
+Conséquence : premier frame peut être fond seul, puis motif dès images prêtes ; golden carreaux intact.
