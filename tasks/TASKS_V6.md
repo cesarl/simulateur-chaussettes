@@ -80,17 +80,17 @@ Page `admin.html` (entrée Vite séparée, accessible seulement en mode dev ; li
 
 **Critères** : [x] e2e court : mode composition → ajouter une image de la bibliothèque → la déplacer au clavier (flèche ×10) → l'empreinte de la grille change ; supprimer → grille = fond seul ; [x] captures (vue à plat éditable + 3D) avec 2 calques dont un tourné, ouvertes et décrites.
 
-### [~] T47 — Projet avec images embarquées, lien quand c'est possible
+### [x] T47 — Projet avec images embarquées, lien quand c'est possible
 - Fichier projet (.json) : version 2 = version 1 + `pattern` + `assets: EmbeddedAsset[]` (seulement les images utilisées : `usedEmbeddedAssets`). Lecture des versions 1 et 2. Taille affichée avant l'enregistrement ; avertissement au-delà de 20 Mo.
 - Ouvrir un projet : restaure calques et images (aucun réseau). Sauvegarde automatique locale : si trop lourde pour le stockage du navigateur, ne garder que les réglages et prévenir (« images non sauvegardées automatiquement : enregistrez le projet »).
 - Lien de partage : si `isLinkShareable(composition)` → lien normal (les calques ne référencent que la bibliothèque, quelques dizaines de caractères chacun) ; sinon bouton désactivé avec l'explication « Cette composition contient des images importées : envoyez le fichier projet (.json) ». La visionneuse ouvre correctement une composition partagée par lien.
 - Exports PNG, BMP, planche : inchangés (ils partent de la grille).
 
-**Critères** : [ ] test unitaire aller-retour projet v2 avec 1 PNG + 1 SVG embarqués ; [ ] test unitaire : projet v1 toujours lisible ; [ ] e2e court : composition avec image de la bibliothèque → lien → visionneuse identique ; [ ] `npm run verify` complet vert (fin du jalon C).
+**Critères** : [x] test unitaire aller-retour projet v2 avec 1 PNG + 1 SVG embarqués ; [x] test unitaire : projet v1 toujours lisible ; [x] e2e court : composition avec image de la bibliothèque → lien → visionneuse identique ; [x] `npm run verify` complet vert (fin du jalon C).
 
 ## Jalon D — finitions
 
-### [ ] T48 — Aides et garde-fous « jacquard »
+### [x] T48 — Aides et garde-fous « jacquard »
 - En mode composition : alerte si une image a des détails plus fins qu'une maille (proportion de mailles isolées après réduction), si le nombre de couleurs de fil dépasse la limite machine, si des flottés sont trop longs (contrôles existants).
 - Bouton « Aperçu gros pixels » sur le calque sélectionné (sa vignette pixelisée à la taille réelle en mailles).
 - Petit guide (bulle « ? ») : « Préférez des dessins en aplats (SVG) ; les photos passent mal en 4 à 6 couleurs de fil. »

@@ -59,7 +59,21 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
   snapInput.checked = true;
   snapInput.dataset.testid = 'comp-snap';
   snapToggle.append(snapInput, document.createTextNode(' Aimantation'));
-  toolbar.append(addLib, addImport, fileInput, snapToggle);
+  const helpBtn = document.createElement('button');
+  helpBtn.type = 'button';
+  helpBtn.dataset.testid = 'comp-help';
+  helpBtn.textContent = '?';
+  helpBtn.title = 'Conseils jacquard';
+  const helpBubble = document.createElement('p');
+  helpBubble.className = 'hint comp-help-bubble';
+  helpBubble.dataset.testid = 'comp-help-bubble';
+  helpBubble.hidden = true;
+  helpBubble.textContent =
+    'Préférez des dessins en aplats (SVG) ; les photos passent mal en 4 à 6 couleurs de fil.';
+  helpBtn.addEventListener('click', () => {
+    helpBubble.hidden = !helpBubble.hidden;
+  });
+  toolbar.append(addLib, addImport, fileInput, snapToggle, helpBtn);
 
   const canvas = document.createElement('canvas');
   canvas.dataset.testid = 'comp-canvas';
@@ -78,7 +92,7 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
   libPicker.dataset.testid = 'comp-lib-picker';
   libPicker.hidden = true;
 
-  root.append(toolbar, canvas, layers, inspector, libPicker);
+  root.append(toolbar, helpBubble, canvas, layers, inspector, libPicker);
   host.appendChild(root);
 
   const splitter = document.createElement('div');
@@ -360,6 +374,58 @@ export function mountCompositionEditor(host: HTMLElement): CompositionEditorApi 
     });
     repeat.appendChild(gap);
     inspector.appendChild(repeat);
+
+    const previewBtn = document.createElement('button');
+    previewBtn.type = 'button';
+    previewBtn.dataset.testid = 'comp-pixel-preview';
+    previewBtn.textContent = 'Aperçu gros pixels';
+    previewBtn.addEventListener('click', () => showPixelPreview(layer));
+    inspector.appendChild(previewBtn);
+
+    let previewHost = inspector.querySelector('[data-testid="comp-pixel-preview-canvas"]') as HTMLCanvasElement | null;
+    if (!previewHost) {
+      previewHost = document.createElement('canvas');
+      previewHost.dataset.testid = 'comp-pixel-preview-canvas';
+      previewHost.hidden = true;
+      inspector.appendChild(previewHost);
+    }
+  }
+
+  function showPixelPreview(layer: { id: string; asset: import('../core/composition').AssetRef; widthStitches: number }): void {
+    const img = images.get(assetKey(layer.asset));
+    let canvas = root.querySelector('[data-testid="comp-pixel-preview-canvas"]') as HTMLCanvasElement | null;
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      canvas.dataset.testid = 'comp-pixel-preview-canvas';
+      inspector.appendChild(canvas);
+    }
+    if (!img) {
+      canvas.hidden = true;
+      setStatusHint('Image du calque pas encore chargée.');
+      return;
+    }
+    const tw = Math.max(1, Math.round(layer.widthStitches));
+    const aspect = img.height / Math.max(1, img.width);
+    const th = Math.max(1, Math.round(tw * aspect * (gauge().stitchesPerCm / gauge().rowsPerCm)));
+    canvas.width = tw;
+    canvas.height = th;
+    canvas.style.width = `${Math.min(280, tw * 4)}px`;
+    canvas.style.height = 'auto';
+    canvas.style.imageRendering = 'pixelated';
+    canvas.hidden = false;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const src = document.createElement('canvas');
+    src.width = img.width;
+    src.height = img.height;
+    const sctx = src.getContext('2d');
+    if (!sctx) return;
+    const imageData = sctx.createImageData(img.width, img.height);
+    imageData.data.set(img.rgba);
+    sctx.putImageData(imageData, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, tw, th);
+    ctx.drawImage(src, 0, 0, tw, th);
   }
 
   function renderLayersPanel(comp: Composition): void {

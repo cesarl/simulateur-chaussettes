@@ -373,7 +373,7 @@ function paintPill(testId: string, ok: boolean, text: string): void {
   item.textContent = text;
 }
 
-export function renderChecks(report: FabricationReport): void {
+export function renderChecks(report: FabricationReport, detail?: { tooFine: boolean; isolatedCount: number } | null): void {
   paintPill(
     'check-colors',
     report.totalOk,
@@ -396,6 +396,21 @@ export function renderChecks(report: FabricationReport): void {
     report.seamOk,
     report.seamOk ? 'Raccord : le motif tombe juste' : `Raccord : décalage de ${report.seamMismatch} mailles`,
   );
+  const detailPill = document.querySelector('[data-testid="check-detail"]');
+  if (detailPill instanceof HTMLElement) {
+    if (!detail) {
+      detailPill.hidden = true;
+    } else {
+      detailPill.hidden = false;
+      paintPill(
+        'check-detail',
+        !detail.tooFine,
+        detail.tooFine
+          ? `Détails : ${detail.isolatedCount} mailles isolées (trop fins pour le jacquard)`
+          : 'Détails : pas de mailles isolées problématiques',
+      );
+    }
+  }
 }
 
 function isViewId(value: string): value is ViewId {
@@ -1425,6 +1440,7 @@ function mountSettings(host: HTMLElement, actions: PanelActions): void {
     pill('check-rows'),
     pill('check-floats'),
     pill('check-seam'),
+    pill('check-detail'),
   );
   const fitSeam = document.createElement('button');
   fitSeam.type = 'button';

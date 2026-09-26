@@ -523,3 +523,11 @@ Contrôle visuel `visuel-t47-share-viewer.png` : visionneuse publique après lie
 Vérification : `npm run verify` ✅ (unitaires + 50 e2e). Fin jalon C.
 Décisions : D45.
 Reste / risques : aides jacquard T48, bilan T49.
+
+## T48 — Aides jacquard composition — 2026-09-26 14:10
+Statut : terminée
+Fait : `countIsolatedStitches` + pastille `check-detail` ; bulle « ? » ; bouton Aperçu gros pixels.
+Contrôle visuel `visuel-t48-aides.png` : mode composition, bulle conseils, pastilles contrôles, aperçu pixelisé.
+Vérification : typecheck ✅ ; vitest composition-aids + golden ✅ ; e2e composition-aids + composition-editor ✅.
+Décisions : D46.
+Reste / risques : bilan T49.

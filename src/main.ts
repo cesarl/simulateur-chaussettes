@@ -1,7 +1,8 @@
-import { layoutRaccord, seamMismatch } from './core/layout';
+import { layoutRaccord, motifRows, seamMismatch } from './core/layout';
 import { computePatternRgb, normalizePatternSource } from './core/patternSource';
 import { compositionYarnColors } from './core/compositionPalette';
-import { assetKey, type RasterImage } from './core/composition';
+import { assetKey, isLinkShareable, type RasterImage } from './core/composition';
+import { countIsolatedStitches } from './core/compositionAids';
 import { loadCompositionImages } from './io/compositionImages';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
@@ -30,7 +31,6 @@ import { capturePng, frameView, type ViewName } from './render/sock3d/studio';
 import { getState, subscribe, update, undo, redo, type DesignPatch } from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
-import { isLinkShareable } from './core/composition';
 import { mountFlatView } from './ui/flatView';
 import { mountCompositionEditor } from './ui/compositionEditor';
 import { mountPanel, renderChecks, renderStatus } from './ui/panel';
@@ -464,7 +464,14 @@ function recompute(): void {
     design.quantize.maxFloat,
   );
   flat.setFloatMask(report.floatMask);
-  renderChecks(report);
+  const detail =
+    source.kind === 'composition' && pattern
+      ? countIsolatedStitches(pattern, design.dimensions.needles, motifRows(design.dimensions, design.zones))
+      : null;
+  renderChecks(
+    report,
+    detail ? { tooFine: detail.tooFine, isolatedCount: detail.isolatedCount } : null,
+  );
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
   computeId += 1;

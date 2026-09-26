@@ -259,3 +259,8 @@ Conséquence : e2e T46 couvre le flux bibliothèque → clavier → supprimer ; 
 Contexte : images importées dans le projet ; lien de partage ne peut pas porter des data URL.
 Choix : document `version: 2` + `assets[]` (seulement `usedEmbeddedAssets`) ; v1 toujours lue (`assets: []`). Bouton « Copier le lien » désactivé si `!isLinkShareable` avec hint. Autosave IndexedDB omet les assets au-delà de 4 Mo avec message. Seuil d’avertissement enregistrement : 20 Mo.
 Conséquence : composition bibliothèque partageable ; composition avec import → fichier .json obligatoire.
+
+## D46 — Aides jacquard composition (T48)
+Contexte : détecter détails trop fins après réduction.
+Choix : même critère que le despeckle (maille dont les 4 voisins sont égaux et différents) ; seuil 2 % de mailles isolées. Pastille `check-detail` visible seulement en mode composition. Couleurs / flottés : contrôles existants inchangés.
+Conséquence : alerte lisible sans nouveau panneau.
