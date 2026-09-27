@@ -18,17 +18,17 @@ const DEFAULT_RATIO_THRESHOLD = 0.02;
  * sont tous d’une autre couleur, et tous égaux entre eux.
  * Même critère que le despeckle de `quantize.ts`.
  */
-export function countIsolatedStitches(
+/**
+ * Masque 1 = maille isolée (même critère que le despeckle).
+ * Dimensions = grille motif (largeur × hauteur motif).
+ */
+export function isolatedStitchMask(
   indices: Uint8Array,
   width: number,
   height: number,
-  ratioThreshold = DEFAULT_RATIO_THRESHOLD,
-): IsolatedStitchReport {
-  let isolatedCount = 0;
-  const totalStitches = Math.max(0, width * height);
-  if (width <= 0 || height <= 2) {
-    return { isolatedCount: 0, totalStitches, ratio: 0, tooFine: false };
-  }
+): Uint8Array {
+  const mask = new Uint8Array(Math.max(0, width * height));
+  if (width <= 0 || height <= 2) return mask;
   for (let row = 1; row < height - 1; row++) {
     for (let col = 0; col < width; col++) {
       const index = row * width + col;
@@ -38,9 +38,24 @@ export function countIsolatedStitches(
       const up = indices[(row - 1) * width + col] ?? 0;
       const down = indices[(row + 1) * width + col] ?? 0;
       if (left === right && right === up && up === down && left !== center) {
-        isolatedCount += 1;
+        mask[index] = 1;
       }
     }
+  }
+  return mask;
+}
+
+export function countIsolatedStitches(
+  indices: Uint8Array,
+  width: number,
+  height: number,
+  ratioThreshold = DEFAULT_RATIO_THRESHOLD,
+): IsolatedStitchReport {
+  const totalStitches = Math.max(0, width * height);
+  const mask = isolatedStitchMask(indices, width, height);
+  let isolatedCount = 0;
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i]) isolatedCount += 1;
   }
   const ratio = totalStitches > 0 ? isolatedCount / totalStitches : 0;
   return {

@@ -50,7 +50,7 @@ Ne pas réécrire ; tests dans `tests/unit/v9-dessin.test.ts`.
 
 ---
 
-### [ ] T70 — Vue 2D : vraies couleurs, alertes en option
+### [x] T70 — Vue 2D : vraies couleurs, alertes en option
 
 - `ensureStitchBitmap` ne modifie plus jamais les couleurs : la vue 2D = la grille, pixel pour pixel.
 - Bouton bascule **« Alertes »** dans la barre de la vue 2D (désactivé par défaut, mémorisé en `localStorage` avec `try/catch`). Quand il est actif, sur le **canvas de superposition** :
@@ -61,10 +61,10 @@ Ne pas réécrire ; tests dans `tests/unit/v9-dessin.test.ts`.
 - La vue 3D n'affiche jamais les alertes.
 
 **Critères**
-- [ ] e2e `vue2d-couleurs.spec.ts` sur un design avec flottés :
+- [x] e2e `vue2d-couleurs.spec.ts` sur un design avec flottés :
   - la couleur lue sur le canvas 2D, au centre d'une maille en flotté, est exactement celle de la grille (`window.__SIM__`) ;
   - clic sur « Alertes » → contours visibles sur la superposition ; recharger → toujours actif.
-- [ ] Capture avant / après sur le design de la collaboratrice (collection Classique14, voir la capture de César), décrite.
+- [x] Capture avant / après sur le design de la collaboratrice (collection Classique14, voir la capture de César), décrite.
 
 ### [ ] T71 — Calque Dessin dans l'application
 

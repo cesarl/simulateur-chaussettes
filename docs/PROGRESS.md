@@ -894,3 +894,14 @@ Fait : chaque motif importé a son aperçu avant/après et son remplacement de c
 Vérification : unitaires `svgZones` ✅ (`#808080` → Gris moyen, `#606060` → Gris acier, `#d7e8cf` reste vert). Contrôle navigateur : deux SVG, deux blocs Motif, pastilles et noms visibles.
 Décisions : D59
 Reste / risques : la quantification des mailles garde la distance redmean.
+
+## T70 — Vue 2D vraies couleurs + alertes — 2026-09-27 15:30
+Statut : terminée
+Fait : `ensureStitchBitmap` peint la grille pixel pour pixel (plus d’assombrissement). Bouton **Alertes** (`ctl-flat-alerts`, défaut off, `sim-flat-alerts`) : contours rouges par plage de flotté + ronds pour mailles isolées sur `flat-overlay`, légende en bas. Pastilles Contrôles Flottés / Détails cliquables → activent Alertes. 3D inchangée.
+Vérification : typecheck ✅ ; unitaires checks/composition-aids ✅ ; e2e `vue2d-couleurs.spec.ts` ✅.
+Contrôle visuel :
+- `docs/captures/v9/visuel-t70-avant-alertes.png` (Classique14) : bord-côte marine, tige avec losanges blancs / fleurs noir-vert / fond bleu clair, couleurs franches (pas de voile marron/mauve) ; repères Intérieur / Dos / Extérieur ; pas de contours d’alerte ni de légende.
+- `docs/captures/v9/visuel-t70-apres-alertes.png` : même motif, nombreuses plages entourées d’un trait rouge fin (flottés), légende rose en bas (« Contour rouge : flotté trop long (plus de 7 mailles…) »). Les couleurs du motif restent lisibles sous les contours.
+Décisions : D60
+Reste / risques : T71 branche le calque Dessin déjà écrit.
+

@@ -391,6 +391,43 @@ details.section summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 }
 .pill.ok::before { background: #2f7d4a; }
 .pill.warn::before { background: #d9822b; }
+button.pill {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+button.pill.pill-action:hover { text-decoration: underline; }
+button.pill.pill-action:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.zone-toolbar button.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.flat-alerts-legend {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #5a1a1a;
+  background: rgba(255, 248, 246, 0.92);
+  border: 1px solid rgba(200, 24, 24, 0.35);
+  pointer-events: none;
+}
+.flat-alerts-legend[hidden] { display: none !important; }
 .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .swatch { display: flex; align-items: center; gap: 4px; font-size: 12px; }
 .swatch i { width: 16px; height: 16px; border: 1px solid var(--line); display: inline-block; }

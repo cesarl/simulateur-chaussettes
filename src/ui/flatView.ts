@@ -1,5 +1,6 @@
 import type { SockDimensions, StitchGrid, ZoneSettings } from '../core/types';
 import { Zone } from '../core/types';
+import { floatRunSpans } from '../core/checks';
 import { seamColumn } from '../core/calepinage';
 import { rowRanges } from '../core/grid';
 import { gridYToMotifY, motifYToGridY, faceGuides } from '../core/layers';
@@ -27,6 +28,10 @@ const ZONE_LABEL: Record<number, string> = {
 export interface FlatHandle {
   setGrid: (grid: StitchGrid, aspect: number) => void;
   setFloatMask: (mask: Uint8Array | null) => void;
+  setIsolatedMask: (mask: Uint8Array | null) => void;
+  /** Alertes flottés / mailles isolées sur la superposition 2D (jamais en 3D). */
+  setAlerts: (on: boolean) => void;
+  getAlerts: () => boolean;
   centerOf: (col: number, row: number) => { x: number; y: number } | null;
   /** Centre écran d'une maille en coordonnées motif (rang 0 = haut de la tige). */
   clientAtMotifStitch: (col: number, motifRow: number) => { x: number; y: number } | null;
@@ -92,7 +97,13 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   hover.className = 'flat-hover';
   hover.dataset.testid = 'flat-hover';
   hover.textContent = 'Survolez une maille.';
-  layer.append(canvas, overlay, hover);
+
+  const alertsLegend = document.createElement('p');
+  alertsLegend.className = 'flat-alerts-legend';
+  alertsLegend.dataset.testid = 'flat-alerts-legend';
+  alertsLegend.hidden = true;
+
+  layer.append(canvas, overlay, hover, alertsLegend);
 
   const switcher = document.createElement('div');
   switcher.className = 'view-switch';
@@ -121,6 +132,7 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
 
   let grid: StitchGrid | null = null;
   let floatMask: Uint8Array | null = null;
+  let isolatedMask: Uint8Array | null = null;
   let aspect = 0.75;
   let zoom = 1;
   let panX = 0;
@@ -134,10 +146,18 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   let stitchBitmap: ImageData | null = null;
   let stitchCanvas: HTMLCanvasElement | null = null;
   let showFaceGuides = true;
+  let showAlerts = false;
   try {
     const stored = localStorage.getItem('sim-face-guides');
     if (stored === '0') showFaceGuides = false;
     if (stored === '1') showFaceGuides = true;
+  } catch {
+    /* ignore */
+  }
+  try {
+    const storedAlerts = localStorage.getItem('sim-flat-alerts');
+    if (storedAlerts === '1') showAlerts = true;
+    if (storedAlerts === '0') showAlerts = false;
   } catch {
     /* ignore */
   }
@@ -168,12 +188,8 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     }
     const data = stitchBitmap.data;
     for (let i = 0; i < grid.colorIndex.length; i++) {
-      let [r, g, b] = parseHex(grid.palette[grid.colorIndex[i] ?? 0] ?? '#cccccc');
-      if (floatMask && floatMask[i]) {
-        r = Math.round(r * 0.65);
-        g = Math.round(g * 0.65);
-        b = Math.round(b * 0.65);
-      }
+      // V9 : vraies couleurs, pixel pour pixel — jamais d’assombrissement des flottés.
+      const [r, g, b] = parseHex(grid.palette[grid.colorIndex[i] ?? 0] ?? '#cccccc');
       const o = i * 4;
       data[o] = r;
       data[o + 1] = g;
@@ -183,6 +199,58 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     const sc = stitchCanvas!.getContext('2d');
     if (sc) sc.putImageData(stitchBitmap, 0, 0);
     return stitchBitmap;
+  }
+
+  function updateAlertsLegend(): void {
+    if (!showAlerts) {
+      alertsLegend.hidden = true;
+      alertsLegend.textContent = '';
+      return;
+    }
+    const n = getState().design.quantize.maxFloat;
+    alertsLegend.hidden = false;
+    alertsLegend.textContent =
+      `Contour rouge : flotté trop long (plus de ${n} mailles de même couleur à la suite, ` +
+      'le fil passe derrière sur une grande longueur). Rond : maille isolée.';
+  }
+
+  function drawAlertOverlays(): void {
+    if (!overlayCtx || !grid || !showAlerts) return;
+    const { w, h } = cells();
+    const originX = MARGIN_LEFT + panX;
+    const originY = MARGIN_TOP + panY;
+
+    if (floatMask && floatMask.length === grid.width * grid.height) {
+      const spans = floatRunSpans(floatMask, grid.colorIndex, grid.width, grid.height);
+      overlayCtx.save();
+      overlayCtx.strokeStyle = 'rgba(200, 24, 24, 0.95)';
+      overlayCtx.lineWidth = 1.25;
+      for (const span of spans) {
+        const x = originX + span.col0 * w;
+        const y = originY + span.row * h;
+        const rw = (span.col1 - span.col0) * w;
+        overlayCtx.strokeRect(x + 0.5, y + 0.5, Math.max(1, rw - 1), Math.max(1, h - 1));
+      }
+      overlayCtx.restore();
+    }
+
+    if (isolatedMask && isolatedMask.length === grid.width * grid.height) {
+      overlayCtx.save();
+      overlayCtx.strokeStyle = 'rgba(200, 24, 24, 0.95)';
+      overlayCtx.lineWidth = 1.25;
+      const radius = Math.max(2, Math.min(w, h) * 0.28);
+      for (let i = 0; i < isolatedMask.length; i++) {
+        if (!isolatedMask[i]) continue;
+        const col = i % grid.width;
+        const row = Math.floor(i / grid.width);
+        const cx = originX + col * w + w / 2;
+        const cy = originY + row * h + h / 2;
+        overlayCtx.beginPath();
+        overlayCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+        overlayCtx.stroke();
+      }
+      overlayCtx.restore();
+    }
   }
 
   /** Point écran pour une maille / coordonnée continue (rang de grille, éventuellement fractionnaire). */
@@ -214,7 +282,9 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     if (!overlayCtx || layer.hidden) return;
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
     if (!grid) return;
+    drawAlertOverlays();
     overlayDrawer?.();
+    updateAlertsLegend();
   }
 
   function draw(): void {
@@ -456,7 +526,26 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     },
     setFloatMask(mask: Uint8Array | null) {
       floatMask = mask;
-      draw();
+      // Plus d’impact sur les couleurs : seulement les contours d’alerte.
+      if (showAlerts) drawOverlayOnly();
+      else draw();
+    },
+    setIsolatedMask(mask: Uint8Array | null) {
+      isolatedMask = mask;
+      if (showAlerts) drawOverlayOnly();
+    },
+    setAlerts(on: boolean) {
+      showAlerts = on;
+      try {
+        localStorage.setItem('sim-flat-alerts', on ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      drawOverlayOnly();
+      updateAlertsLegend();
+    },
+    getAlerts() {
+      return showAlerts;
     },
     centerOf,
     clientAtMotifStitch,

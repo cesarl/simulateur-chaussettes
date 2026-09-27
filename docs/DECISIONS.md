@@ -353,3 +353,9 @@ Contexte : la distance redmean choisissait un vert ou un bleu de même clarté �
 Options : A) garder redmean ; B) OKLab seul ; C) OKLab plus une pénalité quand le fil est plus coloré que la cible.
 Choix : C — `yarnMatchDistance` dans `color.ts`. Un vert réel (`#d7e8cf`) reste sur son fil. Chaque motif a son aperçu avant/après et ses listes `nom · code` avec pastille.
 Conséquence : `colorDistance` (redmean) reste utilisé par la quantification des mailles. Seul le zonage admin change.
+
+## D60 — Alertes 2D optionnelles, vraies couleurs (T70)
+Contexte : les flottés trop longs étaient assombris à 65 % dans `ensureStitchBitmap`, ce qui rendait le motif illisible (marron / mauve). César veut les vraies couleurs ; les alertes restent utiles mais optionnelles.
+Options : A) garder l’assombrissement + légende ; B) couleurs exactes + contours/ronds sur le canvas de superposition, bouton « Alertes » (défaut off, `localStorage`).
+Choix : B — `floatRunSpans` pour un rectangle par plage ; masque isolé mappé grille via `motifYToGridY` ; pastilles Contrôles Flottés / Détails cliquables (`pill-action`) activent les alertes. La 3D n’affiche jamais les alertes.
+Conséquence : e2e `vue2d-couleurs` ; captures `docs/captures/v9/visuel-t70-*.png`.

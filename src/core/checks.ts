@@ -98,6 +98,40 @@ function countFloats(
   return count;
 }
 
+/**
+ * Plages horizontales (non enveloppantes) de mailles marquées flotté trop long,
+ * regroupées par couleur : un rectangle d’alerte par plage.
+ */
+export function floatRunSpans(
+  mask: Uint8Array,
+  colorIndex: Uint8Array,
+  width: number,
+  height: number,
+): Array<{ row: number; col0: number; col1: number }> {
+  const spans: Array<{ row: number; col0: number; col1: number }> = [];
+  for (let row = 0; row < height; row++) {
+    let col = 0;
+    while (col < width) {
+      const index = row * width + col;
+      if (!mask[index]) {
+        col += 1;
+        continue;
+      }
+      const paint = colorIndex[index] ?? 0;
+      const start = col;
+      while (
+        col < width &&
+        mask[row * width + col] &&
+        (colorIndex[row * width + col] ?? 0) === paint
+      ) {
+        col += 1;
+      }
+      spans.push({ row, col0: start, col1: col });
+    }
+  }
+  return spans;
+}
+
 export function checkFabrication(
   grid: StitchGrid,
   layout: LayoutSettings,

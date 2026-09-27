@@ -1,5 +1,5 @@
 import { layoutRaccord, seamMismatch } from './core/layout';
-import { type RasterImage } from './core/composition';
+import { type RasterImage, assetKey } from './core/composition';
 import { loadCompositionImages } from './io/compositionImages';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
@@ -16,12 +16,12 @@ import {
   imageGizmo,
   motifGizmo,
   layerAtStitch,
+  motifYToGridY,
   type ImageLayer,
   type MotifLayer,
   type SockDesignV2,
   type StackLayer,
 } from './core/layers';
-import { assetKey } from './core/composition';
 import { yarnColors, isPngCollection } from './core/collections';
 import { runExports, renderPair } from './io/exportPng';
 import { loadCatalogue } from './io/catalogue';
@@ -63,7 +63,14 @@ import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
 import { mountFlatGizmos } from './ui/flatGizmos';
 import { mountCompositionEditor } from './ui/compositionEditor';
-import { mountPanel, renderChecks, renderStackPaletteGuard, renderStatus, type PanelApi } from './ui/panel';
+import {
+  mountPanel,
+  renderChecks,
+  renderStackPaletteGuard,
+  renderStatus,
+  setChecksAlertsActivator,
+  type PanelApi,
+} from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
 import { mountSplitters } from './ui/splitters';
@@ -73,7 +80,7 @@ import { mountOptionsTabs } from './ui/optionsTabs';
 import { mountProjectBar } from './ui/projectBar';
 import { createDecorController } from './render/decorController';
 import { checkFabrication } from './core/checks';
-import { countIsolatedStitches } from './core/compositionAids';
+import { countIsolatedStitches, isolatedStitchMask } from './core/compositionAids';
 import { composeGrid, gridFingerprint, rowRanges } from './core/grid';
 import { motifRows } from './core/layout';
 import {
@@ -243,6 +250,28 @@ if (toolbar2dEl instanceof HTMLElement) {
     guidesBtn.classList.toggle('active', next);
   });
   toolbar2dEl.append(guidesBtn);
+
+  const alertsBtn = document.createElement('button');
+  alertsBtn.type = 'button';
+  alertsBtn.dataset.testid = 'ctl-flat-alerts';
+  alertsBtn.textContent = 'Alertes';
+  const syncAlertsBtn = (): void => {
+    const on = flat.getAlerts();
+    alertsBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    alertsBtn.classList.toggle('active', on);
+  };
+  syncAlertsBtn();
+  alertsBtn.addEventListener('click', () => {
+    flat.setAlerts(!flat.getAlerts());
+    syncAlertsBtn();
+  });
+  toolbar2dEl.append(alertsBtn);
+
+  setChecksAlertsActivator(() => {
+    flat.setAlerts(true);
+    syncAlertsBtn();
+    if (!flat.isFlat()) flat.setFlat(true);
+  });
 }
 
 applyShellMode(devMode);
@@ -1008,12 +1037,26 @@ function recompute(): void {
   if (pattern) {
     const motifH = motifRows(design.dimensions, zonesEff);
     const isolated = countIsolatedStitches(pattern, design.dimensions.needles, motifH);
+    const motifIso = isolatedStitchMask(pattern, design.dimensions.needles, motifH);
+    const gridIso = new Uint8Array(grid.width * grid.height);
+    for (let my = 0; my < motifH; my++) {
+      const gy = Math.floor(motifYToGridY(design.dimensions, zonesEff, my));
+      if (gy < 0 || gy >= grid.height) continue;
+      for (let x = 0; x < design.dimensions.needles && x < grid.width; x++) {
+        if (motifIso[my * design.dimensions.needles + x]) {
+          gridIso[gy * grid.width + x] = 1;
+        }
+      }
+    }
+    flat.setIsolatedMask(gridIso);
     if (isolated.isolatedCount > 0) {
       const layerHint = stackOwner
         ? firstIsolatedLayerHint(pattern, design.dimensions.needles, motifH, stackOwner, design.layers)
         : null;
       checkDetail = { tooFine: isolated.tooFine, isolatedCount: isolated.isolatedCount, layerHint };
     }
+  } else {
+    flat.setIsolatedMask(null);
   }
 
   renderChecks(report, checkDetail, { floatLayerHint });

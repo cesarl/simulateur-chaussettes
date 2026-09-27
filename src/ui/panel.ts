@@ -407,9 +407,12 @@ export function renderStatus(info: {
   });
 }
 
-function pill(testId: string): HTMLElement {
-  const item = document.createElement('p');
-  item.className = 'pill';
+function pill(testId: string, options?: { action?: boolean }): HTMLElement {
+  const item = document.createElement(options?.action ? 'button' : 'p');
+  if (options?.action && item instanceof HTMLButtonElement) {
+    item.type = 'button';
+  }
+  item.className = options?.action ? 'pill pill-action' : 'pill';
   item.dataset.testid = testId;
   item.textContent = '…';
   return item;
@@ -418,8 +421,17 @@ function pill(testId: string): HTMLElement {
 function paintPill(testId: string, ok: boolean, text: string): void {
   const item = document.querySelector(`[data-testid="${testId}"]`);
   if (!(item instanceof HTMLElement)) return;
+  const action = item.classList.contains('pill-action');
   item.className = ok ? 'pill ok' : 'pill warn';
+  if (action) item.classList.add('pill-action');
   item.textContent = text;
+}
+
+let checksAlertsActivator: (() => void) | null = null;
+
+/** Pastilles Flottés / Mailles isolées → activent les alertes 2D (T70). */
+export function setChecksAlertsActivator(fn: (() => void) | null): void {
+  checksAlertsActivator = fn;
 }
 
 export function renderChecks(
@@ -1570,12 +1582,16 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   );
 
   const checks = details('Contrôles', 'section-checks');
+  const floatsPill = pill('check-floats', { action: true });
+  const detailPill = pill('check-detail', { action: true });
+  floatsPill.addEventListener('click', () => checksAlertsActivator?.());
+  detailPill.addEventListener('click', () => checksAlertsActivator?.());
   checks.append(
     pill('check-colors'),
     pill('check-rows'),
-    pill('check-floats'),
+    floatsPill,
     pill('check-seam'),
-    pill('check-detail'),
+    detailPill,
   );
   const fitSeam = document.createElement('button');
   fitSeam.type = 'button';
