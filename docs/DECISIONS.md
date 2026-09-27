@@ -323,3 +323,9 @@ Contexte : les images importées (embarquées) ne passent pas dans le lien de pa
 Options : A) tout embarquer en base64 dans le lien ; B) AssetRef `bibliotheque` + fichiers sous `public/images/` synchronisés depuis `bibliotheque-images/`.
 Choix : B — `assetKey` = `b:<id>` ; sync via `syncBibliothequeImages.mjs` appelé par `sync-carreaux` / `sync:local` ; entrée absente → avertissement, sync continue. Section admin Images reportée (bonus).
 Conséquence : Logo et futures images passent dans `#p=2.` sans message « images importées ».
+
+## D55 — Lignes de couleur œil + recolor Image (T67)
+Contexte : pastilles damier peu lisibles ; besoin de remplacer une couleur d’image par un fil.
+Options : A) garder les pastilles + menu contextuel ; B) ligne unifiée (œil + Remplacer…).
+Choix : B — `colorRow.ts` partagé Motif/Image ; zones Motif reçoivent le même œil ; dialogue modal pour le recolor (palette sock + nuancier public + origine).
+Conséquence : `transparentColors` / `recolor` inchangés en cœur ; UI FR avec `layer-color-*` stables.

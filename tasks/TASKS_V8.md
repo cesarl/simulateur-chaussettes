@@ -147,7 +147,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
   - Bibliothèque → Images → « Logo » → calque Image magenta visible dans la vue 2D ;
   - « Copier le lien » → ouvrir le lien → même image (pas de message « images importées »).
 
-### [ ] T67 — Couleurs d'un calque : œil (transparence) et remplacement
+### [x] T67 — Couleurs d'un calque : œil (transparence) et remplacement
 
 Un seul composant **« ligne de couleur »** pour les Motifs et les Images : pastille, code ou nom du fil, **œil**, et pour les Images **« Remplacer… »**.
 
@@ -165,11 +165,11 @@ Un seul composant **« ligne de couleur »** pour les Motifs et les Images : pas
 - L'ancienne section « Couleurs transparentes » (pastilles en damier) est remplacée par ces lignes.
 
 **Critères**
-- [ ] e2e `couleurs-calque.spec.ts`, à la souris :
+- [x] e2e `couleurs-calque.spec.ts`, à la souris :
   - œil barré sur le blanc d'un Motif jaune et blanc → le Fond apparaît dans la vue 2D ;
   - sur une Image, « Remplacer… » → choisir une couleur de « Déjà sur la chaussette » → dans la vue 2D, les mailles de l'image passent à cette couleur ;
   - l'œil et le remplacement survivent à « Copier le lien » puis à la réouverture.
-- [ ] Capture des lignes de couleurs d'un Motif et d'une Image (avec un remplacement), décrite.
+- [x] Capture des lignes de couleurs d'un Motif et d'une Image (avec un remplacement), décrite.
 
 ### [ ] T68 — Bilan V8
 

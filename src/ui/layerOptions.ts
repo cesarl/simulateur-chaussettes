@@ -21,19 +21,24 @@ import {
   replaceImageAsset,
   resetSelectedLayer,
   setFondColor,
+  setImageRecolor,
   setMotifBounds,
   setMotifImportes,
   toggleLayerTransparentColor,
   update,
 } from '../state';
+import { createColorRow } from './colorRow';
 import { details, makeCheckbox, makeColor, makeSliderNumber } from './controls';
 import { embeddedAssetFromTile } from './library';
+import { yarnLegendLabels } from './palettePanel';
 
 export interface LayerOptionsDeps {
   /** Couleurs principales du calque (une pastille par couleur). */
   layerKeyColors: (layerId: string) => string[];
   /** Dessine l’image du calque (aperçu) dans le canvas fourni. */
   drawAssetPreview: (layerId: string, canvas: HTMLCanvasElement) => void;
+  /** Palette déjà sur la chaussette (pour le remplacement d’image). */
+  sockPalette?: () => readonly string[];
 }
 
 export interface LayerOptionsApi {
@@ -388,47 +393,177 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
   numbers.append(posX.root, posY.root, widthStitches.root, rotation.root);
   image.append(preview, replaceRow, flipX.root, flipY.root, repeat.root, repeatGap.root, numbers);
 
-  // ------------------------------------------------------------------ Couleurs transparentes
-  const transparency = details('Couleurs transparentes', 'section-transparence');
+  // ------------------------------------------------------------------ Couleurs du calque (œil + remplacement)
+  const transparency = details('Couleurs du calque', 'section-transparence');
   const transparencyHint = document.createElement('p');
   transparencyHint.className = 'hint';
   transparencyHint.textContent =
-    'Un clic rend la couleur transparente (le calque du dessous apparaît) ; un second clic la rétablit.';
-  const chips = document.createElement('div');
-  chips.className = 'color-chips';
-  chips.dataset.testid = 'transparent-colors';
-  transparency.append(transparencyHint, chips);
+    'Œil barré = couleur transparente (le calque du dessous apparaît). Sur une Image, « Remplacer… » change la couleur de fil.';
+  const colorRows = document.createElement('div');
+  colorRows.className = 'color-rows';
+  colorRows.dataset.testid = 'transparent-colors';
+  transparency.append(transparencyHint, colorRows);
 
-  let chipsKey = '';
+  const recolorDialog = document.createElement('dialog');
+  recolorDialog.className = 'recolor-dialog';
+  recolorDialog.dataset.testid = 'recolor-dialog';
+  const recolorTitle = document.createElement('h3');
+  recolorTitle.textContent = 'Remplacer la couleur';
+  const recolorSock = document.createElement('div');
+  recolorSock.className = 'recolor-section';
+  recolorSock.dataset.testid = 'recolor-sock';
+  const recolorSockTitle = document.createElement('h4');
+  recolorSockTitle.textContent = 'Déjà sur la chaussette';
+  const recolorSockList = document.createElement('div');
+  recolorSockList.className = 'recolor-list';
+  recolorSock.append(recolorSockTitle, recolorSockList);
+  const recolorNuancier = document.createElement('div');
+  recolorNuancier.className = 'recolor-section';
+  recolorNuancier.dataset.testid = 'recolor-nuancier';
+  const recolorNuancierTitle = document.createElement('h4');
+  recolorNuancierTitle.textContent = 'Nuancier (validé)';
+  const recolorSearch = document.createElement('input');
+  recolorSearch.type = 'search';
+  recolorSearch.placeholder = 'Rechercher un fil (code ou nom)…';
+  recolorSearch.dataset.testid = 'recolor-search';
+  const recolorNuancierList = document.createElement('div');
+  recolorNuancierList.className = 'recolor-list';
+  recolorNuancier.append(recolorNuancierTitle, recolorSearch, recolorNuancierList);
+  const recolorReset = document.createElement('button');
+  recolorReset.type = 'button';
+  recolorReset.dataset.testid = 'recolor-original';
+  recolorReset.textContent = 'Couleur d’origine';
+  const recolorClose = document.createElement('button');
+  recolorClose.type = 'button';
+  recolorClose.dataset.testid = 'recolor-close';
+  recolorClose.textContent = 'Fermer';
+  recolorDialog.append(recolorTitle, recolorSock, recolorNuancier, recolorReset, recolorClose);
+  transparency.appendChild(recolorDialog);
 
-  function renderChips(layer: StackLayer): void {
+  let colorsKey = '';
+  let recolorFrom: Hex | null = null;
+  let recolorLayerId: string | null = null;
+
+  function yarnLabel(hex: string): string {
+    const map = yarnLegendLabels();
+    const known = map.get(hex.toLowerCase());
+    if (known) return known;
+    const cat = getState().catalogue;
+    const hit = cat?.nuancier.find((c) => c.hex.toLowerCase() === hex.toLowerCase());
+    return hit ? `${hit.id} · ${hit.nom}` : hex.toUpperCase();
+  }
+
+  function closeRecolor(): void {
+    recolorFrom = null;
+    recolorLayerId = null;
+    if (recolorDialog.open) recolorDialog.close();
+  }
+
+  function pickRecolor(to: Hex | null): void {
+    if (!recolorLayerId || !recolorFrom) return;
+    setImageRecolor(recolorLayerId, recolorFrom, to);
+    closeRecolor();
+  }
+
+  function renderRecolorLists(): void {
+    recolorSockList.replaceChildren();
+    recolorNuancierList.replaceChildren();
+    const { design, catalogue } = getState();
+    const sock = new Set<string>();
+    for (const hex of deps.sockPalette?.() ?? []) sock.add(hex.toLowerCase());
+    sock.add(design.zones.cuffColor.toLowerCase());
+    sock.add(design.zones.heelColor.toLowerCase());
+    sock.add(design.zones.toeColor.toLowerCase());
+    for (const hex of sock) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'recolor-swatch';
+      btn.dataset.testid = `recolor-sock-${hex.slice(1)}`;
+      const chip = document.createElement('i');
+      chip.style.background = hex;
+      const label = document.createElement('span');
+      label.textContent = yarnLabel(hex);
+      btn.append(chip, label);
+      btn.addEventListener('click', () => pickRecolor(hex as Hex));
+      recolorSockList.appendChild(btn);
+    }
+    const q = recolorSearch.value.trim().toLowerCase();
+    const colors = (catalogue?.nuancier ?? []).filter((c) => {
+      if (!c.public) return false;
+      if (!q) return true;
+      return c.id.toLowerCase().includes(q) || c.nom.toLowerCase().includes(q);
+    });
+    for (const c of colors) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'recolor-swatch';
+      btn.dataset.testid = `recolor-yarn-${c.id}`;
+      const chip = document.createElement('i');
+      chip.style.background = c.hex;
+      const label = document.createElement('span');
+      label.textContent = `${c.id} · ${c.nom}`;
+      btn.append(chip, label);
+      btn.addEventListener('click', () => pickRecolor(c.hex.toLowerCase() as Hex));
+      recolorNuancierList.appendChild(btn);
+    }
+  }
+
+  function openRecolor(layerId: string, from: Hex): void {
+    recolorLayerId = layerId;
+    recolorFrom = from.toLowerCase() as Hex;
+    recolorSearch.value = '';
+    renderRecolorLists();
+    if (!recolorDialog.open) recolorDialog.showModal();
+  }
+
+  recolorClose.addEventListener('click', () => closeRecolor());
+  recolorReset.addEventListener('click', () => pickRecolor(null));
+  recolorSearch.addEventListener('input', () => renderRecolorLists());
+  recolorDialog.addEventListener('close', () => {
+    recolorFrom = null;
+    recolorLayerId = null;
+  });
+
+  function renderColorRows(layer: StackLayer): void {
+    if (layer.kind === 'fond') return;
     const colors = deps.layerKeyColors(layer.id);
     const transparent = new Set(layer.transparentColors.map((c) => c.toLowerCase()));
-    const key = `${layer.id}|${colors.join(',')}|${[...transparent].sort().join(',')}`;
-    if (key === chipsKey) return;
-    chipsKey = key;
-    chips.replaceChildren();
+    const recolor = layer.kind === 'image' ? layer.recolor ?? {} : {};
+    const recolorSig = Object.entries(recolor)
+      .map(([k, v]) => `${k}:${v}`)
+      .sort()
+      .join(',');
+    const key = `${layer.id}|${colors.join(',')}|${[...transparent].sort().join(',')}|${recolorSig}|${layer.kind}`;
+    if (key === colorsKey) return;
+    colorsKey = key;
+    colorRows.replaceChildren();
     if (colors.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'hint';
       empty.textContent = 'Couleurs principales pas encore connues (calque vide ou image en cours de lecture).';
-      chips.appendChild(empty);
+      colorRows.appendChild(empty);
       return;
     }
     for (const color of colors) {
-      const hex = color.toLowerCase();
+      const hex = color.toLowerCase() as Hex;
       const off = transparent.has(hex);
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = off ? 'color-chip is-transparent' : 'color-chip';
-      chip.dataset.testid = `layer-color-${hex.slice(1)}`;
-      chip.dataset.color = hex;
-      chip.style.setProperty('--chip', hex);
-      chip.title = off ? `${hex} — transparente` : `${hex} — cliquer pour rendre transparente`;
-      chip.setAttribute('aria-label', chip.title);
-      chip.setAttribute('aria-pressed', off ? 'true' : 'false');
-      chip.addEventListener('click', () => toggleLayerTransparentColor(layer.id, hex as Hex));
-      chips.appendChild(chip);
+      const mapped = recolor[hex] ?? recolor[color];
+      let label = yarnLabel(hex);
+      let recolorLabel: string | null = null;
+      if (mapped) {
+        recolorLabel = `${hex.toUpperCase()} → ${yarnLabel(mapped)}`;
+        label = recolorLabel;
+      }
+      colorRows.appendChild(
+        createColorRow({
+          hex,
+          label,
+          transparent: off,
+          recolorLabel,
+          onToggleEye: () => toggleLayerTransparentColor(layer.id, hex),
+          onRecolor: layer.kind === 'image' ? () => openRecolor(layer.id, hex) : undefined,
+        }),
+      );
     }
   }
 
@@ -537,7 +672,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     syncFond(layer);
     syncExtent(layer);
     syncImage(layer);
-    if (layer.kind !== 'fond') renderChips(layer);
+    if (layer.kind !== 'fond') renderColorRows(layer);
   }
 
   return { header, source, fond, extent, image, transparency, sync };

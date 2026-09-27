@@ -1003,8 +1003,76 @@ dialog.library .hint { margin: 8px 12px 0; font-size: 11px; color: var(--muted);
 .color-chip.is-transparent::after {
   content: '';
   position: absolute;
-  inset: 4px 4px auto 4px;
-  height: 6px;
-  border-radius: 2px;
-  background: var(--chip, #fff);
+  inset: 0;
 }
+.color-rows { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: default;
+}
+.color-row.is-transparent { opacity: 0.72; background: #f7f5f1; }
+.color-row-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.color-row-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.color-row-eye,
+.color-row-recolor {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.color-row-eye { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 24px; padding: 0; }
+.color-row-eye[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
+.recolor-dialog {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  max-width: min(420px, 92vw);
+  max-height: 80vh;
+  overflow: auto;
+}
+.recolor-dialog::backdrop { background: rgba(30, 24, 18, 0.35); }
+.recolor-section { margin: 10px 0; }
+.recolor-section h4 { margin: 0 0 6px; font-size: 12px; }
+.recolor-list { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow: auto; }
+.recolor-swatch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 5px;
+  padding: 4px 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+}
+.recolor-swatch i {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+.zone-swatches .color-row { cursor: pointer; }

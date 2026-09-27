@@ -820,3 +820,17 @@ Vérification : typecheck ✅ ; unit sync ✅ ; e2e bibliotheque-images ✅.
 Contrôle visuel — `visuel-t66-logo-2d.png` : calque **Logo** (IMAGE) sélectionné dans le dock ; logo « CÉSAR BAZAAR » magenta visible sur la **vue 2D** (tige crème) et la **3D** (côté de la chaussette) ; pastilles roses dans « Couleurs transparentes » ; Fond + Motif 1 toujours présents.
 Décisions : D54.
 Reste / risques : T67 œil / remplacement couleurs.
+
+## T67 — Couleurs calque œil / remplacement — 2026-09-27 09:45
+Statut : terminée
+Fait :
+- Composant `colorRow` (pastille, libellé, œil, Remplacer…) ; section « Couleurs du calque » remplace le damier.
+- Zones Motif (palettePanel) : œil + bascule groupée si même fil ; Images : dialogue Remplacer (sock + nuancier + origine).
+- `setImageRecolor` dans state ; `data-testid` `layer-color-*` conservés pour les e2e V7.
+- e2e `couleurs-calque.spec.ts`.
+Vérification : typecheck ✅ ; e2e couleurs-calque ✅.
+Contrôle visuel :
+- `visuel-t67-motif-oeil.png` : Motif Dunes jaune sur Fond bleu marine (blanc transparent) ; lignes zone-1 WT000 Blanc avec œil ; 2D/3D cohérents.
+- `visuel-t67-image-recolor.png` : calque Logo sélectionné ; section « Couleurs du calque » avec pastille + « Changer… » (remplacement actif) ; logo visible en 2D/3D.
+Décisions : D55.
+Reste / risques : T68 bilan + verify complet.

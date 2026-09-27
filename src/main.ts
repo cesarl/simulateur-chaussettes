@@ -1423,6 +1423,7 @@ async function boot(): Promise<void> {
     tabs: optionsTabs,
     layerKeyColors: layerColorsOf,
     drawAssetPreview,
+    sockPalette: () => patternPalette,
     exportImages: (request) => {
       const { design, footSide } = getState();
       const shape = shapeFromDesign(design.dimensions, design.zones, footSide);
