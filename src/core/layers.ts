@@ -730,7 +730,12 @@ export function migrateDesignV1(d: SockDesign, ctx: V1Context): SockDesignV2 {
         (l, i): ImageLayer => ({
           kind: 'image',
           id: l.id || `image-${i + 1}`,
-          name: l.asset.kind === 'collection' ? `${l.asset.collectionId} ${l.asset.variation}` : `Image ${i + 1}`,
+          name:
+            l.asset.kind === 'collection'
+              ? `${l.asset.collectionId} ${l.asset.variation}`
+              : l.asset.kind === 'bibliotheque'
+                ? l.asset.imageId
+                : `Image ${i + 1}`,
           hidden: l.hidden,
           locked: l.locked,
           transparentColors: [],
@@ -923,8 +928,7 @@ export function unpackLayers(packed: unknown): StackLayer[] {
 function cleanAsset(a: unknown): AssetRef {
   const r = (isObj(a) ? a : {}) as Record<string, J>;
   if (r.kind === 'embarquee') return { kind: 'embarquee', assetId: String(r.assetId ?? '') };
-  if (r.kind === 'bibliotheque') // V8 : le type 'bibliotheque' est ajouté à AssetRef en T64 (retirer alors ce transtypage).
-    return { kind: 'bibliotheque', imageId: String(r.imageId ?? '') } as unknown as AssetRef;
+  if (r.kind === 'bibliotheque') return { kind: 'bibliotheque', imageId: String(r.imageId ?? '') };
   return { kind: 'collection', collectionId: String(r.collectionId ?? ''), variation: String(r.variation ?? 'VAR1') };
 }
 

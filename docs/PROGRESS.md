@@ -808,3 +808,15 @@ Vérification : typecheck ✅ ; e2e onglet-global ✅.
 Contrôle visuel — `visuel-t65-onglet-global.png` : onglet **Global** actif dans la barre d’onglets (Calque / Chaussette / Décor / Export / Global) ; volet droit montre « Tout réinitialiser », « Dernier calcul : 164 ms », lien « Gérer mes collections », bouton « Quitter le mode dev » ; bandeau Annuler/Rétablir/Copier le lien toujours en tête du panneau ; **aucun** pied `.options-footer` sous les options ; 2D (tige crème, bord-côte marine, repères) et 3D (chaussette) visibles ; dock Motif 1 / Fond en bas.
 Décisions : aucune.
 Reste / risques : T66 bibliothèque d’images.
+
+## T66 — Bibliothèque d’images — 2026-09-27 09:27
+Statut : terminée
+Fait :
+- `AssetRef` + `assetKey` `b:<id>` ; chargement `compositionImages` via `./images/<fichier>` ; `cleanAsset` sans transtypage ; `project.readAssetRef`.
+- `scripts/syncBibliothequeImages.mjs` branché dans `sync-carreaux` / `sync:local` → `public/images/` + `index.json` + rapport.
+- Bibliothèque onglet Images : section « Bibliothèque » (filtre + vignettes) au-dessus de « Images du projet ».
+- Tests : `sync-bibliotheque.test.ts` ; e2e `bibliotheque-images.spec.ts` (souris).
+Vérification : typecheck ✅ ; unit sync ✅ ; e2e bibliotheque-images ✅.
+Contrôle visuel — `visuel-t66-logo-2d.png` : calque **Logo** (IMAGE) sélectionné dans le dock ; logo « CÉSAR BAZAAR » magenta visible sur la **vue 2D** (tige crème) et la **3D** (côté de la chaussette) ; pastilles roses dans « Couleurs transparentes » ; Fond + Motif 1 toujours présents.
+Décisions : D54.
+Reste / risques : T67 œil / remplacement couleurs.

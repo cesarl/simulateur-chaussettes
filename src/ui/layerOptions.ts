@@ -489,10 +489,14 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     }
     if (layer.kind === 'image') {
       const asset = layer.asset;
-      const name =
-        asset.kind === 'embarquee'
-          ? (getState().embeddedAssets.find((a) => a.id === asset.assetId)?.name ?? 'image du projet')
-          : `${asset.collectionId} ${asset.variation}`;
+      let name: string;
+      if (asset.kind === 'embarquee') {
+        name = getState().embeddedAssets.find((a) => a.id === asset.assetId)?.name ?? 'image du projet';
+      } else if (asset.kind === 'bibliotheque') {
+        name = asset.imageId;
+      } else {
+        name = `${asset.collectionId} ${asset.variation}`;
+      }
       sourceText.textContent = `Image : ${name}`;
       useImported.hidden = true;
       return;

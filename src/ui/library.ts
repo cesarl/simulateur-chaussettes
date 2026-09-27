@@ -12,6 +12,11 @@ import type { EmbeddedAsset } from '../core/composition';
 import type { TileAsset } from '../core/types';
 import { addImageLayer, addMotifLayer, canAddLayer, defaultMotifLayout, getState, subscribe, update } from '../state';
 import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
+import {
+  bibliothequeImageUrl,
+  loadBibliothequeImages,
+  type BibliothequeImage,
+} from '../io/bibliothequeImages';
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { calepinageForCollection } from './collectionPicker';
@@ -133,6 +138,26 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   imagesPane.className = 'library-pane library-pane-images';
   imagesPane.dataset.testid = 'lib-pane-images';
 
+  const bibSection = document.createElement('section');
+  bibSection.className = 'library-bib';
+  bibSection.dataset.testid = 'lib-bib-section';
+  const bibTitle = document.createElement('h3');
+  bibTitle.className = 'calep-group-title';
+  bibTitle.textContent = 'Bibliothèque';
+  const bibFilter = document.createElement('input');
+  bibFilter.type = 'search';
+  bibFilter.className = 'library-search';
+  bibFilter.placeholder = 'Filtrer la bibliothèque…';
+  bibFilter.dataset.testid = 'lib-bib-filter';
+  const bibList = document.createElement('div');
+  bibList.className = 'library-grid';
+  bibList.dataset.testid = 'lib-bib-list';
+  bibSection.append(bibTitle, bibFilter, bibList);
+
+  const projectTitle = document.createElement('h3');
+  projectTitle.className = 'calep-group-title';
+  projectTitle.textContent = 'Images du projet';
+
   const imagesTools = document.createElement('div');
   imagesTools.className = 'library-tools';
 
@@ -171,7 +196,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   imagesList.className = 'library-grid';
   imagesList.dataset.testid = 'lib-images';
 
-  imagesPane.append(imagesTools, imagesDrop, imagesList);
+  imagesPane.append(bibSection, projectTitle, imagesTools, imagesDrop, imagesList);
 
   const variationMenu = document.createElement('div');
   variationMenu.className = 'library-variation-menu';
@@ -255,6 +280,13 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
 
   function addAssetLayer(asset: EmbeddedAsset, assets: EmbeddedAsset[]): void {
     const added = addImageLayer({ kind: 'embarquee', assetId: asset.id }, asset.name, assets);
+    if (added) close();
+    else setStatus('16 calques au maximum.');
+  }
+
+  function addBibliothequeLayer(entry: BibliothequeImage): void {
+    if (busy) return;
+    const added = addImageLayer({ kind: 'bibliotheque', imageId: entry.id }, entry.nom);
     if (added) close();
     else setStatus('16 calques au maximum.');
   }
@@ -420,14 +452,56 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     }
   }
 
+  function renderBibliotheque(entries: BibliothequeImage[]): void {
+    const q = bibFilter.value.trim().toLowerCase();
+    bibList.replaceChildren();
+    const filtered = entries.filter((e) => {
+      if (!q) return true;
+      return `${e.nom} ${e.id} ${e.categorie}`.toLowerCase().includes(q);
+    });
+    if (filtered.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.textContent = entries.length === 0 ? 'Aucune image dans la bibliothèque.' : 'Aucun résultat.';
+      bibList.appendChild(empty);
+      return;
+    }
+    for (const entry of filtered) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'library-item';
+      button.dataset.testid = `lib-bib-${entry.id}`;
+      const img = document.createElement('img');
+      img.alt = '';
+      img.className = 'coll-thumb';
+      img.src = bibliothequeImageUrl(entry.fichier);
+      const name = document.createElement('span');
+      name.className = 'coll-name';
+      name.textContent = entry.nom;
+      const cat = document.createElement('span');
+      cat.className = 'coll-meta';
+      cat.textContent = entry.categorie;
+      button.append(img, name, cat);
+      button.addEventListener('click', () => addBibliothequeLayer(entry));
+      bibList.appendChild(button);
+    }
+  }
+
   function renderImages(): void {
     const { embeddedAssets } = getState();
     imagesList.replaceChildren();
-    setStatus(
-      embeddedAssets.length === 0
-        ? 'Aucune image dans le projet : ajoutez l’exemple ou importez un PNG / SVG.'
-        : `${embeddedAssets.length} image${embeddedAssets.length > 1 ? 's' : ''} dans le projet · un clic ajoute un calque Image.`,
-    );
+    void loadBibliothequeImages().then((entries) => {
+      if (activeTab !== 'images') return;
+      renderBibliotheque(entries);
+      const bibCount = entries.length;
+      setStatus(
+        bibCount > 0
+          ? `${bibCount} image${bibCount > 1 ? 's' : ''} en bibliothèque · ${embeddedAssets.length} dans le projet.`
+          : embeddedAssets.length === 0
+            ? 'Aucune image : ajoutez l’exemple ou importez un PNG / SVG.'
+            : `${embeddedAssets.length} image${embeddedAssets.length > 1 ? 's' : ''} dans le projet · un clic ajoute un calque Image.`,
+      );
+    });
     for (const asset of embeddedAssets) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -464,6 +538,11 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   dialog.addEventListener('close', () => closeVariationMenu());
   search.addEventListener('input', () => {
     if (activeTab === 'collections') renderCollections();
+  });
+  bibFilter.addEventListener('input', () => {
+    void loadBibliothequeImages().then((entries) => {
+      if (activeTab === 'images') renderBibliotheque(entries);
+    });
   });
   importBtn.addEventListener('click', () => fileInput.click());
   exampleBtn.addEventListener('click', () => void addExample());

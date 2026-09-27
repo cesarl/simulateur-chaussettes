@@ -5,12 +5,13 @@
 import { assetKey, type AssetRef, type RasterImage, type EmbeddedAsset } from '../core/composition';
 import { recolorSvg, zoneHex, type Catalogue, type ZoneColors } from '../core/collections';
 import { carreauxUrl } from './collectionTiles';
+import { bibliothequeImageUrl, resolveBibliothequeFichier } from './bibliothequeImages';
 import { loadTileFromSvgText, loadTileFromUrl } from './tiles';
 import { base64ToBytes, decodePng } from './pngCodec';
 
 export interface CompositionImageRequest {
   ref: AssetRef;
-  /** Couleurs de zones (collection) — ignoré pour embarqué. */
+  /** Couleurs de zones (collection) — ignoré pour embarqué / bibliothèque. */
   zoneColors?: ZoneColors | null;
   catalogue?: Catalogue | null;
   assets?: readonly EmbeddedAsset[];
@@ -30,6 +31,7 @@ export function compositionCacheKey(req: CompositionImageRequest): string {
   const key = assetKey(req.ref);
   const side = req.targetSide ?? 512;
   if (req.ref.kind === 'embarquee') return `${key}|e|${side}`;
+  if (req.ref.kind === 'bibliotheque') return `${key}|b|${side}`;
   return `${key}|${colorsKey(req.zoneColors)}|${side}`;
 }
 
@@ -63,6 +65,11 @@ export async function loadCompositionImage(req: CompositionImageRequest): Promis
       const tile = await loadTileFromSvgText(asset.data, asset.name);
       img = { width: tile.width, height: tile.height, rgba: tile.rgba };
     }
+  } else if (req.ref.kind === 'bibliotheque') {
+    const fichier = await resolveBibliothequeFichier(req.ref.imageId);
+    if (!fichier) throw new Error(`Image bibliothèque introuvable : ${req.ref.imageId}`);
+    const tile = await loadTileFromUrl(bibliothequeImageUrl(fichier));
+    img = { width: tile.width, height: tile.height, rgba: tile.rgba };
   } else {
     const ref = req.ref;
     const cat = req.catalogue;

@@ -317,3 +317,9 @@ Contexte : 80 000 fillRect/frame et un `recompute` à chaque mousemove figeaient
 Options : A) WebWorker ; B) ImageData + pipeline drag dédié (dirty rows, rAF, pas d’autosave).
 Choix : B — pendant le glisser, peindre le RVB empilé directement ; quantize/compose/3D au plus 8×/s ; un commit store au lâcher (`coalesce`). Overlay canvas pour les poignées.
 Conséquence : `dragComputeMsAvg` passe sous 25 ms ; les Motifs ne sont pas recalculés pendant un glisser d’image.
+
+## D54 — Bibliothèque d’images publique (T66)
+Contexte : les images importées (embarquées) ne passent pas dans le lien de partage ; César veut un logo et d’autres assets publics.
+Options : A) tout embarquer en base64 dans le lien ; B) AssetRef `bibliotheque` + fichiers sous `public/images/` synchronisés depuis `bibliotheque-images/`.
+Choix : B — `assetKey` = `b:<id>` ; sync via `syncBibliothequeImages.mjs` appelé par `sync-carreaux` / `sync:local` ; entrée absente → avertissement, sync continue. Section admin Images reportée (bonus).
+Conséquence : Logo et futures images passent dans `#p=2.` sans message « images importées ».

@@ -122,7 +122,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 **Critères**
 - [x] e2e : les 3 boutons sont dans l'onglet Global, et il n'y a plus d'élément `.options-footer`.
 
-### [ ] T66 — Bibliothèque d'images intégrée (+ logo fourni par César)
+### [x] T66 — Bibliothèque d'images intégrée (+ logo fourni par César)
 
 - Nouveau dossier **`bibliotheque-images/`** à la racine, déjà créé par Claude :
   - `images.json` : `[{ id, nom, fichier, categorie }]` ;
@@ -142,8 +142,8 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Outil « Gérer mes collections » : section « Images » pour ajouter, renommer ou retirer une image de `bibliotheque-images/`, sur le modèle des collections locales. C'est un bonus, si le temps le permet.
 
 **Critères**
-- [ ] Test unitaire : synchronisation de `bibliotheque-images/` (fixture minimale) → `index.json` correct ; une entrée dont le fichier manque est ignorée avec un avertissement.
-- [ ] e2e `bibliotheque-images.spec.ts`, à la souris :
+- [x] Test unitaire : synchronisation de `bibliotheque-images/` (fixture minimale) → `index.json` correct ; une entrée dont le fichier manque est ignorée avec un avertissement.
+- [x] e2e `bibliotheque-images.spec.ts`, à la souris :
   - Bibliothèque → Images → « Logo » → calque Image magenta visible dans la vue 2D ;
   - « Copier le lien » → ouvrir le lien → même image (pas de message « images importées »).
 
