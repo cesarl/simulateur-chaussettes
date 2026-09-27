@@ -35,6 +35,7 @@ import {
   type RasterImage,
 } from '../../src/core/composition';
 import { motifRows, samplePattern } from '../../src/core/layout';
+import { rowRanges } from '../../src/core/grid';
 import type {
   DecorSettings,
   Hex,
@@ -93,6 +94,12 @@ export interface ImageLayer extends BaseLayer {
   flipX: boolean;
   flipY: boolean;
   repeatAroundGap: number | null;
+  /**
+   * V8 — remplacement de couleurs : couleur principale de l'image → couleur de fil (nuancier).
+   * Absent ou vide = image telle quelle. Quand il y a au moins un remplacement, chaque pixel est
+   * d'abord rattaché à la couleur principale la plus proche (image « aplatie », idéale en jacquard).
+   */
+  recolor?: Record<Hex, Hex>;
 }
 
 export type StackLayer = FondLayer | MotifLayer | ImageLayer;
@@ -340,7 +347,82 @@ export interface StackRenderResult {
 
 type Prepared =
   | { kind: 'motif'; index: number; rgb: Uint8ClampedArray; from: number; to: number; isT: ((r: number, g: number, b: number) => boolean) | null }
-  | { kind: 'image'; index: number; layer: ImagePlacement; img: RasterImage; frame: ReturnType<typeof layerFrame>; opaque: Uint8Array };
+  | { kind: 'image'; index: number; layer: ImagePlacement; img: RasterImage; frame: ReturnType<typeof layerFrame>; opaque: Uint8Array; rgba: ArrayLike<number> };
+
+/**
+ * Pixels « prêts » d'une image (masque d'opacité + couleurs remplacées), mis en cache par image et
+ * par réglages : pendant un glisser, on ne refait pas ce travail à chaque mouvement de souris.
+ */
+const imagePixelCache = new WeakMap<RasterImage, Map<string, { opaque: Uint8Array; rgba: ArrayLike<number> }>>();
+
+/** Nettoie une table de remplacement (clés/valeurs en minuscules, entrées identiques retirées). */
+export function cleanRecolor(recolor: Record<Hex, Hex> | undefined): Record<Hex, Hex> {
+  const out: Record<Hex, Hex> = {};
+  for (const [k, v] of Object.entries(recolor ?? {})) {
+    const a = k.toLowerCase();
+    const b = String(v).toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(a) && /^#[0-9a-f]{6}$/.test(b) && a !== b) out[a] = b;
+  }
+  return out;
+}
+
+/** Associe chaque couleur à la couleur principale la plus proche (cache par couleur). */
+function nearestKey(keyColors: readonly Hex[]): (r: number, g: number, b: number) => Hex | null {
+  const keys = keyColors.map((h) => ({ h: h.toLowerCase(), rgb: hexRgb(h) }));
+  const cache = new Map<number, Hex | null>();
+  return (r, g, b) => {
+    const k = (r << 16) | (g << 8) | b;
+    const hit = cache.get(k);
+    if (hit !== undefined) return hit;
+    let best = Infinity;
+    let res: Hex | null = null;
+    for (const c of keys) {
+      const d = (c.rgb[0] - r) ** 2 + (c.rgb[1] - g) ** 2 + (c.rgb[2] - b) ** 2;
+      if (d < best) {
+        best = d;
+        res = c.h;
+      }
+    }
+    cache.set(k, res);
+    return res;
+  };
+}
+
+function imagePixels(
+  img: RasterImage,
+  keyColors: readonly Hex[],
+  transparent: readonly Hex[],
+  recolor: Record<Hex, Hex>,
+): { opaque: Uint8Array; rgba: ArrayLike<number> } {
+  const sig = `${keyColors.join(',')}|${[...transparent].map((h) => h.toLowerCase()).sort().join(',')}|${JSON.stringify(recolor)}`;
+  let perImage = imagePixelCache.get(img);
+  if (!perImage) imagePixelCache.set(img, (perImage = new Map()));
+  const hit = perImage.get(sig);
+  if (hit) return hit;
+  const isT = transparent.length ? transparencyTest(keyColors, transparent) : null;
+  const doRecolor = Object.keys(recolor).length > 0;
+  const snap = doRecolor ? nearestKey(keyColors) : null;
+  const opaque = new Uint8Array(img.width * img.height);
+  const rgba = doRecolor ? new Uint8ClampedArray(img.rgba) : img.rgba;
+  for (let p = 0, o = 0; p < opaque.length; p++, o += 4) {
+    const r = img.rgba[o]!, g = img.rgba[o + 1]!, b = img.rgba[o + 2]!;
+    opaque[p] = img.rgba[o + 3]! >= 128 && !(isT && isT(r, g, b)) ? 1 : 0;
+    if (snap && opaque[p]) {
+      const k = snap(r, g, b);
+      const target = k ? (recolor[k] ?? k) : null;
+      if (target) {
+        const [tr, tg, tb] = hexRgb(target);
+        (rgba as Uint8ClampedArray)[o] = tr;
+        (rgba as Uint8ClampedArray)[o + 1] = tg;
+        (rgba as Uint8ClampedArray)[o + 2] = tb;
+      }
+    }
+  }
+  const res = { opaque, rgba };
+  if (perImage.size > 16) perImage.clear();
+  perImage.set(sig, res);
+  return res;
+}
 
 /** Couleurs principales d'un calque (pour les pastilles « rendre transparent » et la palette). */
 export function layerKeyColors(layer: StackLayer, input: Pick<StackRenderInput, 'motifRgb' | 'images' | 'keyColors'>): Hex[] {
@@ -361,8 +443,8 @@ function prepare(input: StackRenderInput): Prepared[] {
   for (let index = 1; index < layers.length; index++) {
     const l = layers[index]!;
     if (l.hidden) continue;
-    const isT = l.transparentColors.length ? transparencyTest(layerKeyColors(l, input), l.transparentColors) : null;
     if (l.kind === 'motif') {
+      const isT = l.transparentColors.length ? transparencyTest(layerKeyColors(l, input), l.transparentColors) : null;
       const rgb = input.motifRgb.get(l.id);
       if (!rgb || rgb.length < gauge.needles * gauge.rows * 3) continue;
       const from = l.bounds.kind === 'bande' ? Math.max(0, Math.round(Math.min(l.bounds.fromRow, l.bounds.toRow))) : 0;
@@ -372,12 +454,11 @@ function prepare(input: StackRenderInput): Prepared[] {
     } else if (l.kind === 'image') {
       const img = input.images.get(assetKey(l.asset));
       if (!img) continue;
-      const opaque = new Uint8Array(img.width * img.height);
-      for (let p = 0, o = 0; p < opaque.length; p++, o += 4) {
-        opaque[p] = img.rgba[o + 3]! >= 128 && !(isT && isT(img.rgba[o]!, img.rgba[o + 1]!, img.rgba[o + 2]!)) ? 1 : 0;
-      }
+      const recolor = cleanRecolor(l.recolor);
+      const needKeys = l.transparentColors.length > 0 || Object.keys(recolor).length > 0;
+      const { opaque, rgba } = imagePixels(img, needKeys ? layerKeyColors(l, input) : [], l.transparentColors, recolor);
       const placement = imagePlacement(l);
-      out.push({ kind: 'image', index, layer: placement, img, frame: layerFrame(placement, img, gauge), opaque });
+      out.push({ kind: 'image', index, layer: placement, img, frame: layerFrame(placement, img, gauge), opaque, rgba });
     }
   }
   return out.reverse(); // du dessus vers le dessous
@@ -389,13 +470,26 @@ function prepare(input: StackRenderInput): Prepared[] {
  * toujours plein. Quand des images sont visibles, chaque maille est sur-échantillonnée (n × n) et
  * prend la couleur majoritaire (bords nets, jacquard), exactement comme la composition V6.
  */
-export function renderStack(input: StackRenderInput): StackRenderResult {
+export interface RenderStackOptions {
+  /**
+   * V8 — ne recalculer que les rangs [début, fin) (glisser d'une image : seuls les rangs touchés
+   * changent). Le reste du résultat est pris dans `into`, qui est modifié en place et renvoyé.
+   * Résultat identique, octet pour octet, à un rendu complet (testé).
+   */
+  rows?: [number, number];
+  into?: StackRenderResult;
+}
+
+export function renderStack(input: StackRenderInput, opts: RenderStackOptions = {}): StackRenderResult {
   const { gauge } = input;
   const W = gauge.needles;
   const H = gauge.rows;
-  const rgb = new Uint8ClampedArray(Math.max(0, W * H * 3));
-  const owner = new Int16Array(Math.max(0, W * H));
+  const reuse = opts.into && opts.into.rgb.length === Math.max(0, W * H * 3) && opts.into.owner.length === Math.max(0, W * H);
+  const rgb = reuse ? opts.into!.rgb : new Uint8ClampedArray(Math.max(0, W * H * 3));
+  const owner = reuse ? opts.into!.owner : new Int16Array(Math.max(0, W * H));
   if (W < 1 || H < 1) return { rgb, owner };
+  const y0 = reuse && opts.rows ? Math.max(0, Math.floor(opts.rows[0])) : 0;
+  const y1 = reuse && opts.rows ? Math.min(H, Math.ceil(opts.rows[1])) : H;
   const fondLayer = input.layers[0];
   const fond = hexRgb(fondLayer?.kind === 'fond' ? fondLayer.color : DEFAULT_FOND_COLOR);
   const fondKey = (fond[0] << 16) | (fond[1] << 8) | fond[2];
@@ -404,7 +498,7 @@ export function renderStack(input: StackRenderInput): StackRenderResult {
   const votes = new Map<number, number>();
   const ownerVotes = new Map<number, number>();
 
-  for (let y = 0; y < H; y++) {
+  for (let y = y0; y < y1; y++) {
     for (let x = 0; x < W; x++) {
       const m = (y * W + x) * 3;
       // Contribution constante des calques Motif (par maille), calculée une fois.
@@ -432,7 +526,7 @@ export function renderStack(input: StackRenderInput): StackRenderResult {
             const q = py * p.img.width + px;
             if (!p.opaque[q]) continue;
             const o = q * 4;
-            key = (p.img.rgba[o]! << 16) | (p.img.rgba[o + 1]! << 8) | p.img.rgba[o + 2]!;
+            key = (p.rgba[o]! << 16) | (p.rgba[o + 1]! << 8) | p.rgba[o + 2]!;
             who = p.index;
             break;
           }
@@ -657,7 +751,13 @@ export function migrateDesignV1(d: SockDesign, ctx: V1Context): SockDesignV2 {
   const source: MotifSource = ctx.collectionId
     ? { kind: 'collection', collectionId: ctx.collectionId, colors: { ...(ctx.zoneColors ?? {}) }, paletteId: ctx.paletteOptionId }
     : { kind: 'importes', tileIds: [...(ctx.tileIds.length ? ctx.tileIds : d.layout.tileIds)] };
-  const fondColor = d.quantize.paletteMode === 'manuelle' && d.quantize.palette[0] ? d.quantize.palette[0] : DEFAULT_FOND_COLOR;
+  // V8 : le pied uni prend la couleur du Fond (plus de « couleur du pied » séparée). Le Motif couvre
+  // toute la tige, donc le Fond n'y est jamais visible : lui donner la couleur du pied est sans perte.
+  const fondColor = !d.zones.patternOnFoot
+    ? d.zones.footColor
+    : d.quantize.paletteMode === 'manuelle' && d.quantize.palette[0]
+      ? d.quantize.palette[0]
+      : DEFAULT_FOND_COLOR;
   return {
     ...common,
     layers: [newFondLayer(fondColor), newMotifLayer('motif-1', source, layout, ctx.collectionId ? collectionLabel(ctx.collectionId) : 'Motif 1')],
@@ -794,8 +894,11 @@ export function packLayers(layers: readonly StackLayer[]): J[] {
     const d = diffJ(JSON.parse(JSON.stringify(l)) as J, JSON.parse(JSON.stringify(layerTemplate(l.kind))) as J);
     const o = isObj(d) ? d : {};
     delete o.kind;
+    if (isObj(o.recolor) && Object.keys(o.recolor).length === 0) delete o.recolor;
     // la source d'un motif est une union : on la garde entière pour ne pas mélanger les champs
     if (l.kind === 'motif') o.source = JSON.parse(JSON.stringify(l.source)) as J;
+    // idem pour l'image d'un calque Image (union collection / embarquée / bibliothèque)
+    if (l.kind === 'image') o.asset = JSON.parse(JSON.stringify(l.asset)) as J;
     return { k: l.kind[0]!, ...o };
   });
 }
@@ -811,9 +914,18 @@ export function unpackLayers(packed: unknown): StackLayer[] {
     const { k: _k, ...rest } = raw;
     const l = mergeJ(JSON.parse(JSON.stringify(layerTemplate(kind))) as J, rest) as unknown as StackLayer;
     if (l.kind === 'motif') l.source = cleanSource(l.source);
+    if (l.kind === 'image') l.asset = cleanAsset((rest as { asset?: unknown }).asset ?? l.asset);
     out.push({ ...l, kind } as StackLayer);
   }
   return normalizeStack(out);
+}
+
+function cleanAsset(a: unknown): AssetRef {
+  const r = (isObj(a) ? a : {}) as Record<string, J>;
+  if (r.kind === 'embarquee') return { kind: 'embarquee', assetId: String(r.assetId ?? '') };
+  if (r.kind === 'bibliotheque') // V8 : le type 'bibliotheque' est ajouté à AssetRef en T64 (retirer alors ce transtypage).
+    return { kind: 'bibliotheque', imageId: String(r.imageId ?? '') } as unknown as AssetRef;
+  return { kind: 'collection', collectionId: String(r.collectionId ?? ''), variation: String(r.variation ?? 'VAR1') };
 }
 
 function cleanSource(s: MotifSource): MotifSource {
@@ -850,4 +962,161 @@ export function shareJsonToDesignV2(json: unknown): SockDesignV2 {
     decor: pick('decor', defaults.decor),
     layers: Array.isArray(r.layers) ? unpackLayers(r.layers) : structuredClone(defaults.layers),
   };
+}
+
+// =================================================================== V8 — repères de la vue à plat
+/**
+ * Rang de motif (0 = premier rang sous le bord-côte, comme `y` des calques) → rang de la grille
+ * complète. Les rangs de motif SAUTENT le talon : les rangs ≥ legRows sont sur le pied.
+ * (Bug V7 : la vue 2D ajoutait seulement le bord-côte → cadre décalé de la hauteur du talon.)
+ */
+export function motifRowToGridRow(dims: SockDimensions, zones: ZoneSettings, motifRow: number): number {
+  const r = rowRanges(dims, zones);
+  const leg = r.leg.end - r.leg.start;
+  return motifRow < leg ? r.leg.start + motifRow : r.foot.start + (motifRow - leg);
+}
+
+/** Rang de la grille → rang de motif ; null hors zone motif (bord-côte, talon, pointe, pied sans motif). */
+export function gridRowToMotifRow(dims: SockDimensions, zones: ZoneSettings, gridRow: number): number | null {
+  const r = rowRanges(dims, zones);
+  if (gridRow >= r.leg.start && gridRow < r.leg.end) return gridRow - r.leg.start;
+  if (zones.patternOnFoot && gridRow >= r.foot.start && gridRow < r.foot.end) return r.leg.end - r.leg.start + (gridRow - r.foot.start);
+  return null;
+}
+
+/**
+ * Même conversion pour une coordonnée continue (poignées, coins d'un cadre tourné) : en dessous de
+ * la tige, on ajoute la hauteur du talon. Un cadre à cheval sur le talon est donc « coupé » à
+ * l'affichage exactement comme l'image l'est dans la grille.
+ */
+export function motifYToGridY(dims: SockDimensions, zones: ZoneSettings, motifY: number): number {
+  const r = rowRanges(dims, zones);
+  const leg = r.leg.end - r.leg.start;
+  return motifY < leg ? r.leg.start + motifY : r.foot.start + (motifY - leg);
+}
+
+export function gridYToMotifY(dims: SockDimensions, zones: ZoneSettings, gridY: number): number {
+  const r = rowRanges(dims, zones);
+  const leg = r.leg.end - r.leg.start;
+  if (gridY < r.leg.end) return gridY - r.leg.start;
+  if (gridY < r.foot.start) return leg; // sur le talon : collé au premier rang du pied
+  return leg + (gridY - r.foot.start);
+}
+
+/** Centres des quatre faces (colonnes), pour les repères verticaux de la vue 2D. */
+export function faceGuides(needles: number): Array<{ col: number; label: 'Intérieur' | 'Dos' | 'Extérieur' | 'Devant' }> {
+  return [
+    { col: 0, label: 'Intérieur' },
+    { col: needles / 4, label: 'Dos' },
+    { col: needles / 2, label: 'Extérieur' },
+    { col: (3 * needles) / 4, label: 'Devant' },
+  ];
+}
+
+// =================================================================== V8 — glisser fluide
+/**
+ * Rangs à recalculer quand une image passe de `before` à `after` (union des deux cadres, arrondie
+ * vers l'extérieur, + 1 rang de marge pour le sur-échantillonnage). Frise : mêmes rangs, tout le tour.
+ */
+export function dirtyRowsForImage(
+  before: ImageLayer | null,
+  after: ImageLayer | null,
+  img: { width: number; height: number },
+  g: Gauge,
+): [number, number] {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const l of [before, after]) {
+    if (!l) continue;
+    for (const [, y] of layerCorners(imagePlacement(l), img, g)) {
+      lo = Math.min(lo, y);
+      hi = Math.max(hi, y);
+    }
+  }
+  if (!Number.isFinite(lo)) return [0, 0];
+  return [Math.max(0, Math.floor(lo) - 1), Math.min(g.rows, Math.ceil(hi) + 1)];
+}
+
+// =================================================================== V8 — palette : une seule vérité
+export type PaletteSource = 'calques' | 'fils-collection' | 'auto' | 'manuelle';
+
+export interface PaletteResolution {
+  source: PaletteSource;
+  /** Palette imposée à `quantize` (vide en mode « auto » : la réduction choisit). */
+  palette: Hex[];
+  maxColors: number;
+  /** Nombre de couleurs réellement tricotées dans la zone motif (celui que compare le garde-fou). */
+  count: number;
+  /** Au-delà du maximum de la machine : c'est LE seul critère du bandeau « Réduire à N couleurs ». */
+  overLimit: boolean;
+  /** Le réglage « Couleurs du motif » a-t-il un sens ? (non en mode « d'après les calques »). */
+  showMaxColors: boolean;
+}
+
+/**
+ * Palette effectivement utilisée par la réduction ET vérifiée par le garde-fou. En V7, le bandeau
+ * comptait les couleurs de tous les calques (même cachées sous d'autres calques ou les couleurs
+ * d'anticrénelage) alors que la palette appliquée ne gardait que les couleurs visibles : d'où des
+ * « Réduire à 6 » avec 6 couleurs ou moins. Ici, les deux viennent du même calcul.
+ *
+ *  - calques : `suggestStackPalette(…, rendu)` (couleurs visibles, non transparentes) ;
+ *  - manuelle : la palette choisie (un choix explicite gagne toujours) ;
+ *  - fils-collection : fils de la collection du Motif principal (comportement V4–V6), + le Fond
+ *    s'il est visible quelque part (sinon il serait « mangé » par le fil le plus proche) ;
+ *  - auto : réduction automatique à `maxColors`, plafonnée au maximum machine.
+ */
+export function resolveStackPalette(args: {
+  quantize: QuantizeSettings & { paletteFromLayers?: boolean };
+  /** suggestStackPalette(…, rendu) — utilisé en mode calques. */
+  suggested: readonly Hex[];
+  /** Fils de la collection du Motif principal, ou null (pas de collection / collection PNG). */
+  primaryYarns: readonly Hex[] | null;
+  fondColor: Hex;
+  /** Le Fond apparaît-il dans le rendu ? (au moins une maille dont owner = 0) */
+  fondVisible: boolean;
+  machineMax: number;
+}): PaletteResolution {
+  const { quantize: q, machineMax } = args;
+  const uniq = (list: readonly Hex[]) => [...new Set(list.map((h) => h.toLowerCase()))];
+  const done = (source: PaletteSource, palette: Hex[], maxColors: number, count: number): PaletteResolution => ({
+    source,
+    palette,
+    maxColors,
+    count,
+    overLimit: count > machineMax,
+    showMaxColors: source === 'auto' || source === 'manuelle',
+  });
+  if (q.paletteFromLayers) {
+    const p = uniq(args.suggested);
+    return done('calques', p, Math.min(8, Math.max(2, p.length)), p.length);
+  }
+  if (q.paletteMode === 'manuelle' && q.palette.length > 0) {
+    const p = uniq(q.palette);
+    return done('manuelle', p, q.maxColors, p.length);
+  }
+  if (args.primaryYarns && args.primaryYarns.length > 0) {
+    const p = uniq(args.primaryYarns);
+    const fond = args.fondColor.toLowerCase();
+    if (args.fondVisible && !p.includes(fond)) p.push(fond);
+    return done('fils-collection', p, Math.max(2, Math.min(8, p.length)), p.length);
+  }
+  const n = Math.min(q.maxColors, machineMax);
+  return done('auto', [], n, n);
+}
+
+/** Le Fond est-il visible quelque part dans le rendu ? */
+export function fondVisible(owner: Int16Array | null): boolean {
+  if (!owner) return false;
+  for (let i = 0; i < owner.length; i++) if (owner[i] === 0) return true;
+  return false;
+}
+
+// =================================================================== V8 — le Fond remplace la « couleur du pied »
+/**
+ * Zones effectives passées à `composeGrid` : le pied sans motif prend la couleur du Fond.
+ * (Le champ `zones.footColor` reste dans les fichiers pour la compatibilité, mais n'est plus réglable.)
+ */
+export function effectiveZones(d: Pick<SockDesignV2, 'zones' | 'layers'>): ZoneSettings {
+  const fond = d.layers[0];
+  return fond?.kind === 'fond' ? { ...d.zones, footColor: fond.color } : d.zones;
 }
