@@ -33,6 +33,15 @@ export interface FlatHandle {
   /** Souris → maille motif, ou null hors zone motif. */
   clientToMotifStitch: (px: number, py: number) => { col: number; row: number } | null;
   redraw: () => void;
+  /** Redessine seulement les poignées (canvas overlay), sans recalculer la grille. */
+  redrawOverlay: () => void;
+  /** Contexte 2D du canvas des poignées. */
+  getOverlayContext: () => CanvasRenderingContext2D | null;
+  /**
+   * Aperçu rapide pendant un glisser (T62) : peint le RVB motif (3 octets/maille)
+   * sur la zone motif, en gardant bord-côte / talon / pointe de la grille courante.
+   */
+  paintMotifRgbPreview: (rgb: Uint8ClampedArray, needles: number, motifRows: number) => void;
   panBy: (dx: number, dy: number) => void;
   setPanMode: (active: boolean) => void;
   setOverlayDrawer: (draw: (() => void) | null) => void;
@@ -71,11 +80,16 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   canvas.dataset.testid = 'flat-canvas';
   canvas.setAttribute('aria-label', 'Grille de mailles à plat');
 
+  const overlay = document.createElement('canvas');
+  overlay.dataset.testid = 'flat-overlay';
+  overlay.className = 'flat-overlay';
+  overlay.setAttribute('aria-hidden', 'true');
+
   const hover = document.createElement('p');
   hover.className = 'flat-hover';
   hover.dataset.testid = 'flat-hover';
   hover.textContent = 'Survolez une maille.';
-  layer.append(canvas, hover);
+  layer.append(canvas, overlay, hover);
 
   const switcher = document.createElement('div');
   switcher.className = 'view-switch';
@@ -112,14 +126,51 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   let overlayDrawer: (() => void) | null = null;
   let dims: SockDimensions = getState().design.dimensions;
   let zones: ZoneSettings = getState().design.zones;
+  /** Bitmap 1 px = 1 maille (recyclé). */
+  let stitchBitmap: ImageData | null = null;
+  let stitchCanvas: HTMLCanvasElement | null = null;
 
   const context = canvas.getContext('2d');
+  const overlayCtx = overlay.getContext('2d');
 
   function cells(): { w: number; h: number } {
     const w = 4 * zoom;
     const ar = aspect > 0 && Number.isFinite(aspect) ? aspect : 0.75;
     const h = Math.max(1, Math.round(4 * ar)) * zoom;
     return { w, h };
+  }
+
+  function parseHex(hex: string): [number, number, number] {
+    const h = hex.startsWith('#') ? hex.slice(1) : hex;
+    if (h.length !== 6) return [204, 204, 204];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+
+  function ensureStitchBitmap(): ImageData | null {
+    if (!grid) return null;
+    if (!stitchBitmap || stitchBitmap.width !== grid.width || stitchBitmap.height !== grid.height) {
+      stitchBitmap = new ImageData(grid.width, grid.height);
+      stitchCanvas = document.createElement('canvas');
+      stitchCanvas.width = grid.width;
+      stitchCanvas.height = grid.height;
+    }
+    const data = stitchBitmap.data;
+    for (let i = 0; i < grid.colorIndex.length; i++) {
+      let [r, g, b] = parseHex(grid.palette[grid.colorIndex[i] ?? 0] ?? '#cccccc');
+      if (floatMask && floatMask[i]) {
+        r = Math.round(r * 0.65);
+        g = Math.round(g * 0.65);
+        b = Math.round(b * 0.65);
+      }
+      const o = i * 4;
+      data[o] = r;
+      data[o + 1] = g;
+      data[o + 2] = b;
+      data[o + 3] = 255;
+    }
+    const sc = stitchCanvas!.getContext('2d');
+    if (sc) sc.putImageData(stitchBitmap, 0, 0);
+    return stitchBitmap;
   }
 
   /** Point écran pour une maille / coordonnée continue (rang de grille, éventuellement fractionnaire). */
@@ -140,7 +191,18 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
       canvas.width = width;
       canvas.height = height;
     }
+    if (overlay.width !== width || overlay.height !== height) {
+      overlay.width = width;
+      overlay.height = height;
+    }
     draw();
+  }
+
+  function drawOverlayOnly(): void {
+    if (!overlayCtx || layer.hidden) return;
+    overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+    if (!grid) return;
+    overlayDrawer?.();
   }
 
   function draw(): void {
@@ -148,31 +210,51 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = '#f4f1ec';
     context.fillRect(0, 0, canvas.width, canvas.height);
-    if (!grid) return;
+    if (!grid) {
+      drawOverlayOnly();
+      return;
+    }
 
     const { w, h } = cells();
     const showGrid = w >= GRID_MIN_PX;
     const originX = MARGIN_LEFT + panX;
     const originY = MARGIN_TOP + panY;
 
-    for (let row = 0; row < grid.height; row += 1) {
-      for (let col = 0; col < grid.width; col += 1) {
-        const index = row * grid.width + col;
-        const color = grid.palette[grid.colorIndex[index] ?? 0] ?? '#cccccc';
-        const x = originX + col * w;
-        const y = originY + row * h;
-        if (x + w < 0 || y + h < 0 || x > canvas.width || y > canvas.height) continue;
-        context.fillStyle = color;
-        context.fillRect(x, y, w, h);
-        if (floatMask && floatMask[index]) {
-          context.fillStyle = 'rgba(0,0,0,0.35)';
-          context.fillRect(x, y, w, h);
-        }
-        if (showGrid) {
-          context.strokeStyle = 'rgba(0,0,0,0.12)';
-          context.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-        }
+    ensureStitchBitmap();
+    if (stitchCanvas) {
+      context.imageSmoothingEnabled = false;
+      context.drawImage(
+        stitchCanvas,
+        0,
+        0,
+        grid.width,
+        grid.height,
+        originX,
+        originY,
+        grid.width * w,
+        grid.height * h,
+      );
+    }
+
+    if (showGrid) {
+      context.strokeStyle = 'rgba(0,0,0,0.12)';
+      context.lineWidth = 1;
+      context.beginPath();
+      const x0 = Math.max(0, Math.floor(-originX / w));
+      const x1 = Math.min(grid.width, Math.ceil((canvas.width - originX) / w) + 1);
+      const y0 = Math.max(0, Math.floor(-originY / h));
+      const y1 = Math.min(grid.height, Math.ceil((canvas.height - originY) / h) + 1);
+      for (let col = x0; col <= x1; col++) {
+        const x = originX + col * w + 0.5;
+        context.moveTo(x, originY + y0 * h);
+        context.lineTo(x, originY + y1 * h);
       }
+      for (let row = y0; row <= y1; row++) {
+        const y = originY + row * h + 0.5;
+        context.moveTo(originX + x0 * w, y);
+        context.lineTo(originX + x1 * w, y);
+      }
+      context.stroke();
     }
 
     const seam = seamColumn(editingLayoutSettings().seam, grid.width);
@@ -186,7 +268,7 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     }
 
     drawZones(originY, h);
-    overlayDrawer?.();
+    drawOverlayOnly();
   }
 
   function drawZones(originY: number, cellH: number): void {
@@ -338,6 +420,53 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     clientAtMotifStitch,
     clientToMotifStitch,
     redraw: draw,
+    redrawOverlay: drawOverlayOnly,
+    getOverlayContext: () => overlayCtx,
+    paintMotifRgbPreview(rgb: Uint8ClampedArray, needles: number, motifRowCount: number) {
+      if (!grid || !context || layer.hidden) return;
+      ensureStitchBitmap();
+      if (!stitchBitmap || !stitchCanvas) return;
+      const data = stitchBitmap.data;
+      const ranges = rowRanges(dims, zones);
+      let motifI = 0;
+      for (let row = 0; row < grid.height; row++) {
+        const inLeg = row >= ranges.leg.start && row < ranges.leg.end;
+        const inFoot = zones.patternOnFoot && row >= ranges.foot.start && row < ranges.foot.end;
+        if (!inLeg && !inFoot) continue;
+        for (let col = 0; col < needles && col < grid.width; col++) {
+          if (motifI >= motifRowCount * needles) break;
+          const src = motifI * 3;
+          const dst = (row * grid.width + col) * 4;
+          data[dst] = rgb[src] ?? 0;
+          data[dst + 1] = rgb[src + 1] ?? 0;
+          data[dst + 2] = rgb[src + 2] ?? 0;
+          data[dst + 3] = 255;
+          motifI += 1;
+        }
+      }
+      const sc = stitchCanvas.getContext('2d');
+      if (sc) sc.putImageData(stitchBitmap, 0, 0);
+      const { w, h } = cells();
+      const originX = MARGIN_LEFT + panX;
+      const originY = MARGIN_TOP + panY;
+      context.imageSmoothingEnabled = false;
+      // Repaint only the stitch area over existing background/zones labels: full clear cheap path
+      context.fillStyle = '#f4f1ec';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(
+        stitchCanvas,
+        0,
+        0,
+        grid.width,
+        grid.height,
+        originX,
+        originY,
+        grid.width * w,
+        grid.height * h,
+      );
+      drawZones(originY, h);
+      drawOverlayOnly();
+    },
     panBy(dx: number, dy: number) {
       panX += dx;
       panY += dy;

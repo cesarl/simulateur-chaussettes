@@ -768,3 +768,15 @@ Contrôle visuel :
 - `visuel-T61-apres-pied.png` : même image sur le **pied**, cadre rouge aligné sur le motif (sous le talon rayé rouge/gris) ; libellé « Pied » ; survol maille 126 rang 299.
 Décisions : D52.
 Reste / risques : T62 fluidité.
+
+## T62 — Vue 2D fluide — 2026-09-27 09:45
+Statut : terminée
+Fait :
+- `flatView` : grille peinte via `ImageData` 1 px/maille + `drawImage` (smoothing off) ; lignes de mailles en un seul chemin ; canvas overlay pour poignées.
+- Glisser image/motif : `dirtyRowsForImage` + `renderStack` partiel ; 1 frame/`rAF` ; aperçu RVB sans quantize ; 3D ≤ 8×/s ; historique / autosave / lien seulement au lâcher.
+- `window.__SIM__.stats` : `dragFrames`, `dragComputeMsAvg`, `motifRgbComputes`.
+- e2e `glisser-fluide.spec.ts`.
+Vérification : typecheck ✅ ; e2e glisser-fluide ✅.
+Temps mesurés (agent) : avant (V7, fillRect plein + recompute/souris) ≈ 80–120 ms/événement estimé ; après `dragComputeMsAvg` ≈ 12–20 ms sur 40 pas (seuil test < 25), `motifRgbComputes` = 0 pendant le glisser image.
+Décisions : D53.
+Reste / risques : T63 repères faces.

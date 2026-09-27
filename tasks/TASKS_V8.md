@@ -66,7 +66,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - [x] e2e `gizmo-pied.spec.ts`, à la souris : glisser une image sous le talon → toutes les mailles dont `owner` est cette image sont à l'intérieur du cadre dessiné, à 1 maille près ; puis cliquer au centre de l'image → elle est bien sélectionnée.
 - [x] Capture avant / après (image sur le pied, sélectionnée), décrite.
 
-### [ ] T62 — Vue 2D fluide
+### [x] T62 — Vue 2D fluide
 
 - **Dessin** : la grille est peinte dans un `ImageData` à 1 pixel par maille, puis agrandie avec `drawImage` (`imageSmoothingEnabled = false`). Fini les 80 000 `fillRect` + `strokeRect` par image.
   - Les lignes de mailles sont tracées en un seul chemin, et seulement à partir du zoom où elles sont lisibles.
@@ -80,8 +80,8 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Glisser un Motif (décalage, taille) : même régulation par image, avec un rendu complet (le cache des Motifs recalcule seulement ce calque).
 
 **Critères**
-- [ ] `window.__SIM__.stats` expose `dragFrames` et `dragComputeMsAvg`. e2e `glisser-fluide.spec.ts` : glisser une image sur 40 pas à la souris → `dragComputeMsAvg < 25` et aucun appel à `motifLayerRgb` pendant le glisser.
-- [ ] Note dans `PROGRESS.md` : temps mesurés avant et après sur la machine de l'agent.
+- [x] `window.__SIM__.stats` expose `dragFrames` et `dragComputeMsAvg`. e2e `glisser-fluide.spec.ts` : glisser une image sur 40 pas à la souris → `dragComputeMsAvg < 25` et aucun appel à `motifLayerRgb` pendant le glisser.
+- [x] Note dans `PROGRESS.md` : temps mesurés avant et après sur la machine de l'agent.
 
 ### [ ] T63 — Repères des faces sur la vue 2D
 

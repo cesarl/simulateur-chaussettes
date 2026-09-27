@@ -311,3 +311,9 @@ Contexte : V7 ajoutait seulement le bord-côte (`motifOriginRow`) → cadre déc
 Options : A) offset = cuff+leg+heel à partir d'un seuil ; B) `motifYToGridY` / `gridYToMotifY` déjà dans `layers.ts`.
 Choix : B — conversions continues partout (souris, coins, reveal) ; cadre image clipé en deux polygones à `legH` si chevauchement ; poignées non clipées.
 Conséquence : un glisser qui traverse le talon reste cohérent avec le rendu grille ; le talon n'est plus une zone « morte » pour la souris (collé au 1er rang du pied).
+
+## D53 — Glisser 2D : aperçu RVB + quantize 8 Hz (T62)
+Contexte : 80 000 fillRect/frame et un `recompute` à chaque mousemove figeaient la vue.
+Options : A) WebWorker ; B) ImageData + pipeline drag dédié (dirty rows, rAF, pas d’autosave).
+Choix : B — pendant le glisser, peindre le RVB empilé directement ; quantize/compose/3D au plus 8×/s ; un commit store au lâcher (`coalesce`). Overlay canvas pour les poignées.
+Conséquence : `dragComputeMsAvg` passe sous 25 ms ; les Motifs ne sont pas recalculés pendant un glisser d’image.

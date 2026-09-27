@@ -33,6 +33,10 @@ export interface FlatGizmoDeps {
   patchImage: (id: string, patch: Partial<ImageLayer>, coalesce: boolean) => void;
   patchMotif: (id: string, patch: Partial<MotifLayer>, coalesce: boolean) => void;
   setMotifBounds: (id: string, bounds: ReturnType<typeof setMotifBand>, coalesce: boolean) => void;
+  /** Glisser fluide (T62) : démarrage / tick rAF / lâcher. */
+  onDragStart?: (kind: 'image' | 'motif', id: string, start: ImageLayer | MotifLayer) => void;
+  onDragTick?: (kind: 'image' | 'motif', id: string, next: ImageLayer | MotifLayer) => void;
+  onDragEnd?: (kind: 'image' | 'motif', id: string, next: ImageLayer | MotifLayer) => void;
 }
 
 type ActiveDrag =
@@ -191,7 +195,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
     const layer = layerById(design.layers, selectedId);
     if (!canEdit(layer)) return;
     const g = stackGauge(design.dimensions, design.zones);
-    const ctx = canvas.getContext('2d');
+    const ctx = flat.getOverlayContext();
     if (!ctx) return;
 
     if (layer.kind === 'image') {
@@ -389,6 +393,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             start: { ...selected },
             from: [st.col + 0.5, st.row + 0.5],
           };
+          deps.onDragStart?.('image', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           event.preventDefault();
           return;
@@ -401,6 +406,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             start: { ...selected },
             from: [st.col + 0.5, st.row + 0.5],
           };
+          deps.onDragStart?.('image', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           event.preventDefault();
           return;
@@ -416,6 +422,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
           const origin: [number, number] = [gz.tile.x, gz.tile.y];
           const startFactor = 1;
           active = { kind: 'motif-scale', id: selected.id, start: { ...selected }, startFactor, origin };
+          deps.onDragStart?.('motif', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           return;
         }
@@ -426,6 +433,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             edge: hit === 'band-haut' ? 'haut' : 'bas',
             band: { from: selected.bounds.fromRow, to: selected.bounds.toRow },
           };
+          deps.onDragStart?.('motif', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           return;
         }
@@ -436,6 +444,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             start: { ...selected },
             from: [st.col + 0.5, st.row + 0.5],
           };
+          deps.onDragStart?.('motif', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           return;
         }
@@ -483,9 +492,15 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
       const patch = dragImage(active.start, g, active.handle, active.from, to, {
         snapDeg: event.shiftKey ? 15 : undefined,
       });
-      deps.patchImage(active.id, patch, true);
-      scheduleHeavy();
-      flat.redraw();
+      const next = { ...active.start, ...patch };
+      if (deps.onDragTick) {
+        deps.onDragTick('image', active.id, next);
+        flat.redrawOverlay();
+      } else {
+        deps.patchImage(active.id, patch, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
       return;
     }
 
@@ -493,9 +508,15 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
       const dx = to[0] - active.from[0];
       const dy = to[1] - active.from[1];
       const patch = dragMotif(active.start, [dx, dy]);
-      deps.patchMotif(active.id, patch, true);
-      scheduleHeavy();
-      flat.redraw();
+      const next = { ...active.start, ...patch };
+      if (deps.onDragTick) {
+        deps.onDragTick('motif', active.id, next);
+        flat.redrawOverlay();
+      } else {
+        deps.patchMotif(active.id, patch, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
       return;
     }
 
@@ -509,26 +530,46 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
       const db = Math.hypot(to[0] - cx, to[1] - cy);
       const factor = db / da;
       const patch = scaleMotif(active.start, factor, g);
-      deps.patchMotif(active.id, patch, true);
-      scheduleHeavy();
-      flat.redraw();
+      const next = { ...active.start, ...patch };
+      if (deps.onDragTick) {
+        deps.onDragTick('motif', active.id, next);
+        flat.redrawOverlay();
+      } else {
+        deps.patchMotif(active.id, patch, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
       return;
     }
 
     if (active.kind === 'motif-band') {
       const g = stackGauge(design.dimensions, design.zones);
       const row = Math.round(st.row);
-      const next =
+      const nextBounds =
         active.edge === 'haut'
           ? setMotifBand(g.rows, { from: row, to: active.band.to })
           : setMotifBand(g.rows, { from: active.band.from, to: row });
-      deps.setMotifBounds(active.id, next, true);
-      scheduleHeavy();
-      flat.redraw();
+      const designLayer = layerById(design.layers, active.id);
+      if (designLayer?.kind === 'motif' && deps.onDragTick) {
+        deps.onDragTick('motif', active.id, { ...designLayer, bounds: nextBounds });
+        flat.redrawOverlay();
+      } else {
+        deps.setMotifBounds(active.id, nextBounds, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
     }
   };
 
   const onPointerUp = (): void => {
+    if (active && deps.onDragEnd) {
+      const design = deps.getDesign();
+      const layer = layerById(design.layers, active.id);
+      if (layer && (layer.kind === 'image' || layer.kind === 'motif')) {
+        // getDesign merges pending already during drag; on end pending is the latest.
+        deps.onDragEnd(layer.kind === 'image' ? 'image' : 'motif', active.id, layer);
+      }
+    }
     active = null;
     panning = false;
     flat.setPanMode(false);

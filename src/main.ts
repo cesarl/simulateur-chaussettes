@@ -4,8 +4,9 @@ import { loadCompositionImages } from './io/compositionImages';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
-import { createMotifRgbCache, computeStackRgb } from './core/stackCompute';
+import { createMotifRgbCache, computeStackRgb, tilesForMotifLayer } from './core/stackCompute';
 import {
+  dirtyRowsForImage,
   effectiveZones,
   fondVisible,
   layerKeyColors,
@@ -15,6 +16,8 @@ import {
   imageGizmo,
   motifGizmo,
   layerAtStitch,
+  type ImageLayer,
+  type MotifLayer,
   type SockDesignV2,
   type StackLayer,
 } from './core/layers';
@@ -147,7 +150,14 @@ if (!(flatCanvasEl instanceof HTMLCanvasElement)) {
   throw new Error('Canvas vue 2D introuvable');
 }
 mountFlatGizmos(flat, flatCanvasEl, {
-  getDesign: () => getState().design,
+  getDesign: () => {
+    const design = getState().design;
+    if (!dragLive?.pending) return design;
+    return {
+      ...design,
+      layers: design.layers.map((l) => (l.id === dragLive!.pending!.id ? dragLive!.pending! : l)),
+    } as SockDesignV2;
+  },
   getSelectedId: () => getState().selectedLayerId,
   getStackOwner: () => stackOwner,
   getImages: () => compositionImages,
@@ -155,6 +165,48 @@ mountFlatGizmos(flat, flatCanvasEl, {
   patchImage: patchImageLayer,
   patchMotif: patchLayerCoalesced,
   setMotifBounds,
+  onDragStart(kind, id, start) {
+    motifRgbCache.resetStats();
+    dragLive = {
+      kind,
+      id,
+      beforeImage: kind === 'image' && start.kind === 'image' ? { ...start } : null,
+      lastStack: null,
+      raf: null,
+      pending: start,
+      frames: 0,
+      computeMsSum: 0,
+      last3dMs: 0,
+    };
+    dragStats.dragFrames = 0;
+    dragStats.dragComputeMsAvg = 0;
+  },
+  onDragTick(_kind, _id, next) {
+    if (!dragLive) return;
+    dragLive.pending = next;
+    scheduleDragFrame();
+  },
+  onDragEnd(kind, id, next) {
+    if (dragLive?.raf !== null && dragLive) {
+      cancelAnimationFrame(dragLive.raf);
+      dragLive.raf = null;
+    }
+    const session = dragLive;
+    dragLive = null;
+    // Un seul commit historique au lâcher (coalesce).
+    if (kind === 'image' && next.kind === 'image') {
+      patchImageLayer(id, next, true);
+    } else if (next.kind === 'motif') {
+      patchLayerCoalesced(id, next);
+    }
+    syncMesh(grid);
+    if (session) {
+      dragStats.dragFrames = session.frames;
+      dragStats.dragComputeMsAvg =
+        session.frames > 0 ? session.computeMsSum / session.frames : 0;
+    }
+    publish();
+  },
 });
 const compositionEditor = mountCompositionEditor(view3d);
 const viewer = mountViewerBar(view3d, {
@@ -289,6 +341,119 @@ let stackOwner: Int16Array | null = null; // sélection 2D (T56)
 /** Derniers pixels par calque Motif et couleurs de fil : vignettes du dock. */
 let lastMotifRgb = new Map<string, Uint8ClampedArray>();
 let lastKeyColors = new Map<string, readonly string[]>();
+
+/** Session de glisser fluide (T62) : recalcul partiel, pas d’autosave / lien / historique. */
+type DragLive = {
+  kind: 'image' | 'motif';
+  id: string;
+  beforeImage: ImageLayer | null;
+  lastStack: { rgb: Uint8ClampedArray; owner: Int16Array } | null;
+  raf: number | null;
+  pending: ImageLayer | MotifLayer | null;
+  frames: number;
+  computeMsSum: number;
+  last3dMs: number;
+};
+let dragLive: DragLive | null = null;
+const dragStats = { dragFrames: 0, dragComputeMsAvg: 0 };
+
+function suppressSideEffects(): boolean {
+  return dragLive !== null;
+}
+
+function scheduleDragFrame(): void {
+  if (!dragLive || dragLive.raf !== null) return;
+  dragLive.raf = requestAnimationFrame(() => {
+    if (!dragLive) return;
+    dragLive.raf = null;
+    runDragCompute();
+  });
+}
+
+function runDragCompute(): void {
+  if (!dragLive?.pending) return;
+  const started = performance.now();
+  const { design } = getState();
+  const pending = dragLive.pending;
+  const layers = design.layers.map((l) => (l.id === pending.id ? pending : l));
+  const previewDesign = { ...design, layers } as SockDesignV2;
+  const gauge = stackGauge(previewDesign.dimensions, previewDesign.zones);
+
+  // Image : Motifs inchangés → lastMotifRgb, aucun motifLayerRgb.
+  // Motif : le cache ne recalcule que le calque touché.
+  let motifRgb = lastMotifRgb;
+  if (dragLive.kind === 'motif') {
+    const { tiles, calepPresets } = getState();
+    motifRgb = motifRgbCache.getMotifRgb(
+      previewDesign,
+      (layer) => tilesForMotifLayer(layer, tiles),
+      calepPresets,
+    );
+    lastMotifRgb = motifRgb;
+  }
+
+  let stackResult: { rgb: Uint8ClampedArray; owner: Int16Array };
+  if (dragLive.kind === 'image' && pending.kind === 'image' && dragLive.beforeImage) {
+    const img = compositionImages.get(assetKey(pending.asset));
+    const rows = img
+      ? dirtyRowsForImage(dragLive.beforeImage, pending, img, gauge)
+      : ([0, gauge.rows] as [number, number]);
+    stackResult = renderStack(
+      {
+        layers,
+        gauge,
+        motifRgb,
+        images: compositionImages,
+        keyColors: lastKeyColors,
+      },
+      dragLive.lastStack ? { rows, into: dragLive.lastStack } : { rows },
+    );
+  } else {
+    stackResult = renderStack({
+      layers,
+      gauge,
+      motifRgb,
+      images: compositionImages,
+      keyColors: lastKeyColors,
+    });
+  }
+  dragLive.lastStack = stackResult;
+  stackOwner = stackResult.owner;
+
+  // Aperçu 2D immédiat depuis le RVB empilé (sans quantize).
+  flat.paintMotifRgbPreview(stackResult.rgb, gauge.needles, gauge.rows);
+
+  const now = performance.now();
+  // 3D au plus 8×/s : quantize + compose + texture.
+  if (now - dragLive.last3dMs >= 125) {
+    const palette =
+      patternPalette.length > 0
+        ? patternPalette
+        : design.quantize.palette.length > 0
+          ? design.quantize.palette
+          : ['#f4f1ea', '#1f3a5f'];
+    const reduced = quantize(stackResult.rgb, design.dimensions.needles, {
+      ...design.quantize,
+      paletteMode: 'manuelle',
+      palette,
+      maxColors: Math.max(2, Math.min(8, palette.length)),
+      despeckle: false,
+    });
+    grid = composeGrid(
+      design.dimensions,
+      effectiveZones(previewDesign),
+      reduced.indices,
+      reduced.palette,
+    );
+    syncMesh(grid);
+    dragLive.last3dMs = now;
+  }
+
+  dragLive.frames += 1;
+  dragLive.computeMsSum += now - started;
+  dragStats.dragFrames = dragLive.frames;
+  dragStats.dragComputeMsAvg = dragLive.computeMsSum / Math.max(1, dragLive.frames);
+}
 
 /** Clé de cache d’une vignette : rien ne change tant que le calque et la jauge sont identiques. */
 function thumbKey(layer: StackLayer, design: SockDesignV2): string {
@@ -691,6 +856,17 @@ function publish(): void {
     flatMotifCenter: (col, motifRow) => flat.clientAtMotifStitch(col, motifRow),
     flatRevealMotif: (col, motifRow) => flat.revealMotifStitch(col, motifRow),
     motifStitchFromLocal: (px, py) => flat.clientToMotifStitch(px, py),
+    stats: {
+      get dragFrames() {
+        return dragStats.dragFrames;
+      },
+      get dragComputeMsAvg() {
+        return dragStats.dragComputeMsAvg;
+      },
+      get motifRgbComputes() {
+        return motifRgbCache.stats.motifRgbComputes;
+      },
+    },
   };
   window.__SIM__ = hook;
 }
@@ -992,6 +1168,7 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
 let autosaveAssetsOmitted = false;
 
 function scheduleSave(): void {
+  if (suppressSideEffects()) return;
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     const { design, tiles, embeddedAssets } = getState();
@@ -1031,6 +1208,7 @@ function scheduleSave(): void {
 
 let shareTimer: number | undefined;
 function scheduleShareHash(): void {
+  if (suppressSideEffects()) return;
   window.clearTimeout(shareTimer);
   shareTimer = window.setTimeout(() => {
     const { design, embeddedAssets } = getState();

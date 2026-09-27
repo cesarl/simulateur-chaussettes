@@ -80,6 +80,12 @@ export interface SimHook {
   flatRevealMotif: (col: number, motifRow: number) => void;
   /** Coordonnées canvas → maille motif (tests). */
   motifStitchFromLocal: (px: number, py: number) => { col: number; row: number } | null;
+  /** Stats de glisser fluide (T62). */
+  stats: {
+    dragFrames: number;
+    dragComputeMsAvg: number;
+    motifRgbComputes: number;
+  };
 }
 
 declare global {
