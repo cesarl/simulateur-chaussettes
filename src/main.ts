@@ -129,10 +129,12 @@ mountSplitters(storage);
 const handle = createScene(view3d);
 const sockCanvas =
   handle.renderer.domElement instanceof HTMLCanvasElement ? handle.renderer.domElement : null;
+const toolbar3d = toolbar3dEl instanceof HTMLElement ? toolbar3dEl : null;
 const flat = mountFlatView(
   {
     canvasHost: view2d,
     toolsHost: toolbar2dEl instanceof HTMLElement ? toolbar2dEl : view2d,
+    shortcutsHost: toolbar3d,
     sockCanvas,
     dualPane: true,
   },
@@ -241,6 +243,7 @@ function applyShellMode(dev: boolean): void {
     flat.setHosts({
       canvasHost: view2d,
       toolsHost: toolbar2dEl instanceof HTMLElement ? toolbar2dEl : view2d,
+      shortcutsHost: toolbar3d,
       sockCanvas,
       dualPane: true,
     });
@@ -248,6 +251,7 @@ function applyShellMode(dev: boolean): void {
     flat.setHosts({
       canvasHost: view3d,
       toolsHost: view3d,
+      shortcutsHost: toolbar3d,
       sockCanvas,
       dualPane: false,
     });

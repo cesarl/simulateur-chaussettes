@@ -50,6 +50,8 @@ export interface FlatHosts {
   canvasHost: HTMLElement;
   /** Conteneur des boutons 3D / À plat (optionnel). */
   toolsHost?: HTMLElement | null;
+  /** Barre d’outils de la vue 3D : raccourcis caméra. */
+  shortcutsHost?: HTMLElement | null;
   /** Canvas WebGL 3D à masquer en mode plat (visionneuse). */
   sockCanvas?: HTMLCanvasElement | null;
   /** true = 2D et 3D côte à côte (mode ?dev) : pas de bascule. */
@@ -95,7 +97,8 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
 
   hosts.canvasHost.append(layer);
   const toolsTarget = hosts.toolsHost ?? hosts.canvasHost;
-  toolsTarget.append(switcher, shortcuts);
+  toolsTarget.append(switcher);
+  placeShortcuts(hosts.shortcutsHost, toolsTarget);
 
   let grid: StitchGrid | null = null;
   let floatMask: Uint8Array | null = null;
@@ -255,9 +258,14 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     hover.textContent = `Maille ${hit.col} · rang ${hit.row} · ${ZONE_LABEL[zone] ?? 'Zone'} · ${color}`;
   }
 
+  function placeShortcuts(host: HTMLElement | null | undefined, fallback: HTMLElement): void {
+    const target = host ?? fallback;
+    if (shortcuts.parentElement !== target) target.append(shortcuts);
+  }
+
   function applyToolsVisibility(): void {
     // En double panneau : pas de bascule 3D/plat (les deux sont visibles).
-    // Les raccourcis caméra restent visibles dans la barre d’outils.
+    // Les raccourcis caméra restent dans la barre d’outils 3D.
     switcher.hidden = dualPane || !toolsVisible;
     shortcuts.hidden = !toolsVisible;
   }
@@ -365,9 +373,8 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
         next.canvasHost.append(layer);
       }
       const tools = next.toolsHost ?? next.canvasHost;
-      if (switcher.parentElement !== tools) {
-        tools.append(switcher, shortcuts);
-      }
+      if (switcher.parentElement !== tools) tools.append(switcher);
+      placeShortcuts(next.shortcutsHost, tools);
       applyToolsVisibility();
       if (dualPane) {
         setMode(true);
