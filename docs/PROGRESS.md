@@ -796,3 +796,15 @@ Vérification : e2e vues-bascule ✅.
 Contrôle visuel : 4 captures `visuel-T64-{2d-3d,3d-seul,aucune,2d-seul}.png` — combinaisons lisibles, panneau+dock quand aucune vue.
 Décisions : aucune.
 Reste / risques : T65 onglet Global.
+
+## T65 — Onglet Global — 2026-09-27 09:20
+Statut : terminée
+Fait :
+- Onglet `tab-global` / `pane-global` (dernier après Export) ; `OptionsTab` étendu.
+- Contenu de l’ancien `.options-footer` déplacé : « Tout réinitialiser », « Dernier calcul », « Gérer mes collections », « Quitter le mode dev » (`data-testid` inchangés).
+- Plus de pied de panneau ni de propriété `Panes.footer`.
+- e2e `onglet-global.spec.ts` (souris).
+Vérification : typecheck ✅ ; e2e onglet-global ✅.
+Contrôle visuel — `visuel-t65-onglet-global.png` : onglet **Global** actif dans la barre d’onglets (Calque / Chaussette / Décor / Export / Global) ; volet droit montre « Tout réinitialiser », « Dernier calcul : 164 ms », lien « Gérer mes collections », bouton « Quitter le mode dev » ; bandeau Annuler/Rétablir/Copier le lien toujours en tête du panneau ; **aucun** pied `.options-footer` sous les options ; 2D (tige crème, bord-côte marine, repères) et 3D (chaussette) visibles ; dock Motif 1 / Fond en bas.
+Décisions : aucune.
+Reste / risques : T66 bibliothèque d’images.
