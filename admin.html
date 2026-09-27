@@ -7,7 +7,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/styles.css" />
     <style>
-      body.admin { max-width: 960px; margin: 0 auto; padding: 1.5rem; background: #f7f4ef; color: #1d1d1b; font-family: "Source Sans 3", system-ui, sans-serif; }
+      /* Le simulateur fige html/body (overflow: hidden). Ici seulement, la page défile. */
+      html:has(body.admin) { height: auto; min-height: 100%; overflow: auto; }
+      body.admin { height: auto; min-height: 100%; overflow: visible; max-width: 960px; margin: 0 auto; padding: 1.5rem; background: #f7f4ef; color: #1d1d1b; font-family: "Source Sans 3", system-ui, sans-serif; }
       body.admin h1 { font-family: "Fraunces", Georgia, serif; font-weight: 600; }
       .admin-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
       .admin-list { display: grid; gap: 0.5rem; }

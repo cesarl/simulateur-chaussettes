@@ -880,3 +880,10 @@ Fait : Maj+D entre ou sort du mode dev (`enterDevMode` / `leaveDevMode`, même m
 Vérification : test unitaire `enterDevMode` ✅ (10 tests dans `share.test.ts`). Contrôle navigateur : Maj+D masque le panneau (visionneuse), D seul y reste, second Maj+D rouvre le panneau et réécrit `simulateur-chaussettes:dev` ; dans le champ « Rechercher une collection… », Maj+D ne quitte pas le mode.
 Décisions : D57
 Reste / risques : aucun.
+
+## Admin — défilement de la page collections — 2026-09-27 16:45
+Statut : terminée
+Fait : `admin.html` autorise le défilement de la page (`html:has(body.admin)`), sans modifier `src/styles.css`. Le formulaire « Nouvelle collection » atteint le dépôt de fichiers et **Enregistrer**.
+Vérification : navigateur — formulaire plus haut que la fenêtre, ascenseur visible, **Enregistrer** atteint au défilement. Simulateur : `overflow: hidden` sur `html`/`body`/`#app`, `scrollY` reste 0 après `scrollTo`.
+Décisions : D58
+Reste / risques : aucun.

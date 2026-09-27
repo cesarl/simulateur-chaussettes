@@ -341,3 +341,9 @@ Contexte : `?dev` et « Quitter le mode dev » existent, mais il manquait un rac
 Options : A) Ctrl+D (déjà « dupliquer le calque ») ; B) Maj+D (D seul cadre la vue de dos) ; C) une touche dédiée hors des vues.
 Choix : B — Maj+D appelle `enterDevMode` / `leaveDevMode` (même clé localStorage que `?dev`). Ignoré dans un champ de saisie, et si Ctrl, Cmd ou Alt sont enfoncés. La répétition de touche ne bascule qu’une fois.
 Conséquence : le mode reste mémorisé au rechargement ; la légende des vues affiche « Maj+D : mode dev ». D seul ne change pas de mode.
+
+## D58 — Défilement de la page admin seulement
+Contexte : `html, body { overflow: hidden }` fige le simulateur. `admin.html` charge la même feuille, donc le formulaire « Nouvelle collection » était coupé (pas d’accès à Enregistrer).
+Options : A) retirer `overflow: hidden` du global ; B) autoriser le défilement seulement quand `body.admin` est présent.
+Choix : B — dans `admin.html`, `html:has(body.admin)` passe en `overflow: auto` et `body.admin` en hauteur automatique. `src/styles.css` ne change pas.
+Conséquence : l’admin défile jusqu’au dépôt de fichiers et au bouton Enregistrer. Le simulateur garde `overflow: hidden` sur `html` et `body`.

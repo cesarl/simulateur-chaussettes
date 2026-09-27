@@ -78,7 +78,7 @@ npm run sync:local    # fusionne collections-locales/ dans public/carreaux/ (la 
 
 Format : `collections-locales/collections.json` + `collections-locales/svg/<ID>-VAR<n>.svg|.png` (mêmes champs que le simulateur de carreaux). Dans l’UI, catégorie **Mes collections**.
 
-**Admin (mode dev)** : page [`admin.html`](admin.html) (lien « Gérer mes collections » en bas du panneau). Ouvre le dossier via File System Access (Chrome/Edge) ou exporte un ZIP à décompresser. Zones SVG automatiques (moulinette), palettes conseillées, puis `npm run sync:local` + commit.
+**Admin (mode dev)** : page [`admin.html`](admin.html) (lien « Gérer mes collections » dans l’onglet **Global**). La page défile (le simulateur, lui, reste sans ascenseur de page). Ouvre le dossier via File System Access (Chrome/Edge) ou exporte un ZIP à décompresser. Zones SVG automatiques (moulinette), palettes conseillées, puis `npm run sync:local` + commit.
 
 ## Calques (remplace le mode composition V6)
 
