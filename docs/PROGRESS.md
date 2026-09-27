@@ -873,3 +873,10 @@ Fait : le réglage « Automatique d’après les calques » (`quantize.paletteFr
 Vérification : `npm run verify` ✅ (171 unitaires ; 76 e2e dont share palette calques/manuelle). Contrôle visuel : avant/après ouverture du lien — select Palette = « Automatique d’après les calques » (`media/visuel-share-palette-calques-avant.png` / `apres.png`).
 Décisions : D56
 Reste / risques : aucun ; empreintes liens réels / golden / v1ShareDefaults / v8-layers inchangés.
+
+## Maj+D — bascule du mode développeur — 2026-09-27 16:35
+Statut : terminée
+Fait : Maj+D entre ou sort du mode dev (`enterDevMode` / `leaveDevMode`, même mémorisation que `?dev`). D seul reste la vue de dos. Ignoré dans un champ, avec Ctrl/Cmd/Alt, et en répétition de touche. Légende des vues : « Maj+D : mode dev ». README mis à jour.
+Vérification : test unitaire `enterDevMode` ✅ (10 tests dans `share.test.ts`). Contrôle navigateur : Maj+D masque le panneau (visionneuse), D seul y reste, second Maj+D rouvre le panneau et réécrit `simulateur-chaussettes:dev` ; dans le champ « Rechercher une collection… », Maj+D ne quitte pas le mode.
+Décisions : D57
+Reste / risques : aucun.

@@ -111,7 +111,8 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   const shortcuts = document.createElement('p');
   shortcuts.className = 'view-shortcuts';
   shortcuts.dataset.testid = 'view-shortcuts';
-  shortcuts.textContent = 'R : réinitialiser · F : face · T : ¾ · E : extérieur · D : dos · I : intérieur';
+  shortcuts.textContent =
+    'R : réinitialiser · F : face · T : ¾ · E : extérieur · D : dos · I : intérieur · Maj+D : mode dev';
 
   hosts.canvasHost.append(layer);
   const toolsTarget = hosts.toolsHost ?? hosts.canvasHost;

@@ -17,7 +17,7 @@ npm install
 npm run dev          # ouvre http://localhost:5173
 ```
 
-Par défaut : **visionneuse 3D plein écran** (barre discrète : vues + copier le lien). Ajouter `?dev` une fois pour ouvrir le panneau de réglages (mémorisé jusqu’à « Quitter le mode dev »).
+Par défaut : **visionneuse 3D plein écran** (barre discrète : vues + copier le lien). Ajouter `?dev` une fois, ou taper **Maj+D**, pour ouvrir le panneau de réglages (mémorisé jusqu’à « Quitter le mode dev » ou un second **Maj+D**).
 
 ## Commandes
 
@@ -39,7 +39,7 @@ Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites 
 ## Utilisation (V8 — calques + retours)
 
 1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).
-2. **Visionneuse** : uniquement la 3D. Pour les réglages : `/?dev` (puis l’URL perd `?dev` ; le mode reste actif). Bouton **Quitter le mode dev** dans l’onglet **Global**.
+2. **Visionneuse** : uniquement la 3D. Pour les réglages : `/?dev` ou **Maj+D** (puis l’URL perd `?dev` ; le mode reste actif). **Maj+D** ou le bouton **Quitter le mode dev** (onglet **Global**) reviennent à la visionneuse. Dans un champ de saisie, Maj+D ne change pas de mode.
 3. **Mode technique (`?dev`)** : grille CSS — vue à plat | vue 3D | options (onglets Calque / Chaussette / Décor / Export / **Global**) | **dock des calques** en bas.
 4. **Vues 2D / 3D** : boutons bascule dans la barre projet (choix mémorisé). Masquer une vue libère sa place ; les deux masquées → options + dock seulement.
 5. **Repères** (vue 2D) : traits pointillés Intérieur / Dos / Extérieur / Devant ; aimantation au glisser d’image (± 2 mailles). Bouton « Repères » mémorisé.
@@ -52,7 +52,7 @@ Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites 
 9. **Poignées** sur la vue 2D : déplacer / tourner / redimensionner une Image (cadre correct sous le talon) ; décaler / bande un Motif.
 10. **Copier le lien** : `#p=2.…`. Images bibliothèque OK ; images importées → fichier projet `.json`.
 11. **Projet** : format version 3. Lecture v1/v2/v3.
-12. **Exports** : cocher les vues puis exporter. Raccourcis 3D : R / F / T / E / D / I.
+12. **Exports** : cocher les vues puis exporter. Raccourcis 3D : R / F / T / E / D / I. **Maj+D** bascule le mode développeur (D seul = vue de dos).
 
 Les modes séparés « Carreaux » / « Composition » de V6 sont remplacés par la pile de calques (empreintes golden T41 et liens réels inchangés).
 

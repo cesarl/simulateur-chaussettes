@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeShare, diff, encodeShare, merge, resolveDevMode, DEV_STORAGE_KEY } from '../../src/io/shareLink';
+import { decodeShare, diff, encodeShare, enterDevMode, merge, resolveDevMode, DEV_STORAGE_KEY } from '../../src/io/shareLink';
 
 // état proche de celui de l'application
 const defaults = {
@@ -85,6 +85,12 @@ describe('mode dev', () => {
     expect(resolveDevMode({ search: '', hash: '', pathname: '/' }, st, () => {})).toBe(true); // reste en dev
     st.removeItem(DEV_STORAGE_KEY);
     expect(resolveDevMode({ search: '', hash: '', pathname: '/' }, st, () => {})).toBe(false);
+  });
+  it('enterDevMode mémorise le mode pour les prochains chargements', () => {
+    const st = mem();
+    enterDevMode(st);
+    expect(st.m.get(DEV_STORAGE_KEY)).toBe('1');
+    expect(resolveDevMode({ search: '', hash: '', pathname: '/' }, st, () => {})).toBe(true);
   });
   it('stockage indisponible : pas d’erreur', () => {
     const broken = { getItem: () => { throw new Error('x'); }, setItem: () => { throw new Error('x'); }, removeItem: () => {} };

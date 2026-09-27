@@ -176,6 +176,14 @@ export function resolveDevMode(loc: { search: string; hash: string; pathname: st
   return asked || stored;
 }
 
+export function enterDevMode(storage: Pick<Storage, 'setItem'> | null): void {
+  try {
+    storage?.setItem(DEV_STORAGE_KEY, '1');
+  } catch {
+    /* rien */
+  }
+}
+
 export function leaveDevMode(storage: Pick<Storage, 'removeItem'> | null): void {
   try {
     storage?.removeItem(DEV_STORAGE_KEY);

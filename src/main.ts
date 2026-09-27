@@ -37,7 +37,7 @@ import {
   type ParsedProject,
   type ProjectCollectionMeta,
 } from './io/project';
-import { leaveDevMode, resolveDevMode } from './io/shareLink';
+import { enterDevMode, leaveDevMode, resolveDevMode } from './io/shareLink';
 import { buildShareUrl, decodeShareHash, type ParsedShare } from './io/shareState';
 import { fixtureUrl, loadTileFromUrl, loadTileFromSvgText } from './io/tiles';
 import { createScene } from './render/scene';
@@ -1527,6 +1527,14 @@ async function boot(): Promise<void> {
       return;
     }
     const key = event.key.toLowerCase();
+    if (event.shiftKey && !mod && !event.altKey && key === 'd' && !event.repeat) {
+      event.preventDefault();
+      const next = !devMode;
+      if (next) enterDevMode(storage);
+      else leaveDevMode(storage);
+      applyShellMode(next);
+      return;
+    }
     if (key === 'r') {
       event.preventDefault();
       frameCamera('trois-quarts');

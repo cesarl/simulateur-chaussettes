@@ -335,3 +335,9 @@ Contexte : le select « Automatique d’après les calques » était perdu à l�
 Options : A) forcer `false` à l’apply (comportement V7, incorrect pour V8) ; B) sérialiser le booléen et le restaurer, défaut rétrocompat `false` si absent.
 Choix : B — `designV2ToShareJson` inclut déjà `quantize` ; `frozenDefaultsV2` et `shareJsonToDesignV2` fixent `paletteFromLayers: false` par défaut ; `migrateDesignV1` aussi ; `applyShare` n’écrase plus le champ ; `quantizeForShareApply` normalise `=== true`.
 Conséquence : un lien V2 avec calques restaure le mode ; un ancien lien sans le champ reste en réduction/manuelle. `v1ShareDefaults.json` inchangé (pas de version 3 du lien).
+
+## D57 — Maj+D bascule le mode développeur
+Contexte : `?dev` et « Quitter le mode dev » existent, mais il manquait un raccourci pour entrer et sortir sans toucher l’URL.
+Options : A) Ctrl+D (déjà « dupliquer le calque ») ; B) Maj+D (D seul cadre la vue de dos) ; C) une touche dédiée hors des vues.
+Choix : B — Maj+D appelle `enterDevMode` / `leaveDevMode` (même clé localStorage que `?dev`). Ignoré dans un champ de saisie, et si Ctrl, Cmd ou Alt sont enfoncés. La répétition de touche ne bascule qu’une fois.
+Conséquence : le mode reste mémorisé au rechargement ; la légende des vues affiche « Maj+D : mode dev ». D seul ne change pas de mode.
