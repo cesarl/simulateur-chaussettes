@@ -102,7 +102,23 @@ export interface ImageLayer extends BaseLayer {
   recolor?: Record<Hex, Hex>;
 }
 
-export type StackLayer = FondLayer | MotifLayer | ImageLayer;
+/**
+ * V9 — calque Dessin : du pixel art maille par maille (1 case = 1 maille, rien n'est redimensionné).
+ * Coordonnées : colonnes 0..w-1 (tour de jambe, circulaire) et rangs de motif 0..h-1 (le talon est
+ * sauté, comme pour tous les calques). Une case vide est transparente.
+ */
+export interface DessinLayer extends BaseLayer {
+  kind: 'dessin';
+  /** Couleurs de fil utilisées par le dessin (case codée n ↔ palette[n-1]). */
+  palette: Hex[];
+  /** Taille de la zone motif au moment du dessin (aiguilles × rangs de motif). */
+  w: number;
+  h: number;
+  /** Cases peintes codées en plages (voir `encodeDessinCells`). '' = dessin vide. */
+  cells: string;
+}
+
+export type StackLayer = FondLayer | MotifLayer | ImageLayer | DessinLayer;
 
 /** Modèle V2 (V7) : les calques remplacent layout / pattern / collection active. */
 export interface SockDesignV2 {
@@ -148,7 +164,7 @@ export function newImageLayer(id: string, asset: AssetRef, g: Gauge, name = 'Ima
 }
 
 /** Identifiant libre pour un nouveau calque (`motif-2`, `image-3`…). */
-export function nextLayerId(layers: readonly StackLayer[], prefix: 'motif' | 'image'): string {
+export function nextLayerId(layers: readonly StackLayer[], prefix: 'motif' | 'image' | 'dessin'): string {
   const used = new Set(layers.map((l) => l.id));
   for (let i = 1; ; i++) if (!used.has(`${prefix}-${i}`)) return `${prefix}-${i}`;
 }
@@ -166,7 +182,7 @@ export function normalizeStack(layers: readonly StackLayer[]): StackLayer[] {
   const out: StackLayer[] = [fond];
   for (const l of rest) {
     let id = l.id;
-    if (!id || used.has(id)) id = nextLayerId([...out, ...rest.filter((r) => r !== l)], l.kind as 'motif' | 'image');
+    if (!id || used.has(id)) id = nextLayerId([...out, ...rest.filter((r) => r !== l)], l.kind as 'motif' | 'image' | 'dessin');
     used.add(id);
     out.push({ ...l, id });
   }
@@ -178,7 +194,7 @@ export function updateStackLayer<T extends StackLayer>(layers: readonly StackLay
 }
 
 /** Ajoute au-dessus de tout. */
-export function addStackLayer(layers: readonly StackLayer[], layer: MotifLayer | ImageLayer): StackLayer[] {
+export function addStackLayer(layers: readonly StackLayer[], layer: MotifLayer | ImageLayer | DessinLayer): StackLayer[] {
   return normalizeStack([...layers, layer]);
 }
 
@@ -347,7 +363,8 @@ export interface StackRenderResult {
 
 type Prepared =
   | { kind: 'motif'; index: number; rgb: Uint8ClampedArray; from: number; to: number; isT: ((r: number, g: number, b: number) => boolean) | null }
-  | { kind: 'image'; index: number; layer: ImagePlacement; img: RasterImage; frame: ReturnType<typeof layerFrame>; opaque: Uint8Array; rgba: ArrayLike<number> };
+  | { kind: 'image'; index: number; layer: ImagePlacement; img: RasterImage; frame: ReturnType<typeof layerFrame>; opaque: Uint8Array; rgba: ArrayLike<number> }
+  | { kind: 'dessin'; index: number; cells: Uint8Array; colors: Int32Array };
 
 /**
  * Pixels « prêts » d'une image (masque d'opacité + couleurs remplacées), mis en cache par image et
@@ -429,6 +446,7 @@ export function layerKeyColors(layer: StackLayer, input: Pick<StackRenderInput, 
   const given = input.keyColors?.get(layer.id);
   if (given) return [...given];
   if (layer.kind === 'fond') return [layer.color];
+  if (layer.kind === 'dessin') return dessinUsedColors(layer);
   if (layer.kind === 'motif') {
     const rgb = input.motifRgb.get(layer.id);
     return rgb ? dominantColors(rgb, 3) : [];
@@ -451,6 +469,19 @@ function prepare(input: StackRenderInput): Prepared[] {
       const to = l.bounds.kind === 'bande' ? Math.min(gauge.rows, Math.round(Math.max(l.bounds.fromRow, l.bounds.toRow))) : gauge.rows;
       if (to <= from) continue;
       out.push({ kind: 'motif', index, rgb, from, to, isT });
+    } else if (l.kind === 'dessin') {
+      if (!l.cells) continue;
+      const cells = dessinCellsForGauge(l, gauge.needles, gauge.rows);
+      const t = new Set(l.transparentColors.map((h) => h.toLowerCase()));
+      // -1 = case transparente (vide, ou couleur rendue transparente)
+      const colors = new Int32Array(l.palette.length + 1).fill(-1);
+      l.palette.forEach((h, i) => {
+        if (!t.has(h.toLowerCase())) {
+          const [r, g, b] = hexRgb(h);
+          colors[i + 1] = (r << 16) | (g << 8) | b;
+        }
+      });
+      out.push({ kind: 'dessin', index, cells, colors });
     } else if (l.kind === 'image') {
       const img = input.images.get(assetKey(l.asset));
       if (!img) continue;
@@ -511,6 +542,13 @@ export function renderStack(input: StackRenderInput, opts: RenderStackOptions = 
           let key = fondKey;
           let who = 0;
           for (const p of stack) {
+            if (p.kind === 'dessin') {
+              const c = p.colors[p.cells[y * W + x]!]!;
+              if (c < 0) continue;
+              key = c;
+              who = p.index;
+              break;
+            }
             if (p.kind === 'motif') {
               if (y < p.from || y >= p.to) continue;
               const r = p.rgb[m]!, g = p.rgb[m + 1]!, b = p.rgb[m + 2]!;
@@ -719,7 +757,8 @@ export function migrateDesignV1(d: SockDesign, ctx: V1Context): SockDesignV2 {
     name: d.name,
     dimensions: structuredClone(d.dimensions),
     zones: structuredClone(d.zones),
-    quantize: structuredClone(d.quantize),
+    // V1 n’avait pas ce réglage : palette exacte du lien / projet, jamais « d’après les calques ».
+    quantize: { ...structuredClone(d.quantize), paletteFromLayers: false },
     decor: structuredClone(d.decor),
   };
   if (d.pattern?.kind === 'composition') {
@@ -730,7 +769,12 @@ export function migrateDesignV1(d: SockDesign, ctx: V1Context): SockDesignV2 {
         (l, i): ImageLayer => ({
           kind: 'image',
           id: l.id || `image-${i + 1}`,
-          name: l.asset.kind === 'collection' ? `${l.asset.collectionId} ${l.asset.variation}` : `Image ${i + 1}`,
+          name:
+            l.asset.kind === 'collection'
+              ? `${l.asset.collectionId} ${l.asset.variation}`
+              : l.asset.kind === 'bibliotheque'
+                ? l.asset.imageId
+                : `Image ${i + 1}`,
           hidden: l.hidden,
           locked: l.locked,
           transparentColors: [],
@@ -825,7 +869,8 @@ function frozenDefaultsV2(): SockDesignV2 {
     name: V1.name,
     dimensions: structuredClone(V1.dimensions),
     zones: structuredClone(V1.zones),
-    quantize: structuredClone(V1.quantize),
+    // paletteFromLayers absent des défauts V1 figés → false (rétrocompat liens sans le champ).
+    quantize: { ...structuredClone(V1.quantize), paletteFromLayers: false },
     decor: structuredClone(V1.decor),
     layers: [newFondLayer()],
   };
@@ -850,6 +895,7 @@ export function designFromShare(version: number, json: unknown): { design: SockD
 export function layerTemplate(kind: StackLayer['kind']): StackLayer {
   if (kind === 'fond') return newFondLayer();
   if (kind === 'motif') return newMotifLayer('', { kind: 'collection', collectionId: '', colors: {}, paletteId: null }, TEMPLATE_LAYOUT, '');
+  if (kind === 'dessin') return { ...base('', ''), kind: 'dessin', palette: [], w: 0, h: 0, cells: '' };
   return {
     ...base('', ''),
     kind: 'image',
@@ -905,7 +951,7 @@ export function packLayers(layers: readonly StackLayer[]): J[] {
 
 export function unpackLayers(packed: unknown): StackLayer[] {
   if (!Array.isArray(packed)) return [newFondLayer()];
-  const kinds: Record<string, StackLayer['kind']> = { f: 'fond', m: 'motif', i: 'image' };
+  const kinds: Record<string, StackLayer['kind']> = { f: 'fond', m: 'motif', i: 'image', d: 'dessin' };
   const out: StackLayer[] = [];
   for (const raw of packed) {
     if (!isObj(raw)) continue;
@@ -923,8 +969,7 @@ export function unpackLayers(packed: unknown): StackLayer[] {
 function cleanAsset(a: unknown): AssetRef {
   const r = (isObj(a) ? a : {}) as Record<string, J>;
   if (r.kind === 'embarquee') return { kind: 'embarquee', assetId: String(r.assetId ?? '') };
-  if (r.kind === 'bibliotheque') // V8 : le type 'bibliotheque' est ajouté à AssetRef en T64 (retirer alors ce transtypage).
-    return { kind: 'bibliotheque', imageId: String(r.imageId ?? '') } as unknown as AssetRef;
+  if (r.kind === 'bibliotheque') return { kind: 'bibliotheque', imageId: String(r.imageId ?? '') };
   return { kind: 'collection', collectionId: String(r.collectionId ?? ''), variation: String(r.variation ?? 'VAR1') };
 }
 
@@ -953,12 +998,13 @@ export function shareJsonToDesignV2(json: unknown): SockDesignV2 {
   const defaults = frozenDefaultsV2();
   const r = isObj(json) ? json : {};
   const pick = <T>(k: string, fallback: T): T => (isObj(r[k]) ? (mergeJ(JSON.parse(JSON.stringify(fallback)) as J, r[k]) as T) : structuredClone(fallback));
+  const quantize = pick('quantize', defaults.quantize);
   return {
     version: 2,
     name: typeof r.name === 'string' ? r.name : defaults.name,
     dimensions: pick('dimensions', defaults.dimensions),
     zones: pick('zones', defaults.zones),
-    quantize: pick('quantize', defaults.quantize),
+    quantize: { ...quantize, paletteFromLayers: quantize.paletteFromLayers === true },
     decor: pick('decor', defaults.decor),
     layers: Array.isArray(r.layers) ? unpackLayers(r.layers) : structuredClone(defaults.layers),
   };
@@ -1119,4 +1165,293 @@ export function fondVisible(owner: Int16Array | null): boolean {
 export function effectiveZones(d: Pick<SockDesignV2, 'zones' | 'layers'>): ZoneSettings {
   const fond = d.layers[0];
   return fond?.kind === 'fond' ? { ...d.zones, footColor: fond.color } : d.zones;
+}
+
+// =================================================================== V9 — calque Dessin (pixel art)
+/**
+ * Codage des cases : parcours rang par rang (index = rang × w + colonne), en plages
+ * « longueur (base 36, minuscules) + code », code « . » = vide, « A » = palette[0], « B » = palette[1]…
+ * La dernière plage vide est omise. Ex. ligne de 2 mailles au dos, sur 3 rangs, w = 8 :
+ * « 2.2A6.2A6.2A ». Très compact après la compression du lien (une ligne verticale sur toute la
+ * tige tient en quelques dizaines de caractères).
+ */
+const EMPTY_CODE = '.';
+const CODE_A = 65; // 'A' … 'Z' : 26 couleurs au plus (la machine en tricote 6)
+export const DESSIN_MAX_COLORS = 26;
+
+export function encodeDessinCells(cells: ArrayLike<number>): string {
+  let out = '';
+  let i = 0;
+  const n = cells.length;
+  let lastNonEmpty = -1;
+  for (let k = n - 1; k >= 0; k--) if (cells[k]) { lastNonEmpty = k; break; }
+  while (i <= lastNonEmpty) {
+    const v = cells[i]!;
+    let j = i + 1;
+    while (j <= lastNonEmpty && cells[j] === v) j++;
+    out += (j - i).toString(36) + (v ? String.fromCharCode(CODE_A + v - 1) : EMPTY_CODE);
+    i = j;
+  }
+  return out;
+}
+
+/** Décode vers un tableau w × h (0 = vide, n = palette[n-1]). Lève une erreur si le texte est abîmé. */
+export function decodeDessinCells(text: string, w: number, h: number): Uint8Array {
+  const out = new Uint8Array(Math.max(0, w * h));
+  let pos = 0;
+  const re = /([0-9a-z]+)([.A-Z])/gy;
+  let m: RegExpExecArray | null;
+  let read = 0;
+  while ((m = re.exec(text))) {
+    read = re.lastIndex;
+    const len = parseInt(m[1]!, 36);
+    const v = m[2] === EMPTY_CODE ? 0 : m[2]!.charCodeAt(0) - CODE_A + 1;
+    if (v) out.fill(v, Math.min(pos, out.length), Math.min(pos + len, out.length));
+    pos += len;
+  }
+  if (read !== text.length) throw new Error('Dessin illisible.');
+  return out;
+}
+
+const dessinCache = new Map<string, Uint8Array>();
+
+/**
+ * Cases du dessin pour la zone motif actuelle (W aiguilles × H rangs). Si la taille a changé depuis
+ * le dessin (homme ↔ femme, tige raccourcie), les colonnes sont réparties à proportion (un trait au
+ * dos reste au dos) et les rangs sont gardés tels quels (coupés en bas si la zone est plus courte).
+ */
+export function dessinCellsForGauge(l: DessinLayer, W: number, H: number): Uint8Array {
+  const key = `${l.w}x${l.h}>${W}x${H}|${l.cells}`;
+  const hit = dessinCache.get(key);
+  if (hit) return hit;
+  let src: Uint8Array;
+  try {
+    src = decodeDessinCells(l.cells, l.w, l.h);
+  } catch {
+    src = new Uint8Array(l.w * l.h);
+  }
+  let out: Uint8Array;
+  if (l.w === W && l.h === H) out = src;
+  else {
+    out = new Uint8Array(W * H);
+    const rows = Math.min(H, l.h);
+    for (let y = 0; y < rows; y++)
+      for (let x = 0; x < W; x++) {
+        const sx = l.w === W ? x : Math.min(l.w - 1, Math.floor(((x + 0.5) * l.w) / W));
+        out[y * W + x] = src[y * l.w + sx]!;
+      }
+  }
+  if (dessinCache.size > 32) dessinCache.clear();
+  dessinCache.set(key, out);
+  return out;
+}
+
+export function newDessinLayer(id: string, W: number, H: number, name = 'Dessin'): DessinLayer {
+  return { ...base(id, name), kind: 'dessin', palette: [], w: W, h: H, cells: '' };
+}
+
+/** Couleurs réellement présentes dans le dessin, dans l'ordre de la palette. */
+export function dessinUsedColors(l: DessinLayer): Hex[] {
+  if (!l.cells) return [];
+  const used = new Set<number>();
+  for (const m of l.cells.matchAll(/[0-9a-z]+([A-Z])/g)) used.add(m[1]!.charCodeAt(0) - CODE_A);
+  return l.palette.filter((_, i) => used.has(i)).map((h) => h.toLowerCase());
+}
+
+/**
+ * Peint (ou efface avec `color = null`) une liste de cases [colonne, rang] et renvoie le calque mis
+ * à jour. Colonnes circulaires (x < 0 ou ≥ W reviennent de l'autre côté), rangs hors zone ignorés.
+ * Le dessin est d'abord remis à la taille actuelle (W × H) ; la palette est compactée (couleurs
+ * inutilisées retirées). Au-delà de 26 couleurs, la couleur la plus proche déjà utilisée est prise.
+ */
+export function paintDessin(l: DessinLayer, W: number, H: number, cells: Iterable<readonly [number, number]>, color: Hex | null): DessinLayer {
+  const grid = new Uint8Array(dessinCellsForGauge(l, W, H)); // copie
+  let palette = l.palette.map((h) => h.toLowerCase());
+  let code = 0;
+  if (color) {
+    const c = color.toLowerCase();
+    let i = palette.indexOf(c);
+    if (i < 0) {
+      if (palette.length < DESSIN_MAX_COLORS) i = palette.push(c) - 1;
+      else {
+        const [r, g, b] = hexRgb(c);
+        let best = Infinity;
+        palette.forEach((h, k) => {
+          const [r2, g2, b2] = hexRgb(h);
+          const d = (r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2;
+          if (d < best) { best = d; i = k; }
+        });
+      }
+    }
+    code = i + 1;
+  }
+  for (const [x, y] of cells) {
+    const yi = Math.round(y);
+    if (yi < 0 || yi >= H) continue;
+    const xi = ((Math.round(x) % W) + W) % W;
+    grid[yi * W + xi] = code;
+  }
+  // compacter la palette
+  const used = new Uint8Array(palette.length + 1);
+  for (let k = 0; k < grid.length; k++) used[grid[k]!] = 1;
+  const remap = new Uint8Array(palette.length + 1);
+  const next: Hex[] = [];
+  palette.forEach((h, k) => {
+    if (used[k + 1]) remap[k + 1] = next.push(h);
+  });
+  for (let k = 0; k < grid.length; k++) grid[k] = remap[grid[k]!]!;
+  palette = next;
+  return { ...l, palette, w: W, h: H, cells: encodeDessinCells(grid) };
+}
+
+/** Pinceau carré de `size` mailles centré sur (x, y) (size 1 = une maille, 2 = 2 × 2 vers la droite et le bas). */
+export function brushCells(x: number, y: number, size = 1): Array<[number, number]> {
+  const s = Math.max(1, Math.round(size));
+  const x0 = Math.round(x) - Math.floor((s - 1) / 2);
+  const y0 = Math.round(y) - Math.floor((s - 1) / 2);
+  const out: Array<[number, number]> = [];
+  for (let j = 0; j < s; j++) for (let i = 0; i < s; i++) out.push([x0 + i, y0 + j]);
+  return out;
+}
+
+/**
+ * Trait droit (Bresenham) de (x0, y0) à (x1, y1), épaisseur `size` (perpendiculaire au trait). Sur le tour de jambe, le trait
+ * prend le chemin le plus court (il peut passer par le raccord). `straight` (touche Maj) force un
+ * trait horizontal, vertical ou à 45°.
+ */
+export function lineCells(x0: number, y0: number, x1: number, y1: number, W: number, size = 1, straight = false): Array<[number, number]> {
+  let dx = Math.round(x1) - Math.round(x0);
+  dx = ((((dx + W / 2) % W) + W) % W) - W / 2; // chemin le plus court sur le tour
+  let dy = Math.round(y1) - Math.round(y0);
+  if (straight) {
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    if (ax > 2 * ay) dy = 0;
+    else if (ay > 2 * ax) dx = 0;
+    else { const m = Math.max(ax, ay); dx = Math.sign(dx) * m; dy = Math.sign(dy) * m; }
+  }
+  const sx = Math.round(x0), sy = Math.round(y0);
+  const n = Math.max(Math.abs(dx), Math.abs(dy));
+  const seen = new Set<string>();
+  const out: Array<[number, number]> = [];
+  // Épaisseur perpendiculaire au trait : un trait vertical de 2 mailles fait 2 colonnes, et s'arrête
+  // exactement au dernier rang voulu (un pinceau carré déborderait d'un rang).
+  const s = Math.max(1, Math.round(size));
+  const lo = -Math.floor((s - 1) / 2);
+  const vertical = Math.abs(dy) >= Math.abs(dx);
+  for (let k = 0; k <= n; k++) {
+    const px = n === 0 ? sx : sx + Math.round((dx * k) / n);
+    const py = n === 0 ? sy : sy + Math.round((dy * k) / n);
+    const pts: Array<[number, number]> = [];
+    for (let t = lo; t < lo + s; t++) pts.push(vertical ? [px + t, py] : [px, py + t]);
+    for (const [bx, by] of pts) {
+      const xw = ((bx % W) + W) % W;
+      const id = `${xw},${by}`;
+      if (!seen.has(id)) { seen.add(id); out.push([xw, by]); }
+    }
+  }
+  return out;
+}
+
+/** Rectangle (plein ou contour) entre deux coins ; les colonnes suivent le chemin le plus court sur le tour. */
+export function rectCells(x0: number, y0: number, x1: number, y1: number, W: number, filled = true): Array<[number, number]> {
+  let dx = Math.round(x1) - Math.round(x0);
+  dx = ((((dx + W / 2) % W) + W) % W) - W / 2;
+  const xa = Math.round(x0), xb = xa + dx;
+  const [xl, xr] = xa <= xb ? [xa, xb] : [xb, xa];
+  const [yt, yb] = [Math.min(Math.round(y0), Math.round(y1)), Math.max(Math.round(y0), Math.round(y1))];
+  const out: Array<[number, number]> = [];
+  for (let y = yt; y <= yb; y++)
+    for (let x = xl; x <= xr; x++)
+      if (filled || y === yt || y === yb || x === xl || x === xr) out.push([((x % W) + W) % W, y]);
+  return out;
+}
+
+/**
+ * Pot de peinture : toutes les cases reliées à (x, y) qui ont la même valeur dans `keys`
+ * (W × H ; par ex. la couleur VISIBLE de chaque maille, ou le contenu du dessin). 4-voisinage,
+ * circulaire en x. Plafonné à `max` cases par sécurité.
+ */
+export function floodCells(keys: ArrayLike<number>, W: number, H: number, x: number, y: number, max = 200_000): Array<[number, number]> {
+  const x0 = ((Math.round(x) % W) + W) % W, y0 = Math.round(y);
+  if (y0 < 0 || y0 >= H) return [];
+  const target = keys[y0 * W + x0];
+  const seen = new Uint8Array(W * H);
+  const stack = [y0 * W + x0];
+  seen[y0 * W + x0] = 1;
+  const out: Array<[number, number]> = [];
+  while (stack.length && out.length < max) {
+    const i = stack.pop()!;
+    const cx = i % W, cy = (i - cx) / W;
+    out.push([cx, cy]);
+    const nb = [cy * W + ((cx + 1) % W), cy * W + ((cx - 1 + W) % W), cy > 0 ? i - W : -1, cy < H - 1 ? i + W : -1];
+    for (const k of nb) if (k >= 0 && !seen[k] && keys[k] === target) { seen[k] = 1; stack.push(k); }
+  }
+  return out;
+}
+
+/** Couleur visible (entier RVB) de chaque maille d'un rendu — clé pour `floodCells` « d'après ce qu'on voit ». */
+export function rgbKeys(rgb: Uint8ClampedArray): Uint32Array {
+  const out = new Uint32Array(rgb.length / 3);
+  for (let i = 0, o = 0; i < out.length; i++, o += 3) out[i] = (rgb[o]! << 16) | (rgb[o + 1]! << 8) | rgb[o + 2]!;
+  return out;
+}
+
+/** Symétrie : reflet de chaque case par rapport à la colonne `axis` (ex. un repère de face), sur le tour. */
+export function mirrorCells(cells: Iterable<readonly [number, number]>, axis: number, W: number): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  for (const [x, y] of cells) out.push([(((Math.round(2 * axis - x - 1)) % W) + W) % W, y]);
+  return out;
+}
+
+/** Rangs touchés par une liste de cases (pour `renderStack(…, { rows })`). */
+export function rowsOfCells(cells: Iterable<readonly [number, number]>, H: number): [number, number] {
+  let lo = Infinity, hi = -Infinity;
+  for (const [, y] of cells) { lo = Math.min(lo, y); hi = Math.max(hi, y); }
+  if (!Number.isFinite(lo)) return [0, 0];
+  return [Math.max(0, Math.floor(lo)), Math.min(H, Math.ceil(hi) + 1)];
+}
+
+/** Remplace une couleur du dessin par une autre (fusion si la nouvelle y est déjà). */
+export function replaceDessinColor(l: DessinLayer, from: Hex, to: Hex): DessinLayer {
+  const f = from.toLowerCase(), t = to.toLowerCase();
+  const i = l.palette.findIndex((h) => h.toLowerCase() === f);
+  if (i < 0 || f === t) return l;
+  const j = l.palette.findIndex((h) => h.toLowerCase() === t);
+  if (j < 0) return { ...l, palette: l.palette.map((h, k) => (k === i ? t : h)) };
+  // la couleur cible existe déjà : on repeint les cases de `from` avec l'index de `to`
+  const grid = decodeDessinCells(l.cells, l.w, l.h);
+  for (let k = 0; k < grid.length; k++) if (grid[k] === i + 1) grid[k] = j + 1;
+  return paintDessin({ ...l, cells: encodeDessinCells(grid) }, l.w, l.h, [], null);
+}
+
+/**
+ * « Transformer en dessin » : les mailles visibles d'un calque (owner = `layerIndex` dans un rendu
+ * de pile) deviennent un calque Dessin, pour retoucher une image ou un motif maille par maille.
+ * Au-delà de 26 couleurs, les moins présentes sont rattachées à la plus proche.
+ */
+export function dessinFromRender(id: string, name: string, layerIndex: number, rgb: Uint8ClampedArray, owner: Int16Array, W: number, H: number): DessinLayer {
+  const counts = new Map<number, number>();
+  for (let i = 0; i < W * H; i++) {
+    if (owner[i] !== layerIndex) continue;
+    const k = (rgb[i * 3]! << 16) | (rgb[i * 3 + 1]! << 8) | rgb[i * 3 + 2]!;
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  const keep = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, DESSIN_MAX_COLORS).map(([k]) => k);
+  const palette = keep.map((k) => rgbHex((k >> 16) & 255, (k >> 8) & 255, k & 255));
+  const index = new Map(keep.map((k, i) => [k, i + 1]));
+  const nearest = (k: number): number => {
+    let best = Infinity, res = 1;
+    keep.forEach((c, i) => {
+      const d = (((c >> 16) & 255) - ((k >> 16) & 255)) ** 2 + (((c >> 8) & 255) - ((k >> 8) & 255)) ** 2 + ((c & 255) - (k & 255)) ** 2;
+      if (d < best) { best = d; res = i + 1; }
+    });
+    return res;
+  };
+  const grid = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    if (owner[i] !== layerIndex) continue;
+    const k = (rgb[i * 3]! << 16) | (rgb[i * 3 + 1]! << 8) | rgb[i * 3 + 2]!;
+    grid[i] = index.get(k) ?? nearest(k);
+  }
+  return { ...newDessinLayer(id, W, H, name), palette, cells: encodeDessinCells(grid) };
 }

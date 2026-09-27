@@ -863,7 +863,7 @@ function publish(): void {
     motifRowOrigin: rowRanges(state.design.dimensions, state.design.zones).leg.start,
     gizmoClient(layerId: string) {
       const layer = state.design.layers.find((l) => l.id === layerId);
-      if (!layer || layer.kind === 'fond' || layer.locked) return null;
+      if (!layer || layer.kind === 'fond' || layer.kind === 'dessin' || layer.locked) return null;
       const g = stackGauge(state.design.dimensions, state.design.zones);
       if (layer.kind === 'image') {
         const img = compositionImages.get(assetKey(layer.asset));

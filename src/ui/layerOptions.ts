@@ -636,6 +636,12 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
       useImported.hidden = true;
       return;
     }
+    if (layer.kind === 'dessin') {
+      // V9 : options du calque Dessin → T72
+      sourceText.textContent = 'Dessin maille par maille.';
+      useImported.hidden = true;
+      return;
+    }
     const { tiles, catalogue } = getState();
     if (layer.source.kind === 'collection') {
       const id = layer.source.collectionId;

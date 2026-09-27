@@ -769,6 +769,11 @@ export function resetSelectedLayer(): void {
     update({ design: { layers: updateStackLayer(state.design.layers, 'fond', { color: newFondLayer().color }) } });
     return;
   }
+  if (layer.kind === 'dessin') {
+    // V9 : « Réinitialiser » vide le dessin (annulable).
+    update({ design: { layers: updateStackLayer(state.design.layers, layer.id, { palette: [], cells: '' }) } });
+    return;
+  }
   if (layer.kind === 'motif') {
     const fresh = newMotifLayer(layer.id, layer.source, defaultMotifLayout(), layer.name);
     update({
