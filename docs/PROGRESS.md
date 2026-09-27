@@ -925,3 +925,10 @@ Contrôle visuel :
 - `visuel-t72-achille-3d-dos.png` : vue de dos, même trait noir descendant du bord-côte au talon orange, tige crème texturée.
 Décisions : D62
 Reste / risques : sélecteur couleur T73.
+
+## T73 — Couleur du crayon — 2026-09-27 15:55
+Statut : terminée
+Fait : pastille `dessin-color` ouvre un dialogue (sock + nuancier recherchable + 8 récentes) ; pipette met à jour la couleur ; bandeau palette V8 inchangé si dépassement.
+Vérification : e2e `dessin-couleur` ✅ (recherche « noir », peindre → maille = fil choisi).
+Décisions : D63
+Reste / risques : bilan T74.

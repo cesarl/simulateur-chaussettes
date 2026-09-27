@@ -371,3 +371,9 @@ Contexte : dessiner maille par maille sans figer la vue.
 Options : A) recompute à chaque mousemove ; B) aperçu RVB partiel + commit unique.
 Choix : B — `mountDessinTools` (capture pointeur) ; `setDessinPreview` sur overlay ; `paintMotifRgbPreview` + `renderStack({rows})` ; 3D ≤ 8 Hz ; `update` une fois au pointerup. Poignées ignorées si outil actif.
 Conséquence : e2e Achille souris ; captures 2D/3D dos.
+
+## D63 — Sélecteur couleur crayon = dialogue Remplacer (T73)
+Contexte : même UX que V8 pour choisir un fil.
+Options : A) `<input type=color>` ; B) dialogue sock / nuancier / récentes.
+Choix : B — `dessin-color-dialog` calqué sur `recolor-dialog` ; récentes en `localStorage` (`sim-dessin-recent-colors`).
+Conséquence : e2e `dessin-couleur`.

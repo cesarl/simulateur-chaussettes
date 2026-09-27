@@ -294,6 +294,16 @@ dessinToolsApi = mountDessinTools(
     getDesign: () => getState().design,
     getSelectedId: () => getState().selectedLayerId,
     getStackRgb: () => lastStackRgb,
+    sockPalette: () => {
+      const { design } = getState();
+      const fromGrid = grid?.palette ?? [];
+      return [
+        ...fromGrid,
+        design.zones.cuffColor,
+        design.zones.heelColor,
+        design.zones.toeColor,
+      ];
+    },
     commitDessin(layerId, next) {
       dessinPreview.active = false;
       dessinPreview.lastStack = null;

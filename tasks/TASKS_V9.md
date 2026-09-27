@@ -121,7 +121,7 @@ Quand un calque Dessin est sélectionné, une **barre d'outils de dessin** appar
 - [x] e2e : le crayon avec symétrie « Devant ↔ Dos » peint aussi la maille miroir ; le pot « d'après ce qu'on voit » remplit une forme d'un Motif ; la pipette prend la couleur.
 - [x] Capture : le trait du tendon d'Achille en 2D **et en 3D vue de dos**, décrite. Le trait doit descendre le long du dos et s'arrêter au talon.
 
-### [ ] T73 — Couleur du crayon
+### [x] T73 — Couleur du crayon
 
 - Pastille « couleur courante » dans la barre de dessin. Au clic, un sélecteur s'ouvre (même composant que « Remplacer… » de V8) :
   1. « Déjà sur la chaussette » : palette effective + bord-côte, talon, pointe ;
@@ -131,7 +131,7 @@ Quand un calque Dessin est sélectionné, une **barre d'outils de dessin** appar
 - Si ajouter une couleur fait dépasser le maximum de la machine, le bandeau de V8 s'affiche, comme pour les autres calques. Le dessin n'est pas bloqué.
 
 **Critères**
-- [ ] e2e : choisir une couleur du nuancier par sa recherche, dessiner → la maille prend exactement ce fil.
+- [x] e2e : choisir une couleur du nuancier par sa recherche, dessiner → la maille prend exactement ce fil.
 
 ### [ ] T74 — Bilan V9
 

@@ -18,7 +18,40 @@ import {
   type StackLayer,
 } from '../core/layers';
 import type { Hex } from '../core/types';
+import { getState } from '../state';
+import { yarnLegendLabels } from './palettePanel';
 import type { FlatHandle } from './flatView';
+
+const RECENT_KEY = 'sim-dessin-recent-colors';
+const MAX_RECENT = 8;
+
+function loadRecent(): Hex[] {
+  try {
+    const raw = localStorage.getItem(RECENT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((c): c is string => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))
+      .map((c) => c.toLowerCase() as Hex)
+      .slice(0, MAX_RECENT);
+  } catch {
+    return [];
+  }
+}
+
+function pushRecent(color: Hex): Hex[] {
+  const next = [color.toLowerCase() as Hex, ...loadRecent().filter((c) => c !== color.toLowerCase())].slice(
+    0,
+    MAX_RECENT,
+  );
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+  return next;
+}
 
 export type DessinTool =
   | 'crayon'
@@ -45,6 +78,8 @@ export interface DessinToolsDeps {
   getDesign: () => SockDesignV2;
   getSelectedId: () => string | null;
   getStackRgb: () => Uint8ClampedArray | null;
+  /** Palette déjà sur la chaussette (effective + zones). */
+  sockPalette?: () => readonly string[];
   /** Commit définitif (une étape d’historique). */
   commitDessin: (layerId: string, next: DessinLayer) => void;
   /** Aperçu pendant le trait (sans historique). */
@@ -411,6 +446,7 @@ export function mountDessinTools(
           .join('')}` as Hex;
         state = { ...state, color: hex };
         saveState(state);
+        pushRecent(hex);
         syncUi();
         deps.onColorChange?.(hex);
       }
@@ -572,18 +608,129 @@ export function mountDessinTools(
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
 
-  colorBtn.addEventListener('click', () => {
-    const input = document.createElement('input');
-    input.type = 'color';
-    input.value = state.color;
-    input.addEventListener('change', () => {
-      state = { ...state, color: input.value.toLowerCase() as Hex };
-      saveState(state);
-      syncUi();
-      deps.onColorChange?.(state.color);
-    });
-    input.click();
-  });
+  colorBtn.addEventListener('click', () => openColorPicker());
+
+  const colorDialog = document.createElement('dialog');
+  colorDialog.className = 'recolor-dialog';
+  colorDialog.dataset.testid = 'dessin-color-dialog';
+  const colorTitle = document.createElement('h3');
+  colorTitle.textContent = 'Couleur du crayon';
+  const sockSection = document.createElement('div');
+  sockSection.className = 'recolor-section';
+  sockSection.dataset.testid = 'dessin-color-sock';
+  const sockTitle = document.createElement('h4');
+  sockTitle.textContent = 'Déjà sur la chaussette';
+  const sockList = document.createElement('div');
+  sockList.className = 'recolor-list';
+  sockSection.append(sockTitle, sockList);
+  const yarnSection = document.createElement('div');
+  yarnSection.className = 'recolor-section';
+  yarnSection.dataset.testid = 'dessin-color-nuancier';
+  const yarnTitle = document.createElement('h4');
+  yarnTitle.textContent = 'Nuancier (validé)';
+  const yarnSearch = document.createElement('input');
+  yarnSearch.type = 'search';
+  yarnSearch.placeholder = 'Rechercher un fil (code ou nom)…';
+  yarnSearch.dataset.testid = 'dessin-color-search';
+  const yarnList = document.createElement('div');
+  yarnList.className = 'recolor-list';
+  yarnSection.append(yarnTitle, yarnSearch, yarnList);
+  const recentSection = document.createElement('div');
+  recentSection.className = 'recolor-section';
+  recentSection.dataset.testid = 'dessin-color-recent';
+  const recentTitle = document.createElement('h4');
+  recentTitle.textContent = 'Dernières couleurs';
+  const recentList = document.createElement('div');
+  recentList.className = 'recolor-list';
+  recentSection.append(recentTitle, recentList);
+  const colorClose = document.createElement('button');
+  colorClose.type = 'button';
+  colorClose.dataset.testid = 'dessin-color-close';
+  colorClose.textContent = 'Fermer';
+  colorDialog.append(colorTitle, sockSection, yarnSection, recentSection, colorClose);
+  document.body.appendChild(colorDialog);
+
+  function yarnLabel(hex: string): string {
+    const map = yarnLegendLabels();
+    const known = map.get(hex.toLowerCase());
+    if (known) return known;
+    const cat = getState().catalogue;
+    const hit = cat?.nuancier.find((c) => c.hex.toLowerCase() === hex.toLowerCase());
+    return hit ? `${hit.id} · ${hit.nom}` : hex.toUpperCase();
+  }
+
+  function pickColor(hex: Hex): void {
+    const next = hex.toLowerCase() as Hex;
+    state = { ...state, color: next };
+    saveState(state);
+    pushRecent(next);
+    syncUi();
+    deps.onColorChange?.(next);
+    if (colorDialog.open) colorDialog.close();
+  }
+
+  function renderColorLists(): void {
+    sockList.replaceChildren();
+    yarnList.replaceChildren();
+    recentList.replaceChildren();
+    const { design, catalogue } = getState();
+    const sock = new Set<string>();
+    for (const hex of deps.sockPalette?.() ?? []) sock.add(hex.toLowerCase());
+    sock.add(design.zones.cuffColor.toLowerCase());
+    sock.add(design.zones.heelColor.toLowerCase());
+    sock.add(design.zones.toeColor.toLowerCase());
+    for (const hex of sock) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'recolor-swatch';
+      btn.dataset.testid = `dessin-color-sock-${hex.slice(1)}`;
+      const chip = document.createElement('i');
+      chip.style.background = hex;
+      const label = document.createElement('span');
+      label.textContent = yarnLabel(hex);
+      btn.append(chip, label);
+      btn.addEventListener('click', () => pickColor(hex as Hex));
+      sockList.appendChild(btn);
+    }
+    const q = yarnSearch.value.trim().toLowerCase();
+    for (const c of catalogue?.nuancier ?? []) {
+      if (!c.public) continue;
+      if (q && !c.id.toLowerCase().includes(q) && !c.nom.toLowerCase().includes(q)) continue;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'recolor-swatch';
+      btn.dataset.testid = `dessin-color-yarn-${c.id}`;
+      const chip = document.createElement('i');
+      chip.style.background = c.hex;
+      const label = document.createElement('span');
+      label.textContent = `${c.id} · ${c.nom}`;
+      btn.append(chip, label);
+      btn.addEventListener('click', () => pickColor(c.hex.toLowerCase() as Hex));
+      yarnList.appendChild(btn);
+    }
+    for (const hex of loadRecent()) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'recolor-swatch';
+      btn.dataset.testid = `dessin-color-recent-${hex.slice(1)}`;
+      const chip = document.createElement('i');
+      chip.style.background = hex;
+      const label = document.createElement('span');
+      label.textContent = yarnLabel(hex);
+      btn.append(chip, label);
+      btn.addEventListener('click', () => pickColor(hex));
+      recentList.appendChild(btn);
+    }
+  }
+
+  function openColorPicker(): void {
+    yarnSearch.value = '';
+    renderColorLists();
+    if (!colorDialog.open) colorDialog.showModal();
+  }
+
+  yarnSearch.addEventListener('input', () => renderColorLists());
+  colorClose.addEventListener('click', () => colorDialog.close());
 
   syncUi();
 
@@ -592,9 +739,7 @@ export function mountDessinTools(
     sync: syncUi,
     getState: () => state,
     setColor(color: Hex) {
-      state = { ...state, color: color.toLowerCase() as Hex };
-      saveState(state);
-      syncUi();
+      pickColor(color);
     },
     isDrawingActive: () =>
       !root.hidden &&
@@ -610,6 +755,7 @@ export function mountDessinTools(
       window.removeEventListener('keyup', onKeyUp);
       root.remove();
       bubble.remove();
+      colorDialog.remove();
     },
   };
 }
