@@ -63,6 +63,7 @@ import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
 import { mountFlatGizmos } from './ui/flatGizmos';
+import { mountDessinTools } from './ui/dessinTools';
 import { mountCompositionEditor } from './ui/compositionEditor';
 import {
   mountPanel,
@@ -157,6 +158,7 @@ const flatCanvasEl = view2d.querySelector('[data-testid="flat-canvas"]');
 if (!(flatCanvasEl instanceof HTMLCanvasElement)) {
   throw new Error('Canvas vue 2D introuvable');
 }
+let dessinToolsApi: import('./ui/dessinTools').DessinToolsApi | null = null;
 mountFlatGizmos(flat, flatCanvasEl, {
   getDesign: () => {
     const design = getState().design;
@@ -169,7 +171,10 @@ mountFlatGizmos(flat, flatCanvasEl, {
   getSelectedId: () => getState().selectedLayerId,
   getStackOwner: () => stackOwner,
   getImages: () => compositionImages,
-  selectLayer,
+  selectLayer: (id) => {
+    if (dessinToolsApi?.isDrawingActive()) return;
+    selectLayer(id);
+  },
   patchImage: patchImageLayer,
   patchMotif: patchLayerCoalesced,
   setMotifBounds,
@@ -275,7 +280,83 @@ if (toolbar2dEl instanceof HTMLElement) {
   });
 }
 
-applyShellMode(devMode);
+/** Aperçu live d’un trait de dessin (T72). */
+let dessinPreview = {
+  active: false,
+  last3d: 0,
+  lastStack: null as { rgb: Uint8ClampedArray; owner: Int16Array } | null,
+};
+
+dessinToolsApi = mountDessinTools(
+  toolbar2dEl instanceof HTMLElement ? toolbar2dEl : view2d,
+  flat,
+  {
+    getDesign: () => getState().design,
+    getSelectedId: () => getState().selectedLayerId,
+    getStackRgb: () => lastStackRgb,
+    commitDessin(layerId, next) {
+      dessinPreview.active = false;
+      dessinPreview.lastStack = null;
+      update({
+        design: {
+          layers: getState().design.layers.map((l) => (l.id === layerId ? next : l)),
+        },
+      });
+    },
+    previewStack(layers, dirtyRows) {
+      dessinPreview.active = true;
+      const design = getState().design;
+      const gauge = stackGauge(design.dimensions, design.zones);
+      const stackResult = renderStack(
+        {
+          layers,
+          gauge,
+          motifRgb: lastMotifRgb,
+          images: compositionImages,
+          keyColors: lastKeyColors,
+        },
+        dirtyRows && dessinPreview.lastStack
+          ? { rows: dirtyRows, into: dessinPreview.lastStack }
+          : dirtyRows
+            ? { rows: dirtyRows }
+            : undefined,
+      );
+      dessinPreview.lastStack = stackResult;
+      lastStackRgb = stackResult.rgb;
+      stackOwner = stackResult.owner;
+      flat.paintMotifRgbPreview(stackResult.rgb, gauge.needles, gauge.rows);
+      const now = performance.now();
+      if (now - dessinPreview.last3d >= 125) {
+        dessinPreview.last3d = now;
+        const palette =
+          patternPalette.length > 0
+            ? patternPalette
+            : design.quantize.palette.length > 0
+              ? design.quantize.palette
+              : ['#f4f1ea', '#1d1d1b'];
+        const reduced = quantize(stackResult.rgb, design.dimensions.needles, {
+          ...design.quantize,
+          paletteMode: 'manuelle',
+          palette,
+          maxColors: Math.max(2, Math.min(8, palette.length)),
+          despeckle: false,
+        });
+        grid = composeGrid(
+          design.dimensions,
+          effectiveZones(design),
+          reduced.indices,
+          reduced.palette,
+        );
+        syncMesh(grid);
+      }
+    },
+    endPreview() {
+      dessinPreview.active = false;
+      dessinPreview.lastStack = null;
+      flat.setDessinPreview(null);
+    },
+  },
+);
 
 const shareHint = document.createElement('p');
 shareHint.className = 'share-hint';
@@ -1561,6 +1642,9 @@ async function boot(): Promise<void> {
   subscribe(scheduleShareHash);
   subscribe(() => {
     decor.sync();
+  });
+  subscribe(() => {
+    dessinToolsApi?.sync();
   });
   recompute();
   scheduleShareHash();

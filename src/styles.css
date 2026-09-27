@@ -428,6 +428,52 @@ button.pill.pill-action:focus-visible {
   pointer-events: none;
 }
 .flat-alerts-legend[hidden] { display: none !important; }
+.dessin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 0;
+}
+.dessin-toolbar[hidden] { display: none !important; }
+.dessin-tool-group { display: flex; flex-wrap: wrap; gap: 4px; }
+.dessin-tool-group button.active,
+.dessin-tool-group button[aria-pressed='true'] {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+.dessin-color {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+.dessin-thick, .dessin-check {
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.dessin-thick input { width: 3.2em; }
+.dessin-bubble {
+  position: absolute;
+  left: 12px;
+  bottom: 40px;
+  z-index: 4;
+  margin: 0;
+  padding: 6px 10px;
+  max-width: 280px;
+  font-size: 12px;
+  background: #fff8f0;
+  border: 1px solid #c45;
+  color: #5a1a1a;
+  pointer-events: none;
+}
+.dessin-bubble[hidden] { display: none !important; }
 .swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .swatch { display: flex; align-items: center; gap: 4px; font-size: 12px; }
 .swatch i { width: 16px; height: 16px; border: 1px solid var(--line); display: inline-block; }

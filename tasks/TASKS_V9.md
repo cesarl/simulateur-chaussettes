@@ -85,7 +85,7 @@ Ne pas réécrire ; tests dans `tests/unit/v9-dessin.test.ts`.
 - [x] Test unitaire : projet v3 avec un Dessin → sérialisé → relu → même rendu.
 - [x] e2e : « + Dessin » → calque dans le dock ; « Transformer en dessin » sur un Motif → rendu 2D identique (mêmes couleurs de canvas en 5 points), et l'original est masqué.
 
-### [ ] T72 — Outils de dessin dans la vue 2D
+### [x] T72 — Outils de dessin dans la vue 2D
 
 Quand un calque Dessin est sélectionné, une **barre d'outils de dessin** apparaît dans la vue 2D (et disparaît sinon).
 
@@ -112,14 +112,14 @@ Quand un calque Dessin est sélectionné, une **barre d'outils de dessin** appar
 - Raccourcis clavier actifs seulement quand la vue 2D a le focus et que le focus n'est pas dans un champ.
 
 **Critères**
-- [ ] e2e `dessin-achille.spec.ts`, **uniquement à la souris** (le cas réel) :
+- [x] e2e `dessin-achille.spec.ts`, **uniquement à la souris** (le cas réel) :
   - « + Dessin » → outil Trait, épaisseur 2, Maj ;
   - glisser du haut de la tige au repère « Dos » jusqu'au bas de la tige ;
   - vérifier via `window.__SIM__` : les colonnes 42 et 43 sont peintes du rang 0 au rang 179, et rien au rang 180 ni ailleurs ;
   - Annuler → plus rien ; Rétablir → revenu ;
   - « Copier le lien » → ouvrir → même trait.
-- [ ] e2e : le crayon avec symétrie « Devant ↔ Dos » peint aussi la maille miroir ; le pot « d'après ce qu'on voit » remplit une forme d'un Motif ; la pipette prend la couleur.
-- [ ] Capture : le trait du tendon d'Achille en 2D **et en 3D vue de dos**, décrite. Le trait doit descendre le long du dos et s'arrêter au talon.
+- [x] e2e : le crayon avec symétrie « Devant ↔ Dos » peint aussi la maille miroir ; le pot « d'après ce qu'on voit » remplit une forme d'un Motif ; la pipette prend la couleur.
+- [x] Capture : le trait du tendon d'Achille en 2D **et en 3D vue de dos**, décrite. Le trait doit descendre le long du dos et s'arrêter au talon.
 
 ### [ ] T73 — Couleur du crayon
 

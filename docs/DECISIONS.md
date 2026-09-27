@@ -365,3 +365,9 @@ Contexte : le cœur (`newDessinLayer`, `paintDessin`, `dessinFromRender`, lien `
 Options : A) réécrire une UI parallèle ; B) brancher dock / options / état sur les API existantes.
 Choix : B — `addDessinLayer` / `convertLayerToDessin` / `replaceDessinLayerColor` / `clearDessinLayer` ; vignette Dessin sur damier ; `canEdit` des poignées = Motif|Image seulement (évite `tileStitches` sur Dessin) ; `editingMotif` repli sur Motif masqué.
 Conséquence : e2e `dessin-calque` ; captures `visuel-t71-*.png`.
+
+## D62 — Outils Dessin sur overlay + commit au lâcher (T72)
+Contexte : dessiner maille par maille sans figer la vue.
+Options : A) recompute à chaque mousemove ; B) aperçu RVB partiel + commit unique.
+Choix : B — `mountDessinTools` (capture pointeur) ; `setDessinPreview` sur overlay ; `paintMotifRgbPreview` + `renderStack({rows})` ; 3D ≤ 8 Hz ; `update` une fois au pointerup. Poignées ignorées si outil actif.
+Conséquence : e2e Achille souris ; captures 2D/3D dos.

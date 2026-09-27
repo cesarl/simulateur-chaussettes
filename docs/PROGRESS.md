@@ -915,3 +915,13 @@ Contrôle visuel :
 - `visuel-t71-transform-dessin.png` : après transformation, rendu 2D inchangé (mêmes couleurs aux 5 points e2e) ; Motif masqué.
 Décisions : D61
 Reste / risques : outils de dessin (T72).
+
+## T72 — Outils de dessin 2D — 2026-09-27 15:50
+Statut : terminée
+Fait : barre `dessin-toolbar` (crayon, gomme, trait, rectangle, pot, pipette, main) ; épaisseur 1–4 ; symétrie ; aimantation ; aperçu overlay ; trait live (rAF 2D, 3D ≤ 8 Hz) ; commit au lâcher = 1 undo. Zoom max 24 px/maille.
+Vérification : e2e `dessin-achille` ✅ (trait Achille + symétrie/pipette).
+Contrôle visuel :
+- `visuel-t72-achille-2d.png` : trait noir vertical 2 mailles au centre du Dos, sur toute la tige crème, s’arrête au talon terracotta ; bord-côte marine intact.
+- `visuel-t72-achille-3d-dos.png` : vue de dos, même trait noir descendant du bord-côte au talon orange, tige crème texturée.
+Décisions : D62
+Reste / risques : sélecteur couleur T73.

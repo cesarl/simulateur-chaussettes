@@ -50,6 +50,8 @@ export interface FlatHandle {
   panBy: (dx: number, dy: number) => void;
   setPanMode: (active: boolean) => void;
   setOverlayDrawer: (draw: (() => void) | null) => void;
+  /** Surbrillance des mailles que l’outil de dessin va peindre (T72). */
+  setDessinPreview: (cells: Array<[number, number]> | null, erase?: boolean) => void;
   /** Décale la vue 2D pour centrer une maille motif. */
   revealMotifStitch: (col: number, motifRow: number) => void;
   setDevTools: (visible: boolean) => void;
@@ -140,6 +142,8 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   let panMode = false;
   let toolsVisible = true;
   let overlayDrawer: (() => void) | null = null;
+  let dessinPreviewCells: Array<[number, number]> | null = null;
+  let dessinPreviewErase = false;
   let dims: SockDimensions = getState().design.dimensions;
   let zones: ZoneSettings = getState().design.zones;
   /** Bitmap 1 px = 1 maille (recyclé). */
@@ -283,6 +287,20 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
     if (!grid) return;
     drawAlertOverlays();
+    if (dessinPreviewCells && dessinPreviewCells.length) {
+      const { w, h } = cells();
+      const originX = MARGIN_LEFT + panX;
+      const originY = MARGIN_TOP + panY;
+      overlayCtx.save();
+      overlayCtx.fillStyle = dessinPreviewErase
+        ? 'rgba(255,255,255,0.55)'
+        : 'rgba(29,29,27,0.4)';
+      for (const [col, row] of dessinPreviewCells) {
+        const gy = motifYToGridY(dims, zones, row);
+        overlayCtx.fillRect(originX + col * w, originY + gy * h, w, h);
+      }
+      overlayCtx.restore();
+    }
     overlayDrawer?.();
     updateAlertsLegend();
   }
@@ -495,7 +513,7 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   canvas.addEventListener('wheel', (event) => {
     event.preventDefault();
     const next = event.deltaY < 0 ? zoom + 1 : zoom - 1;
-    zoom = Math.min(8, Math.max(1, next));
+    zoom = Math.min(6, Math.max(1, next)); // 1 maille ≈ 4…24 px
     draw();
   }, { passive: false });
 
@@ -610,6 +628,11 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     setOverlayDrawer(fn: (() => void) | null) {
       overlayDrawer = fn;
       draw();
+    },
+    setDessinPreview(cells: Array<[number, number]> | null, erase = false) {
+      dessinPreviewCells = cells;
+      dessinPreviewErase = erase;
+      drawOverlayOnly();
     },
     revealMotifStitch(col: number, motifRow: number) {
       if (!grid) return;
