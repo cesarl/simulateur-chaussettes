@@ -17,6 +17,8 @@ test('quinconce, 3 couleurs et taille femme se reflètent dans le simulateur', a
   await expect(page.getByTestId('tile-thumb')).toHaveCount(1, { timeout: 15_000 });
   await page.getByTestId('calep-thumb-g-quinconce').click();
   await page.getByTestId('tab-chaussette').click();
+  await page.getByTestId('ctl-palette-mode').selectOption('auto');
+  await expect(page.getByTestId('ctl-max-colors')).toBeVisible();
   await page.getByTestId('ctl-max-colors').fill('3');
   await page.getByTestId('ctl-size').selectOption('femme');
   await page.waitForFunction(() => {

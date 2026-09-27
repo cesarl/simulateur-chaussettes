@@ -30,6 +30,8 @@ test('reset section, undo, reset-all avec confirmation', async ({ page }) => {
   await page.getByTestId('ctl-heel-height').blur();
   await page.waitForFunction(() => window.__SIM__?.design.zones.heelHeightMm === 95);
 
+  await page.getByTestId('ctl-palette-mode').selectOption('auto');
+  await expect(page.getByTestId('ctl-max-colors')).toBeVisible();
   await page.getByTestId('ctl-max-colors').fill('3');
   await page.waitForFunction(() => window.__SIM__?.design.quantize.maxColors === 3);
 
@@ -47,6 +49,7 @@ test('reset section, undo, reset-all avec confirmation', async ({ page }) => {
   await page.waitForFunction(() => window.__SIM__?.design.layout.calepinage.genere.ordre === 'suite');
 
   const tilesBefore = await page.evaluate(() => window.__SIM__!.design.layout.tileIds.length);
+  await page.getByTestId('tab-global').click();
   await page.getByTestId('reset-all').click();
   await expect(page.getByTestId('reset-all')).toHaveText('Confirmer ?');
   await page.getByTestId('reset-all').click();

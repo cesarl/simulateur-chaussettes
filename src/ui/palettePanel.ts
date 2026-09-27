@@ -367,6 +367,11 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
           toggleLayerTransparentColor(motifId, hex);
         },
       });
+      // Œil de zone : testid distinct pour éviter le double `layer-color-*` (section Couleurs du calque).
+      const eye = row.querySelector('.color-row-eye');
+      if (eye instanceof HTMLElement) {
+        eye.dataset.testid = `zone-eye-${z}`;
+      }
       row.addEventListener('click', (event) => {
         const target = event.target;
         if (target instanceof Element && target.closest('.color-row-eye, .color-row-recolor')) return;

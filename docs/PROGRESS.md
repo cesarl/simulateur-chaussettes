@@ -834,3 +834,35 @@ Contrôle visuel :
 - `visuel-t67-image-recolor.png` : calque Logo sélectionné ; section « Couleurs du calque » avec pastille + « Changer… » (remplacement actif) ; logo visible en 2D/3D.
 Décisions : D55.
 Reste / risques : T68 bilan + verify complet.
+
+## T68 — Bilan V8 — 2026-09-27 10:06
+Statut : terminée
+Fait :
+- README mis à jour (V8 : repères, bascule 2D/3D, onglet Global, bibliothèque d’images, lignes de couleur).
+- Captures sous `docs/captures/v8/` (et copie `media/v8/`).
+- Correctifs de suivi : `leave-dev` / `reset-all` via onglet Global ; `ctl-max-colors` après mode auto ; œil zone ≠ `layer-color-*` ; rechargement entre liens T59.
+- `npm run verify` complet vert.
+Vérification : typecheck ✅ ; 167 unitaires ✅ ; build ✅ ; 74 e2e ✅.
+Décisions : D51–D55.
+Reste / risques : T18 (tailles fabricant) toujours hors scope ; CI GitHub peut échouer pour facturation.
+
+## Point pour César — V8 retours — 2026-09-27
+
+### Ce qui marche
+- Palette unique (`resolveStackPalette`) + Fond = pied uni ; plus de « Couleur du pied ».
+- Cadre Image correct sous le talon ; glisser 2D fluide (`dragComputeMsAvg` < 25 ms).
+- Repères des faces + aimantation ; bascule 2D/3D mémorisée.
+- Onglet **Global** (réinit / collections / quitter / ms) — plus de pied de panneau.
+- Bibliothèque d’images publiques (`bibliotheque-images/` → `public/images/`) ; Logo partageable dans le lien.
+- Lignes de couleur : œil (transparence) + Remplacer… (Images).
+
+### Tester en 3 étapes
+1. `npm run sync:local && npm run dev` → ouvrir `http://localhost:5173/?dev`
+2. Bibliothèque → Images → Logo ; basculer Repères / 2D / 3D ; onglet Global.
+3. Sur un Motif : œil sur une couleur ; sur le Logo : Remplacer… → Copier le lien → coller sans `?dev`.
+
+### Décisions à relire
+D51 (palette/Fond), D52 (talon), D53 (glisser), D54 (bibliothèque), D55 (œil/recolor).
+
+### Blocages
+Aucun pour V8. T18 en attente des tailles fabricant. Ne pas toucher `wrangler.jsonc`.

@@ -171,7 +171,7 @@ Un seul composant **« ligne de couleur »** pour les Motifs et les Images : pas
   - l'œil et le remplacement survivent à « Copier le lien » puis à la réouverture.
 - [x] Capture des lignes de couleurs d'un Motif et d'une Image (avec un remplacement), décrite.
 
-### [ ] T68 — Bilan V8
+### [x] T68 — Bilan V8
 
 - README : repères, vues à masquer, onglet Global, bibliothèque d'images (comment ajouter une image : déposer le fichier dans `bibliotheque-images/`, compléter `images.json`, `npm run sync:local`), couleurs des calques.
 - Captures dans `docs/captures/v8/`.

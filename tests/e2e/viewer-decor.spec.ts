@@ -49,6 +49,7 @@ test('visionneuse publique : bascule décor on/off', async ({ page }) => {
   await page.getByTestId('tab-decor').click();
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
   await waitDecorBuild(page, 'coin');
+  await page.getByTestId('tab-global').click();
   await page.getByTestId('leave-dev').click();
 
   await expect(page.getByTestId('panel')).toBeHidden();

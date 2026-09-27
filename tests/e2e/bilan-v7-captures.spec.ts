@@ -29,6 +29,8 @@ test('T59 captures visionneuse liens réels', async ({ page }) => {
         /* ignore */
       }
     });
+    // Forcer un vrai rechargement entre les deux liens (sinon seul le hash change).
+    await page.goto('about:blank');
     await page.goto(`/${lien.hash}`);
     await page.waitForFunction(() => window.__SIM__?.ready === true, null, { timeout: 60_000 });
     await expect(page.getByTestId('panel')).toBeHidden();
