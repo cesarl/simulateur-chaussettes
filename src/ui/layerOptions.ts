@@ -12,12 +12,14 @@
  * branchés sur le calque Motif sélectionné via `editingMotif()`.
  */
 import { motifRows } from '../core/layout';
-import { setMotifBand, type StackLayer } from '../core/layers';
+import { decodeDessinCells, setMotifBand, type DessinLayer, type StackLayer } from '../core/layers';
 import type { Hex } from '../core/types';
 import { loadTileFromFile } from '../io/tiles';
 import {
+  clearDessinLayer,
   getState,
   patchImageLayer,
+  replaceDessinLayerColor,
   replaceImageAsset,
   resetSelectedLayer,
   setFondColor,
@@ -50,13 +52,17 @@ export interface LayerOptionsApi {
   /** Étendue d’un Motif : à placer avec les autres réglages Motif. */
   extent: HTMLElement;
   image: HTMLElement;
+  /** Options propres au calque Dessin (T71). */
+  dessin: HTMLElement;
   transparency: HTMLElement;
   sync: () => void;
 }
 
 function kindLabel(layer: StackLayer): string {
   if (layer.kind === 'fond') return 'Fond';
-  return layer.kind === 'motif' ? 'Motif' : 'Image';
+  if (layer.kind === 'motif') return 'Motif';
+  if (layer.kind === 'dessin') return 'Dessin';
+  return 'Image';
 }
 
 function cm(rows: number, rowsPerCm: number): string {
@@ -393,12 +399,30 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
   numbers.append(posX.root, posY.root, widthStitches.root, rotation.root);
   image.append(preview, replaceRow, flipX.root, flipY.root, repeat.root, repeatGap.root, numbers);
 
+  // ------------------------------------------------------------------ Dessin (T71)
+  const dessin = details('Dessin', 'section-dessin');
+  const dessinHint = document.createElement('p');
+  dessinHint.className = 'hint';
+  dessinHint.textContent = 'Pixel art maille par maille : 1 case = 1 maille tricotée.';
+  const dessinCount = document.createElement('p');
+  dessinCount.className = 'hint';
+  dessinCount.dataset.testid = 'dessin-painted-count';
+  const clearDessinBtn = document.createElement('button');
+  clearDessinBtn.type = 'button';
+  clearDessinBtn.dataset.testid = 'dessin-clear';
+  clearDessinBtn.textContent = 'Effacer tout le dessin';
+  clearDessinBtn.addEventListener('click', () => {
+    const layer = selected();
+    if (layer?.kind === 'dessin') clearDessinLayer(layer.id);
+  });
+  dessin.append(dessinHint, dessinCount, clearDessinBtn);
+
   // ------------------------------------------------------------------ Couleurs du calque (œil + remplacement)
   const transparency = details('Couleurs du calque', 'section-transparence');
   const transparencyHint = document.createElement('p');
   transparencyHint.className = 'hint';
   transparencyHint.textContent =
-    'Œil barré = couleur transparente (le calque du dessous apparaît). Sur une Image, « Remplacer… » change la couleur de fil.';
+    'Œil barré = couleur transparente (le calque du dessous apparaît). « Remplacer… » change la couleur de fil (Image ou Dessin).';
   const colorRows = document.createElement('div');
   colorRows.className = 'color-rows';
   colorRows.dataset.testid = 'transparent-colors';
@@ -443,6 +467,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
   let colorsKey = '';
   let recolorFrom: Hex | null = null;
   let recolorLayerId: string | null = null;
+  let recolorMode: 'image' | 'dessin' = 'image';
 
   function yarnLabel(hex: string): string {
     const map = yarnLegendLabels();
@@ -461,7 +486,11 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
 
   function pickRecolor(to: Hex | null): void {
     if (!recolorLayerId || !recolorFrom) return;
-    setImageRecolor(recolorLayerId, recolorFrom, to);
+    if (recolorMode === 'dessin') {
+      if (to) replaceDessinLayerColor(recolorLayerId, recolorFrom, to);
+    } else {
+      setImageRecolor(recolorLayerId, recolorFrom, to);
+    }
     closeRecolor();
   }
 
@@ -508,10 +537,12 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     }
   }
 
-  function openRecolor(layerId: string, from: Hex): void {
+  function openRecolor(layerId: string, from: Hex, mode: 'image' | 'dessin' = 'image'): void {
     recolorLayerId = layerId;
     recolorFrom = from.toLowerCase() as Hex;
+    recolorMode = mode;
     recolorSearch.value = '';
+    recolorReset.hidden = mode === 'dessin';
     renderRecolorLists();
     if (!recolorDialog.open) recolorDialog.showModal();
   }
@@ -540,7 +571,10 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     if (colors.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'hint';
-      empty.textContent = 'Couleurs principales pas encore connues (calque vide ou image en cours de lecture).';
+      empty.textContent =
+        layer.kind === 'dessin'
+          ? 'Aucune maille peinte pour l’instant.'
+          : 'Couleurs principales pas encore connues (calque vide ou image en cours de lecture).';
       colorRows.appendChild(empty);
       return;
     }
@@ -554,6 +588,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
         recolorLabel = `${hex.toUpperCase()} → ${yarnLabel(mapped)}`;
         label = recolorLabel;
       }
+      const canReplace = layer.kind === 'image' || layer.kind === 'dessin';
       colorRows.appendChild(
         createColorRow({
           hex,
@@ -561,7 +596,9 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
           transparent: off,
           recolorLabel,
           onToggleEye: () => toggleLayerTransparentColor(layer.id, hex),
-          onRecolor: layer.kind === 'image' ? () => openRecolor(layer.id, hex) : undefined,
+          onRecolor: canReplace
+            ? () => openRecolor(layer.id, hex, layer.kind === 'dessin' ? 'dessin' : 'image')
+            : undefined,
         }),
       );
     }
@@ -616,6 +653,24 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     rotation.setValue(Math.round(layer.rotation));
   }
 
+  function syncDessin(layer: StackLayer): void {
+    if (layer.kind !== 'dessin') return;
+    const l = layer as DessinLayer;
+    let painted = 0;
+    if (l.cells && l.w > 0 && l.h > 0) {
+      try {
+        const cells = decodeDessinCells(l.cells, l.w, l.h);
+        for (let i = 0; i < cells.length; i++) if (cells[i]) painted += 1;
+      } catch {
+        painted = 0;
+      }
+    }
+    dessinCount.textContent =
+      painted === 0
+        ? 'Aucune maille peinte.'
+        : `${painted} maille${painted > 1 ? 's' : ''} peinte${painted > 1 ? 's' : ''}.`;
+  }
+
   function syncSource(layer: StackLayer): void {
     if (layer.kind === 'fond') {
       sourceText.textContent = 'Une seule couleur, sous tous les autres calques.';
@@ -665,6 +720,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
       fond.hidden = true;
       extent.hidden = true;
       image.hidden = true;
+      dessin.hidden = true;
       transparency.hidden = true;
       return;
     }
@@ -673,13 +729,15 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     fond.hidden = layer.kind !== 'fond';
     extent.hidden = layer.kind !== 'motif';
     image.hidden = layer.kind !== 'image';
+    dessin.hidden = layer.kind !== 'dessin';
     transparency.hidden = layer.kind === 'fond';
     syncSource(layer);
     syncFond(layer);
     syncExtent(layer);
     syncImage(layer);
+    syncDessin(layer);
     if (layer.kind !== 'fond') renderColorRows(layer);
   }
 
-  return { header, source, fond, extent, image, transparency, sync };
+  return { header, source, fond, extent, image, dessin, transparency, sync };
 }

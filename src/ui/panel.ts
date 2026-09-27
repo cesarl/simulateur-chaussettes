@@ -348,7 +348,7 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): PanelApi 
   mountSettings(panes, actions);
   // Étendue du Motif après le calepinage ; transparence et image en fin de volet.
   panes.motif.appendChild(layerOptions.extent);
-  panes.calque.append(layerOptions.image, layerOptions.transparency);
+  panes.calque.append(layerOptions.image, layerOptions.dessin, layerOptions.transparency);
   syncLayerPane();
 
   return { sync: syncLayerPane };

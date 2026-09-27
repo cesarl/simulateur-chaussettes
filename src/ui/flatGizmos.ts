@@ -81,9 +81,8 @@ function layerById(layers: readonly StackLayer[], id: string): StackLayer | unde
 }
 
 function canEdit(layer: StackLayer | undefined): layer is MotifLayer | ImageLayer {
-  if (!layer || layer.kind === 'fond') return false;
-  if (layer.locked) return false;
-  return true;
+  if (!layer || layer.locked) return false;
+  return layer.kind === 'motif' || layer.kind === 'image';
 }
 
 /** Hauteur de la tige en rangs de motif (frontière avant le saut du talon). */

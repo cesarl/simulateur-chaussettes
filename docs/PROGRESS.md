@@ -905,3 +905,13 @@ Contrôle visuel :
 Décisions : D60
 Reste / risques : T71 branche le calque Dessin déjà écrit.
 
+
+## T71 — Calque Dessin dans l’application — 2026-09-27 15:45
+Statut : terminée
+Fait : dock « + Dessin », vignette damier, menu « Transformer en dessin », options Calque (couleurs œil/Remplacer, effacer, compteur), actions état (`addDessinLayer`, `convertLayerToDessin`, …). Poignées 2D n’appliquent plus `motifGizmo` aux Dessin. Projet v3 / lien `#p=2.` conservent le Dessin.
+Vérification : typecheck ✅ ; unit `v9-dessin-app` + `v9-dessin` ✅ ; e2e `dessin-calque` ✅.
+Contrôle visuel :
+- `visuel-t71-dessin-vide.png` : vue 2D crème (Motif vide), calque Dessin 1 sélectionné dans le dock ; panneau « Dessin · Dessin 1 », « Aucune maille peinte », bouton Effacer.
+- `visuel-t71-transform-dessin.png` : après transformation, rendu 2D inchangé (mêmes couleurs aux 5 points e2e) ; Motif masqué.
+Décisions : D61
+Reste / risques : outils de dessin (T72).

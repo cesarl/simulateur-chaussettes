@@ -56,6 +56,7 @@ import {
   patchImageLayer,
   patchLayerCoalesced,
   setMotifBounds,
+  convertLayerToDessin,
   type DesignPatch,
 } from './state';
 import type { SimHook, StitchRead } from './testHook';
@@ -412,6 +413,8 @@ let compositionImagesReadyKey = '';
 const motifRgbCache = createMotifRgbCache();
 /** Owner par maille de la zone motif (sélection 2D). */
 let stackOwner: Int16Array | null = null; // sélection 2D (T56)
+/** Dernier RVB empilé (zone motif) — Transformer en dessin (T71). */
+let lastStackRgb: Uint8ClampedArray | null = null;
 /** Derniers pixels par calque Motif et couleurs de fil : vignettes du dock. */
 let lastMotifRgb = new Map<string, Uint8ClampedArray>();
 let lastKeyColors = new Map<string, readonly string[]>();
@@ -548,7 +551,7 @@ function thumbKey(layer: StackLayer, design: SockDesignV2): string {
   ]);
 }
 
-/** Vignette d’un calque : rendu réel de ce calque seul, posé sur le Fond. */
+/** Vignette d’un calque : rendu réel de ce calque seul, posé sur le Fond (Dessin = damier). */
 function drawLayerThumb(layerId: string, canvas: HTMLCanvasElement): void {
   const { design } = getState();
   const layer = design.layers.find((l) => l.id === layerId);
@@ -558,8 +561,13 @@ function drawLayerThumb(layerId: string, canvas: HTMLCanvasElement): void {
   if (canvas.dataset.thumbKey === key) return;
   const gauge = stackGauge(design.dimensions, design.zones);
   if (gauge.needles < 1 || gauge.rows < 1) return;
-  const solo: StackLayer[] = layer.kind === 'fond' ? [fond] : [fond, { ...layer, hidden: false }];
-  const { rgb } = renderStack({
+  const solo: StackLayer[] =
+    layer.kind === 'fond'
+      ? [fond]
+      : layer.kind === 'dessin' && fond.kind === 'fond'
+        ? [{ ...fond, color: '#ffffff' }, { ...layer, hidden: false }]
+        : [fond, { ...layer, hidden: false }];
+  const { rgb, owner } = renderStack({
     layers: solo,
     gauge,
     motifRgb: lastMotifRgb,
@@ -574,11 +582,26 @@ function drawLayerThumb(layerId: string, canvas: HTMLCanvasElement): void {
   const context = canvas.getContext('2d');
   if (!sourceContext || !context) return;
   const pixels = sourceContext.createImageData(gauge.needles, gauge.rows);
-  for (let i = 0, p = 0; p < pixels.data.length; i += 3, p += 4) {
-    pixels.data[p] = rgb[i] ?? 0;
-    pixels.data[p + 1] = rgb[i + 1] ?? 0;
-    pixels.data[p + 2] = rgb[i + 2] ?? 0;
-    pixels.data[p + 3] = 255;
+  for (let y = 0; y < gauge.rows; y++) {
+    for (let x = 0; x < gauge.needles; x++) {
+      const i = y * gauge.needles + x;
+      const p = i * 4;
+      const src = i * 3;
+      if (layer.kind === 'dessin' && (owner[i] ?? 0) === 0) {
+        // Damier clair sous le dessin seul.
+        const light = ((x >> 2) + (y >> 2)) % 2 === 0;
+        const v = light ? 235 : 210;
+        pixels.data[p] = v;
+        pixels.data[p + 1] = v;
+        pixels.data[p + 2] = v;
+        pixels.data[p + 3] = 255;
+      } else {
+        pixels.data[p] = rgb[src] ?? 0;
+        pixels.data[p + 1] = rgb[src + 1] ?? 0;
+        pixels.data[p + 2] = rgb[src + 2] ?? 0;
+        pixels.data[p + 3] = 255;
+      }
+    }
   }
   sourceContext.putImageData(pixels, 0, 0);
   // Cadrage « couvrant » depuis le haut de la tige, en millimètres réels : pas de motif déformé.
@@ -643,6 +666,11 @@ const dock = mountLayersDock(layersDock, {
   drawLayerThumb,
   openLayerTab: () => optionsTabs.open('calque'),
   openLibrary: (tab) => library.open(tab),
+  convertToDessin: (layerId) => {
+    if (!lastStackRgb || !stackOwner) return;
+    const id = convertLayerToDessin(layerId, lastStackRgb, stackOwner);
+    if (id) optionsTabs.open('calque');
+  },
 });
 
 function imageLayersKey(design: SockDesignV2): string {
@@ -981,6 +1009,7 @@ function recompute(): void {
     cache: motifRgbCache,
   });
   stackOwner = owner;
+  lastStackRgb = rgb ?? null;
   lastMotifRgb = motifRgb;
   lastKeyColors = keyColors;
 

@@ -6,6 +6,7 @@
  */
 
 import {
+  addDessinLayer,
   duplicateLayer,
   getState,
   MAX_LAYERS,
@@ -29,6 +30,8 @@ export interface LayersDockActions {
   openLayerTab: () => void;
   /** Ouvre la Bibliothèque sur l’onglet demandé. */
   openLibrary: (tab: LibraryTab) => void;
+  /** Transforme un Motif/Image en calque Dessin (T71). */
+  convertToDessin?: (layerId: string) => void;
 }
 
 export interface LayersDockApi {
@@ -67,7 +70,9 @@ function writeCollapsed(collapsed: boolean): void {
 
 function kindLabel(layer: StackLayer): string {
   if (layer.kind === 'fond') return 'Fond';
-  return layer.kind === 'motif' ? 'Motif' : 'Image';
+  if (layer.kind === 'motif') return 'Motif';
+  if (layer.kind === 'dessin') return 'Dessin';
+  return 'Image';
 }
 
 interface Card {
@@ -135,12 +140,17 @@ export function mountLayersDock(host: HTMLElement, actions: LayersDockActions): 
   addImage.dataset.testid = 'dock-add-image';
   addImage.textContent = '+ Image';
 
+  const addDessin = document.createElement('button');
+  addDessin.type = 'button';
+  addDessin.dataset.testid = 'dock-add-dessin';
+  addDessin.textContent = '+ Dessin';
+
   const message = document.createElement('p');
   message.className = 'dock-message';
   message.dataset.testid = 'dock-message';
 
   // « dessous » est dans la liste, juste après la carte du Fond (elle-même fixée à droite).
-  body.append(toggle, selectedName, edgeTop, list, addMotif, addImage, message);
+  body.append(toggle, selectedName, edgeTop, list, addMotif, addImage, addDessin, message);
   host.appendChild(body);
 
   const menuPopup = document.createElement('div');
@@ -197,15 +207,25 @@ export function mountLayersDock(host: HTMLElement, actions: LayersDockActions): 
 
   function openMenu(layer: StackLayer, anchor: HTMLElement): void {
     menuPopup.replaceChildren();
-    menuPopup.append(
+    const items: HTMLButtonElement[] = [
       menuItem(`layer-menu-duplicate-${layer.id}`, 'Dupliquer', () => duplicateLayer(layer.id)),
       menuItem(`layer-menu-up-${layer.id}`, 'Monter', () => moveLayer(layer.id, 'monter')),
       menuItem(`layer-menu-down-${layer.id}`, 'Descendre', () => moveLayer(layer.id, 'descendre')),
+    ];
+    if ((layer.kind === 'motif' || layer.kind === 'image') && actions.convertToDessin) {
+      items.push(
+        menuItem(`layer-menu-to-dessin-${layer.id}`, 'Transformer en dessin', () => {
+          actions.convertToDessin?.(layer.id);
+        }),
+      );
+    }
+    items.push(
       menuItem(`layer-menu-delete-${layer.id}`, 'Supprimer', () => {
         showMessage('');
         removeLayer(layer.id);
       }),
     );
+    menuPopup.append(...items);
     menuPopup.hidden = false;
     menuPopup.dataset.layer = layer.id;
     const rect = anchor.getBoundingClientRect();
@@ -539,6 +559,17 @@ export function mountLayersDock(host: HTMLElement, actions: LayersDockActions): 
     actions.openLibrary('images');
   });
 
+  addDessin.addEventListener('click', () => {
+    if (getState().design.layers.length >= MAX_LAYERS) {
+      showMessage(MAX_LAYERS_MESSAGE);
+      return;
+    }
+    showMessage('');
+    const id = addDessinLayer();
+    if (!id) showMessage(MAX_LAYERS_MESSAGE);
+    else actions.openLayerTab();
+  });
+
   document.addEventListener('pointerdown', (event) => {
     if (menuPopup.hidden) return;
     const target = event.target;
@@ -590,6 +621,10 @@ export function mountLayersDock(host: HTMLElement, actions: LayersDockActions): 
     const full = design.layers.length >= MAX_LAYERS;
     addMotif.title = full ? MAX_LAYERS_MESSAGE : 'Ajouter un calque Motif (Bibliothèque)';
     addImage.title = full ? MAX_LAYERS_MESSAGE : 'Ajouter un calque Image (Bibliothèque)';
+    addDessin.title = full ? MAX_LAYERS_MESSAGE : 'Ajouter un calque Dessin (pixel art)';
+    addMotif.disabled = full;
+    addImage.disabled = full;
+    addDessin.disabled = full;
 
     if (hadFocus && !renamingId) {
       const card = selectedLayerId ? cards.get(selectedLayerId) : undefined;

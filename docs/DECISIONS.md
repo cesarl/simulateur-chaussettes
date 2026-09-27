@@ -359,3 +359,9 @@ Contexte : les flottés trop longs étaient assombris à 65 % dans `ensureStitch
 Options : A) garder l’assombrissement + légende ; B) couleurs exactes + contours/ronds sur le canvas de superposition, bouton « Alertes » (défaut off, `localStorage`).
 Choix : B — `floatRunSpans` pour un rectangle par plage ; masque isolé mappé grille via `motifYToGridY` ; pastilles Contrôles Flottés / Détails cliquables (`pill-action`) activent les alertes. La 3D n’affiche jamais les alertes.
 Conséquence : e2e `vue2d-couleurs` ; captures `docs/captures/v9/visuel-t70-*.png`.
+
+## D61 — Brancher le Dessin sans réécrire le cœur (T71)
+Contexte : le cœur (`newDessinLayer`, `paintDessin`, `dessinFromRender`, lien `d`, …) est déjà dans `layers.ts` / `v9-dessin.test.ts`.
+Options : A) réécrire une UI parallèle ; B) brancher dock / options / état sur les API existantes.
+Choix : B — `addDessinLayer` / `convertLayerToDessin` / `replaceDessinLayerColor` / `clearDessinLayer` ; vignette Dessin sur damier ; `canEdit` des poignées = Motif|Image seulement (évite `tileStitches` sur Dessin) ; `editingMotif` repli sur Motif masqué.
+Conséquence : e2e `dessin-calque` ; captures `visuel-t71-*.png`.

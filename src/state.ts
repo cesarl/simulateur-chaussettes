@@ -9,15 +9,20 @@ import { tileRowsFor, tileWidthForCount } from './core/calepinage';
 import type { Catalogue, ZoneColors } from './core/collections';
 import {
   addStackLayer,
+  dessinFromRender,
   duplicateStackLayer,
   moveStackLayer,
+  newDessinLayer,
   newFondLayer,
   newImageLayer,
   newMotifLayer,
   nextLayerId,
   normalizeStack,
   primaryMotifLayer,
+  replaceDessinColor,
   removeStackLayer,
+  stackGauge,
+  type DessinLayer,
   type FondLayer,
   type ImageLayer,
   type MotifBounds,
@@ -360,7 +365,11 @@ export function editingMotif(design: SockDesignV2 = state.design, selectedId: st
     const sel = design.layers.find((l) => l.id === selectedId);
     if (sel?.kind === 'motif') return sel;
   }
-  return primaryMotifLayer(design.layers);
+  // Motif visible en priorité ; sinon n’importe quel Motif (ex. masqué après « Transformer en dessin »).
+  return (
+    primaryMotifLayer(design.layers) ??
+    (design.layers.find((l): l is MotifLayer => l.kind === 'motif') ?? null)
+  );
 }
 
 /** LayoutSettings (avec tileIds) du Motif en cours — pour contrôles / décor / checks. */
@@ -588,6 +597,79 @@ export function addImageLayer(asset: AssetRef, name = 'Image', assets?: Embedded
     error: null,
   });
   return id;
+}
+
+/** Ajoute un calque Dessin vide au-dessus et le sélectionne. */
+export function addDessinLayer(name?: string): string | null {
+  if (!canAddLayer()) return refuseAdd();
+  const g = stackGauge(state.design.dimensions, state.design.zones);
+  const id = nextLayerId(state.design.layers, 'dessin');
+  const n = state.design.layers.filter((l) => l.kind === 'dessin').length + 1;
+  const layer = newDessinLayer(id, g.needles, g.rows, name ?? `Dessin ${n}`);
+  const layers = addStackLayer(state.design.layers, layer);
+  update({
+    design: { layers },
+    selectedLayerId: id,
+    error: null,
+  });
+  return id;
+}
+
+/**
+ * « Transformer en dessin » : crée un Dessin au-dessus du Motif/Image, masque l’original,
+ * sélectionne le Dessin. `rgb` / `owner` = dernier rendu de pile.
+ */
+export function convertLayerToDessin(
+  layerId: string,
+  rgb: Uint8ClampedArray,
+  owner: Int16Array,
+): string | null {
+  if (!canAddLayer()) return refuseAdd();
+  const layers = state.design.layers;
+  const index = layers.findIndex((l) => l.id === layerId);
+  if (index < 1) return null;
+  const src = layers[index]!;
+  if (src.kind !== 'motif' && src.kind !== 'image') return null;
+  const g = stackGauge(state.design.dimensions, state.design.zones);
+  if (rgb.length < g.needles * g.rows * 3 || owner.length < g.needles * g.rows) return null;
+  const id = nextLayerId(layers, 'dessin');
+  const dessin = dessinFromRender(
+    id,
+    `${src.name} (dessin)`,
+    index,
+    rgb,
+    owner,
+    g.needles,
+    g.rows,
+  );
+  const next = layers.map((l) => (l.id === layerId ? { ...l, hidden: true } : l));
+  // Juste au-dessus de l’original (index + 1 dans la pile fond→dessus).
+  next.splice(index + 1, 0, dessin);
+  update({
+    design: { layers: normalizeStack(next) },
+    selectedLayerId: id,
+    error: null,
+  });
+  return id;
+}
+
+/** Remplace une couleur d’un calque Dessin (annulable). */
+export function replaceDessinLayerColor(id: string, from: Hex, to: Hex): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (layer?.kind !== 'dessin') return;
+  const next = replaceDessinColor(layer, from, to);
+  update({ design: { layers: updateStackLayer<DessinLayer>(state.design.layers, id, next) } });
+}
+
+/** Efface tout le dessin (annulable). */
+export function clearDessinLayer(id: string): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (layer?.kind !== 'dessin') return;
+  update({
+    design: {
+      layers: updateStackLayer<DessinLayer>(state.design.layers, id, { palette: [], cells: '' }),
+    },
+  });
 }
 
 export function removeLayer(id: string): void {

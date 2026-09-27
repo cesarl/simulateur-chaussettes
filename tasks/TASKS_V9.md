@@ -66,7 +66,7 @@ Ne pas réécrire ; tests dans `tests/unit/v9-dessin.test.ts`.
   - clic sur « Alertes » → contours visibles sur la superposition ; recharger → toujours actif.
 - [x] Capture avant / après sur le design de la collaboratrice (collection Classique14, voir la capture de César), décrite.
 
-### [ ] T71 — Calque Dessin dans l'application
+### [x] T71 — Calque Dessin dans l'application
 
 - Dock :
   - bouton **« + Dessin »** : crée `newDessinLayer(nextLayerId(…, 'dessin'), W, H, 'Dessin n')` au-dessus et le sélectionne ;
@@ -82,8 +82,8 @@ Ne pas réécrire ; tests dans `tests/unit/v9-dessin.test.ts`.
 - Sauvegarde automatique et lien : via le projet v3 et le lien `#p=2.` existants. S'assurer que rien ne filtre les calques inconnus (lecture de projet, `normalizeStack`, dock, palette, décor « comme la chaussette »).
 
 **Critères**
-- [ ] Test unitaire : projet v3 avec un Dessin → sérialisé → relu → même rendu.
-- [ ] e2e : « + Dessin » → calque dans le dock ; « Transformer en dessin » sur un Motif → rendu 2D identique (mêmes couleurs de canvas en 5 points), et l'original est masqué.
+- [x] Test unitaire : projet v3 avec un Dessin → sérialisé → relu → même rendu.
+- [x] e2e : « + Dessin » → calque dans le dock ; « Transformer en dessin » sur un Motif → rendu 2D identique (mêmes couleurs de canvas en 5 points), et l'original est masqué.
 
 ### [ ] T72 — Outils de dessin dans la vue 2D
 
