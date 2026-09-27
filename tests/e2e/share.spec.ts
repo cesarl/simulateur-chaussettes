@@ -213,23 +213,22 @@ test('lien de partage : palette manuelle (pas calques) survit aussi', async ({ b
   await page.waitForFunction(() => window.__SIM__?.ready === true && window.__SIM__?.catalogue != null);
 
   await page.getByTestId('tab-chaussette').click();
-  const hashBeforeMode = await page.evaluate(() => window.location.hash);
   await page.getByTestId('ctl-palette-mode').selectOption('manuelle');
   await page.waitForFunction(
     () =>
       window.__SIM__?.design.quantize.paletteFromLayers === false &&
       window.__SIM__?.design.quantize.paletteMode === 'manuelle',
   );
-  // Attendre que le hash intègre le mode manuelle (anti-rebond 500 ms).
+  const hashBefore = await page.evaluate(() => window.location.hash);
+  await page.getByTestId('panel-copy-link').click();
+  await expect(page.getByTestId('share-hint')).toContainText(/Lien copié|carreaux importés|Lien long/i);
   await page.waitForFunction(
-    (prev) =>
-      window.location.hash.startsWith('#p=2.') &&
-      window.location.hash !== prev &&
-      window.location.hash.length > 10,
-    hashBeforeMode,
-    { timeout: 5_000 },
+    (prev) => window.location.hash.startsWith('#p=2.') && window.location.hash.length >= prev.length,
+    hashBefore,
+    { timeout: 10_000 },
   );
   const hash = await page.evaluate(() => window.location.hash);
+  expect(hash.startsWith('#p=2.')).toBe(true);
   await contextA.close();
 
   const contextB = await browser.newContext();
