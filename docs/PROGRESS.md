@@ -887,3 +887,10 @@ Fait : `admin.html` autorise le défilement de la page (`html:has(body.admin)`),
 Vérification : navigateur — formulaire plus haut que la fenêtre, ascenseur visible, **Enregistrer** atteint au défilement. Simulateur : `overflow: hidden` sur `html`/`body`/`#app`, `scrollY` reste 0 après `scrollTo`.
 Décisions : D58
 Reste / risques : aucun.
+
+## Admin — motifs multiples et fils gris — 2026-09-27 17:12
+Statut : terminée
+Fait : chaque motif importé a son aperçu avant/après et son remplacement de couleurs (nom du fil + pastille, nuancier complet). Le choix de fil passe par OKLab avec pénalité de chroma : un gris neutre ne part plus vers un vert ou un bleu de même clarté.
+Vérification : unitaires `svgZones` ✅ (`#808080` → Gris moyen, `#606060` → Gris acier, `#d7e8cf` reste vert). Contrôle navigateur : deux SVG, deux blocs Motif, pastilles et noms visibles.
+Décisions : D59
+Reste / risques : la quantification des mailles garde la distance redmean.

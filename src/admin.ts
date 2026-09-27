@@ -6,6 +6,8 @@ import {
   autoZoneSvg,
   collectionIdFromName,
   lockColorsAcrossVariations,
+  recolorPreview,
+  setZoneColorId,
   type NuancierEntry,
   type SvgZonesResult,
 } from './core/svgZones';
@@ -47,8 +49,8 @@ async function loadCatalogueMeta(): Promise<void> {
   try {
     const res = await fetch('./carreaux/catalogue.json');
     if (!res.ok) throw new Error('catalogue manquant');
-    const cat = (await res.json()) as { nuancier: Array<{ id: string; hex: string }> };
-    nuancier = cat.nuancier.map((c) => ({ id: c.id, hex: c.hex }));
+    const cat = (await res.json()) as { nuancier: Array<{ id: string; hex: string; nom?: string }> };
+    nuancier = cat.nuancier.map((c) => ({ id: c.id, hex: c.hex, nom: c.nom }));
   } catch {
     nuancier = [];
   }
@@ -184,7 +186,7 @@ function openEditor(draft?: LocalCollectionDraft): void {
   fileList.dataset.testid = 'admin-file-list';
 
   const preview = document.createElement('div');
-  preview.className = 'zone-preview';
+  preview.className = 'admin-previews';
   preview.dataset.testid = 'admin-zone-preview';
 
   const saveBtn = document.createElement('button');
@@ -292,48 +294,107 @@ function refreshFileList(fileList: HTMLElement, preview: HTMLElement): void {
     fileList.appendChild(li);
   });
   preview.replaceChildren();
-  const first = editing.files[0];
-  if (first && first.zones.length) {
+  const hexById = new Map(nuancier.map((n) => [n.id, n.hex]));
+  editing.files.forEach((file, fileIndex) => {
+    const block = document.createElement('section');
+    block.className = 'admin-motif';
+    block.dataset.testid = `admin-motif-${fileIndex}`;
+    const title = document.createElement('h3');
+    title.textContent = `Motif ${fileIndex + 1}`;
+    block.appendChild(title);
+
+    const pair = document.createElement('div');
+    pair.className = 'zone-preview';
     const before = document.createElement('div');
-    before.innerHTML = `<p>Avant</p>`;
+    before.append(paragraph('Avant'), previewImage(file.text, 'avant'));
+    const afterImg = previewImage(previewSrc(file, hexById), 'après');
+    afterImg.dataset.testid = `admin-preview-after-${fileIndex}`;
     const after = document.createElement('div');
-    after.innerHTML = `<p>Après (zones)</p>`;
-    const b = document.createElement('img');
-    b.alt = 'avant';
-    b.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(first.text)}`;
-    const a = document.createElement('img');
-    a.alt = 'après';
-    a.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(first.zoned)}`;
-    a.dataset.testid = 'admin-preview-after';
-    before.appendChild(b);
-    after.appendChild(a);
-    preview.append(before, after);
+    after.append(paragraph('Après'), afterImg);
+    pair.append(before, after);
+    block.appendChild(pair);
+
+    if (!file.zones.length) {
+      const note = document.createElement('p');
+      note.className = 'hint';
+      note.textContent = 'Pas de zones : le remplacement de couleurs ne s’applique pas à ce motif.';
+      block.appendChild(note);
+      preview.appendChild(block);
+      return;
+    }
+
     const zoneEditor = document.createElement('div');
-    zoneEditor.dataset.testid = 'admin-zone-codes';
-    for (const z of first.zones) {
-      const row = document.createElement('label');
-      row.textContent = `${z.id} (${z.fillHex}) → `;
+    zoneEditor.dataset.testid = `admin-zone-codes-${fileIndex}`;
+    for (const z of file.zones) {
+      const row = document.createElement('div');
+      row.className = 'admin-zone-row';
+      const source = swatch(z.fillHex);
+      source.title = `Couleur d’origine ${z.fillHex}`;
+      const yarn = swatch(hexById.get(z.suggestedColorId ?? '') ?? '#cccccc');
+      yarn.dataset.testid = `admin-zone-swatch-${fileIndex}-${z.id}`;
+      yarn.title = 'Fil choisi';
       const sel = document.createElement('select');
-      sel.dataset.testid = `admin-zone-${z.id}`;
-      for (const n of nuancier.slice(0, 200)) {
+      sel.dataset.testid = `admin-zone-${fileIndex}-${z.id}`;
+      for (const n of nuancier) {
         const o = document.createElement('option');
         o.value = n.id;
-        o.textContent = `${n.id} ${n.hex}`;
+        o.textContent = n.nom ? `${n.nom} · ${n.id}` : n.id;
         if (n.id === z.suggestedColorId) o.selected = true;
         sel.appendChild(o);
       }
       sel.addEventListener('change', () => {
         z.suggestedColorId = sel.value;
-        first.zoned = first.zoned.replace(
-          new RegExp(`(<g[^>]*id="${z.id}"[^>]*data-color-id=")[^"]*(")`),
-          `$1${sel.value}$2`,
-        );
+        file.zoned = setZoneColorId(file.zoned, z.id, sel.value);
+        yarn.style.background = hexById.get(sel.value) ?? '#cccccc';
+        const chosen = nuancier.find((n) => n.id === sel.value);
+        yarn.title = chosen?.nom ? `${chosen.nom} · ${chosen.id}` : sel.value;
+        afterImg.src = svgUrl(recolorPreview(file.zoned, file.zones, hexById));
+        if (editing) editing.colors = colorIdsOf(editing);
       });
-      row.appendChild(sel);
+      const caption = document.createElement('span');
+      caption.textContent = z.id;
+      row.append(source, caption, document.createTextNode('→'), yarn, sel);
       zoneEditor.appendChild(row);
     }
-    preview.appendChild(zoneEditor);
-  }
+    block.appendChild(zoneEditor);
+    preview.appendChild(block);
+  });
+}
+
+function paragraph(text: string): HTMLParagraphElement {
+  const p = document.createElement('p');
+  p.textContent = text;
+  return p;
+}
+
+function swatch(hex: string): HTMLElement {
+  const chip = document.createElement('i');
+  chip.className = 'admin-swatch';
+  chip.style.background = hex;
+  return chip;
+}
+
+function svgUrl(svgOrUrl: string): string {
+  if (svgOrUrl.startsWith('data:')) return svgOrUrl;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgOrUrl)}`;
+}
+
+function previewImage(src: string, alt: string): HTMLImageElement {
+  const img = document.createElement('img');
+  img.alt = alt;
+  img.src = svgUrl(src);
+  return img;
+}
+
+function previewSrc(file: { text: string; zoned: string; zones: { fillHex: string; suggestedColorId: string | null }[] }, hexById: ReadonlyMap<string, string>): string {
+  if (!file.zones.length) return file.text;
+  return recolorPreview(file.zoned, file.zones, hexById);
+}
+
+function colorIdsOf(d: { files: Array<{ zones: Array<{ suggestedColorId: string | null }> }> }): string[] {
+  const ids = new Set<string>();
+  for (const f of d.files) for (const z of f.zones) if (z.suggestedColorId) ids.add(z.suggestedColorId);
+  return [...ids];
 }
 
 function validateDraft(d: LocalCollectionDraft): string | null {
@@ -358,6 +419,7 @@ async function saveCurrent(): Promise<void> {
     setStatus(err, false);
     return;
   }
+  editing.colors = colorIdsOf(editing);
   const entry = {
     id: editing.id,
     nom: editing.nom,

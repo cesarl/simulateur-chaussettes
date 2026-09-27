@@ -347,3 +347,9 @@ Contexte : `html, body { overflow: hidden }` fige le simulateur. `admin.html` ch
 Options : A) retirer `overflow: hidden` du global ; B) autoriser le défilement seulement quand `body.admin` est présent.
 Choix : B — dans `admin.html`, `html:has(body.admin)` passe en `overflow: auto` et `body.admin` en hauteur automatique. `src/styles.css` ne change pas.
 Conséquence : l’admin défile jusqu’au dépôt de fichiers et au bouton Enregistrer. Le simulateur garde `overflow: hidden` sur `html` et `body`.
+
+## D59 — Rapprochement des fils : OKLab et pénalité de chroma
+Contexte : la distance redmean choisissait un vert ou un bleu de même clarté à la place d’un gris (ex. `#808080` → « Vert lichen » plutôt que « Gris moyen »). L’admin ne montrait aussi que le premier motif, et la liste de fils était tronquée à 200 sans nom ni pastille.
+Options : A) garder redmean ; B) OKLab seul ; C) OKLab plus une pénalité quand le fil est plus coloré que la cible.
+Choix : C — `yarnMatchDistance` dans `color.ts`. Un vert réel (`#d7e8cf`) reste sur son fil. Chaque motif a son aperçu avant/après et ses listes `nom · code` avec pastille.
+Conséquence : `colorDistance` (redmean) reste utilisé par la quantification des mailles. Seul le zonage admin change.

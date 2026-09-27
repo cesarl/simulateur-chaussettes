@@ -3,6 +3,8 @@ import {
   autoZoneSvg,
   collectionIdFromName,
   lockColorsAcrossVariations,
+  recolorPreview,
+  setZoneColorId,
 } from '../../src/core/svgZones';
 
 const nuancier = [
@@ -62,5 +64,36 @@ describe('svgZones (T44)', () => {
       locked,
     );
     expect(b.zones[0]!.suggestedColorId).toBe(locked.get('#c45c26'));
+  });
+
+  it('un gris neutre reste un gris, pas un vert ou un bleu de même clarté', () => {
+    const yarns = [
+      { id: 'BK006', hex: '#707070', nom: 'Gris moyen' },
+      { id: 'GN032', hex: '#747b74', nom: "Vert lichen d'Arctique" },
+      { id: 'BK004', hex: '#545454', nom: 'Gris acier' },
+      { id: 'GN028', hex: '#5d6b5b', nom: 'Gris vert sauge' },
+      { id: 'BK010', hex: '#cfcec9', nom: 'Gris atate' },
+      { id: 'GN006', hex: '#d7e8cf', nom: 'Vert gris pastel' },
+      { id: 'BL007', hex: '#daebf1', nom: 'Gris turquoise' },
+      { id: 'WT000', hex: '#f7f7f7', nom: 'Blanc' },
+      { id: 'OR008', hex: '#c45c26', nom: 'Orange' },
+    ];
+    const suggest = (hex: string) =>
+      autoZoneSvg(`<svg><rect width="8" height="8" fill="${hex}"/></svg>`, yarns).zones[0]!.suggestedColorId;
+    expect(suggest('#808080')).toBe('BK006');
+    expect(suggest('#787878')).toBe('BK006');
+    expect(suggest('#606060')).toBe('BK004');
+    expect(suggest('#e0e0e0')).toBe('WT000');
+    expect(suggest('#d7e8cf')).toBe('GN006');
+    expect(suggest('#c45c26')).toBe('OR008');
+  });
+
+  it('le fil choisi se retrouve dans data-color-id et dans l’aperçu', () => {
+    const svg = `<svg><g id="zone-1" data-color-id="GN032"><rect fill="#808080" width="4" height="4"/></g></svg>`;
+    const next = setZoneColorId(svg, 'zone-1', 'BK006');
+    expect(next).toContain('data-color-id="BK006"');
+    const painted = recolorPreview(next, [{ fillHex: '#808080', suggestedColorId: 'BK006' }], new Map([['BK006', '#707070']]));
+    expect(painted).toContain('fill="#707070"');
+    expect(painted).not.toContain('#808080');
   });
 });

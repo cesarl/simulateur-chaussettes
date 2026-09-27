@@ -1,13 +1,14 @@
 /**
  * Zones automatiques pour SVG (T44) — PUR, sans DOM.
  * Regroupe les formes par couleur de remplissage dans des `<g id="zone-N">`
- * et propose le code nuancier le plus proche (redmean).
+ * et propose le code nuancier le plus proche (OKLab, gris gardés neutres).
  */
-import { colorDistance, hexToRgb, normalizeHex } from './color';
+import { hexToRgb, normalizeHex, yarnMatchDistance } from './color';
 
 export interface NuancierEntry {
   id: string;
   hex: string;
+  nom?: string;
 }
 
 export interface SvgZoneDraft {
@@ -78,13 +79,46 @@ function nearestNuancier(hex: string, nuancier: readonly NuancierEntry[]): strin
     } catch {
       continue;
     }
-    const d = colorDistance(target, hexToRgb(entryHex));
+    const d = yarnMatchDistance(target, hexToRgb(entryHex));
     if (d < bestD) {
       bestD = d;
       best = entry.id;
     }
   }
   return best;
+}
+
+/** Écrit `data-color-id` sur le groupe `zone-N` déjà présent. */
+export function setZoneColorId(svg: string, zoneId: string, colorId: string): string {
+  const re = new RegExp(
+    `(<g\\b[^>]*\\bid\\s*=\\s*["']${zoneId}["'][^>]*\\bdata-color-id\\s*=\\s*["'])[^"']*`,
+    'i',
+  );
+  if (!re.test(svg)) return svg;
+  return svg.replace(re, `$1${colorId}`);
+}
+
+/**
+ * Copie d’aperçu : remplace chaque fill d’origine par le hex du fil choisi.
+ * Les remplacements passent par un jeton pour ne pas se réécrire entre eux.
+ */
+export function recolorPreview(
+  svg: string,
+  zones: readonly Pick<SvgZoneDraft, 'fillHex' | 'suggestedColorId'>[],
+  hexById: ReadonlyMap<string, string>,
+): string {
+  let out = svg;
+  const tokens: Array<{ token: string; hex: string }> = [];
+  zones.forEach((z, i) => {
+    const to = z.suggestedColorId ? hexById.get(z.suggestedColorId) : undefined;
+    if (!to || !z.fillHex) return;
+    const token = `__ZONEFILL${i}__`;
+    const body = z.fillHex.replace('#', '');
+    out = out.replace(new RegExp(`#${body}`, 'gi'), token);
+    tokens.push({ token, hex: to });
+  });
+  for (const { token, hex } of tokens) out = out.replaceAll(token, hex);
+  return out;
 }
 
 function hasZoneGroups(svg: string): boolean {
