@@ -4,8 +4,10 @@ import { loadCompositionImages } from './io/compositionImages';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
-import { createMotifRgbCache, computeStackRgb, stackPaletteIfEnabled } from './core/stackCompute';
+import { createMotifRgbCache, computeStackRgb } from './core/stackCompute';
 import {
+  effectiveZones,
+  fondVisible,
   layerKeyColors,
   primaryMotifLayer,
   renderStack,
@@ -72,9 +74,9 @@ import { countIsolatedStitches } from './core/compositionAids';
 import { composeGrid, gridFingerprint, rowRanges } from './core/grid';
 import { motifRows } from './core/layout';
 import {
-  analyzeStackPaletteGuard,
   firstFloatLayerHint,
   firstIsolatedLayerHint,
+  planStackPalette,
   reduceStackPaletteQuantize,
 } from './core/stackPaletteGuard';
 import * as THREE from 'three';
@@ -263,7 +265,12 @@ function applyShellMode(dev: boolean): void {
 
 applyShellMode(devMode);
 
-let grid: StitchGrid = composeGrid(getState().design.dimensions, getState().design.zones, null, []);
+let grid: StitchGrid = composeGrid(
+  getState().design.dimensions,
+  effectiveZones(getState().design),
+  null,
+  [],
+);
 let patternPalette: string[] = [];
 let patternCounts: number[] = [];
 let computeId = 0;
@@ -725,53 +732,58 @@ function recompute(): void {
   lastMotifRgb = motifRgb;
   lastKeyColors = keyColors;
 
-  if (rgb) {
-    let quantizeSettings = { ...design.quantize };
-    const fromLayers = stackPaletteIfEnabled(design, motifRgb, compositionImages, keyColors, rgb);
-    if (fromLayers) {
-      quantizeSettings = {
-        ...quantizeSettings,
-        paletteMode: 'manuelle',
-        palette: fromLayers.palette,
-        maxColors: fromLayers.maxColors,
-      };
-    } else {
-      // Collection sur Motif primaire : palette fils (comportement V6).
-      const motif = primaryMotifLayer(design.layers);
-      const motifSrc = motif?.source;
-      if (motifSrc?.kind === 'collection' && catalogue) {
-        const collection = catalogue.collections.find((c) => c.id === motifSrc.collectionId);
-        if (collection && !isPngCollection(collection) && Object.keys(motifSrc.colors).length > 0) {
-          const yarns = yarnColors(collection, motifSrc.colors, nuancierMap(catalogue));
-          quantizeSettings = {
-            ...quantizeSettings,
-            paletteMode: 'manuelle',
-            palette: yarns.map((y) => y.hex),
-            maxColors: Math.max(2, Math.min(8, yarns.length || 2)),
-          };
-        }
+  const zonesEff = effectiveZones(design);
+  const fondLayer = design.layers[0];
+  const fondColor = fondLayer?.kind === 'fond' ? fondLayer.color : design.zones.footColor;
+
+  let primaryYarns: string[] | null = null;
+  {
+    const motif = primaryMotifLayer(design.layers);
+    const motifSrc = motif?.source;
+    if (motifSrc?.kind === 'collection' && catalogue) {
+      const collection = catalogue.collections.find((c) => c.id === motifSrc.collectionId);
+      if (collection && !isPngCollection(collection) && Object.keys(motifSrc.colors).length > 0) {
+        primaryYarns = yarnColors(collection, motifSrc.colors, nuancierMap(catalogue)).map((y) => y.hex);
       }
     }
-    const reduced = quantize(rgb, design.dimensions.needles, quantizeSettings);
+  }
+
+  if (rgb) {
+    const plan = planStackPalette({
+      design,
+      input: { motifRgb, images: compositionImages, keyColors },
+      rendered: rgb,
+      primaryYarns,
+      fondColor,
+      fondVisible: fondVisible(owner),
+      limits: MACHINE_LIMITS,
+    });
+    const reduced = quantize(rgb, design.dimensions.needles, plan.quantizeSettings);
     pattern = reduced.indices;
     patternPalette = reduced.palette;
     patternCounts = reduced.counts;
+    renderStackPaletteGuard(plan.guard, () => {
+      const patch = reduceStackPaletteQuantize(rgb, MACHINE_LIMITS);
+      update({ design: { quantize: { ...getState().design.quantize, ...patch } } });
+    });
+  } else {
+    renderStackPaletteGuard(null, () => undefined);
   }
 
-  grid = composeGrid(design.dimensions, design.zones, pattern, patternPalette);
+  grid = composeGrid(design.dimensions, zonesEff, pattern, patternPalette);
   flat.setGrid(grid, stitchAspect(design.dimensions));
   const layout = editingLayoutSettings(design, tiles);
-  const report = checkFabrication(grid, layout, design.zones, MACHINE_LIMITS, design.quantize.maxFloat);
+  const report = checkFabrication(grid, layout, zonesEff, MACHINE_LIMITS, design.quantize.maxFloat);
   flat.setFloatMask(report.floatMask);
 
   const floatLayerHint =
     !report.floatsOk && stackOwner
-      ? firstFloatLayerHint(report.floatMask, grid, design.zones, stackOwner, design.layers)
+      ? firstFloatLayerHint(report.floatMask, grid, zonesEff, stackOwner, design.layers)
       : null;
 
   let checkDetail: { tooFine: boolean; isolatedCount: number; layerHint?: string | null } | null = null;
   if (pattern) {
-    const motifH = motifRows(design.dimensions, design.zones);
+    const motifH = motifRows(design.dimensions, zonesEff);
     const isolated = countIsolatedStitches(pattern, design.dimensions.needles, motifH);
     if (isolated.isolatedCount > 0) {
       const layerHint = stackOwner
@@ -782,21 +794,6 @@ function recompute(): void {
   }
 
   renderChecks(report, checkDetail, { floatLayerHint });
-
-  if (rgb) {
-    const guard = analyzeStackPaletteGuard(
-      design,
-      { motifRgb, images: compositionImages, keyColors },
-      rgb,
-      MACHINE_LIMITS,
-    );
-    renderStackPaletteGuard(guard, () => {
-      const patch = reduceStackPaletteQuantize(rgb, MACHINE_LIMITS);
-      update({ design: { quantize: { ...getState().design.quantize, ...patch } } });
-    });
-  } else {
-    renderStackPaletteGuard(null, () => undefined);
-  }
 
   syncMesh(grid);
   lastComputeMs = performance.now() - started;

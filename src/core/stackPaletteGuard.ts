@@ -1,8 +1,18 @@
 /**
  * Garde-fous palette multi-calques (T58) — pur, sans DOM.
+ * T60 : plan unique via `resolveStackPalette` (palette appliquée = liste du bandeau).
  */
 import { rgbToHex } from './color';
-import { layerKeyColors, dominantColors, type SockDesignV2, type StackLayer, type StackRenderInput } from './layers';
+import {
+  layerKeyColors,
+  dominantColors,
+  resolveStackPalette,
+  suggestStackPalette,
+  type PaletteResolution,
+  type SockDesignV2,
+  type StackLayer,
+  type StackRenderInput,
+} from './layers';
 import type { MachineLimits } from './sizes';
 import type { Hex, QuantizeSettings, StitchGrid, ZoneSettings } from './types';
 import { Zone } from './types';
@@ -87,6 +97,83 @@ export function reduceStackPaletteQuantize(
     paletteMode: 'manuelle',
     palette,
     maxColors,
+  };
+}
+
+export interface StackPalettePlan {
+  resolution: PaletteResolution;
+  /** Réglages passés à `quantize` (mode auto : pas de palette forcée). */
+  quantizeSettings: QuantizeSettings;
+  /** Bandeau : même liste que `resolution.palette` (avec provenance calque quand connue). */
+  guard: StackPaletteGuardResult;
+}
+
+/**
+ * Une seule vérité pour la réduction ET le bandeau (T60).
+ * `guard.entries.map(e => e.hex)` = `resolution.palette` (ordre conservé).
+ */
+export function planStackPalette(args: {
+  design: Pick<SockDesignV2, 'layers' | 'quantize'>;
+  input: Pick<StackRenderInput, 'motifRgb' | 'images' | 'keyColors'>;
+  rendered: Uint8ClampedArray;
+  primaryYarns: readonly Hex[] | null;
+  fondColor: Hex;
+  fondVisible: boolean;
+  limits: MachineLimits;
+}): StackPalettePlan {
+  const machineMax = args.limits.maxColorsTotal;
+  const suggested = suggestStackPalette(
+    {
+      layers: args.design.layers,
+      motifRgb: args.input.motifRgb,
+      images: args.input.images,
+      keyColors: args.input.keyColors,
+    },
+    args.rendered,
+  );
+  const resolution = resolveStackPalette({
+    quantize: args.design.quantize,
+    suggested,
+    primaryYarns: args.primaryYarns,
+    fondColor: args.fondColor,
+    fondVisible: args.fondVisible,
+    machineMax,
+  });
+
+  const byHex = new Map(
+    stackPaletteEntries(args.design.layers, args.input, args.rendered, {
+      requirePixelPresence: false,
+    }).map((e) => [e.hex.toLowerCase(), e]),
+  );
+  const entries: StackPaletteColorEntry[] = resolution.palette.map((hex) => {
+    const h = hex.toLowerCase() as Hex;
+    return byHex.get(h) ?? { hex: h, layerId: '', layerName: 'Palette' };
+  });
+
+  const quantizeSettings: QuantizeSettings =
+    resolution.source === 'auto'
+      ? {
+          ...args.design.quantize,
+          paletteMode: 'auto',
+          palette: [],
+          maxColors: resolution.maxColors,
+        }
+      : {
+          ...args.design.quantize,
+          paletteMode: 'manuelle',
+          palette: [...resolution.palette],
+          maxColors: resolution.maxColors,
+        };
+
+  return {
+    resolution,
+    quantizeSettings,
+    guard: {
+      entries,
+      overLimit: resolution.overLimit,
+      showBanner: resolution.overLimit,
+      machineMax,
+    },
   };
 }
 

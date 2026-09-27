@@ -33,7 +33,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 
 ---
 
-### [ ] T60 — Brancher la palette unique et le Fond
+### [x] T60 — Brancher la palette unique et le Fond
 
 - `main.ts › recompute()` :
   - calculer une seule fois `const pal = resolveStackPalette({ quantize, suggested: suggestStackPalette(…, rgb), primaryYarns, fondColor, fondVisible: fondVisible(owner), machineMax })` ;
@@ -50,12 +50,12 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Le Fond fait maintenant toujours partie de la palette quand il est visible (mode « fils de la collection »). Il n'est plus remplacé en douce par le fil le plus proche.
 
 **Critères**
-- [ ] Test unitaire (`main`, ou une fonction extraite de `recompute`) : la palette appliquée et le compte du bandeau sont toujours égaux.
-- [ ] e2e `palette-bandeau.spec.ts`, à la souris :
+- [x] Test unitaire (`main`, ou une fonction extraite de `recompute`) : la palette appliquée et le compte du bandeau sont toujours égaux.
+- [x] e2e `palette-bandeau.spec.ts`, à la souris :
   - deux Motifs dont celui du dessus recouvre tout, en mode « d'après les calques » → pas de bandeau ;
   - rendre transparentes des couleurs jusqu'à dépasser 6 couleurs visibles → bandeau ; « Réduire à 6 » → 6 couleurs ;
   - le curseur « Couleurs du motif » est invisible en mode calques et visible en mode manuel.
-- [ ] e2e : décocher « Motif sur le pied », changer la couleur du Fond → le pied de la vue 2D prend cette couleur ; « Couleur du pied » n'existe plus.
+- [x] e2e : décocher « Motif sur le pied », changer la couleur du Fond → le pied de la vue 2D prend cette couleur ; « Couleur du pied » n'existe plus.
 
 ### [ ] T61 — Vue 2D : le cadre suit l'image sous le talon
 

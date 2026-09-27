@@ -1377,12 +1377,15 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   const toeColor = makeColor('Couleur de la pointe', 'ctl-toe-color', design.zones.toeColor, (value) => {
     slide({ design: { zones: { toeColor: value } } });
   });
-  const patternFoot = makeCheckbox('Motif sur le pied', 'ctl-pattern-foot', design.zones.patternOnFoot, (checked) => {
-    update({ design: { zones: { patternOnFoot: checked } } });
-  });
-  const footColor = makeColor('Couleur du pied', 'ctl-foot-color', design.zones.footColor, (value) => {
-    slide({ design: { zones: { footColor: value } } });
-  });
+  const patternFoot = makeCheckbox(
+    'Motif sur le pied',
+    'ctl-pattern-foot',
+    design.zones.patternOnFoot,
+    (checked) => {
+      update({ design: { zones: { patternOnFoot: checked } } });
+    },
+    'Décoché : le pied est uni, de la couleur du Fond.',
+  );
   zones.append(
     cuff.root,
     cuffRows.root,
@@ -1393,7 +1396,6 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
     heelSpread.root,
     toeColor.root,
     patternFoot.root,
-    footColor.root,
   );
 
   const fidelity = makeSelect(
@@ -1687,6 +1689,10 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
     sizeCm.textContent = `Tour ${tour.toFixed(1)} cm · hauteur ${height.toFixed(1)} cm`;
     sampling.input.value = current.quantize.sampling;
     maxColors.setValue(current.quantize.maxColors);
+    const showMaxColors =
+      !current.quantize.paletteFromLayers &&
+      (current.quantize.paletteMode === 'auto' || current.quantize.paletteMode === 'manuelle');
+    maxColors.root.hidden = !showMaxColors;
     if (document.activeElement !== paletteMode.input) {
       paletteMode.input.value = current.quantize.paletteFromLayers ? 'calques' : current.quantize.paletteMode;
     }
@@ -1701,7 +1707,6 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
     heelSpread.setValue(current.zones.heelSpread);
     if (document.activeElement !== toeColor.input) toeColor.input.value = current.zones.toeColor;
     patternFoot.input.checked = current.zones.patternOnFoot;
-    if (document.activeElement !== footColor.input) footColor.input.value = current.zones.footColor;
     if (document.activeElement !== decorMode.input) decorMode.input.value = current.decor.mode;
     decorTileCm.setValue(current.decor.tileCm);
     decorGrout.setValue(current.decor.groutMm);

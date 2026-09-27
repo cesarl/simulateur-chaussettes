@@ -299,3 +299,9 @@ Choix : B, plus les décisions techniques suivantes.
 - Le bouton « Bibliothèque » de la barre projet est branché sur ce dialogue (défaut V6 n° 2 : « Bibliothèque ne fait rien de visible »).
 - Le Fond n’a ni œil, ni menu, ni glisser ; il garde son cadenas.
 Conséquence : l’ajout de calques est testable à la souris dès T54 ; T57 remplace le contenu du dialogue sans toucher au dock. Limite connue : la palette reste celle du design (`paletteFromLayers`) — un projet migré (palette exacte) ne prend pas automatiquement les couleurs d’un calque ajouté ; T58 traite la palette multi-calques.
+
+## D51 — planStackPalette unique + Fond = pied (T60)
+Contexte : V7 avait deux comptes de couleurs (bandeau vs réduction) et un réglage « Couleur du pied » distinct du Fond.
+Options : A) faire dépendre `analyzeStackPaletteGuard` de `resolveStackPalette` ; B) nouvelle fonction `planStackPalette` qui produit réglages quantize + garde-fou.
+Choix : B — `planStackPalette` dans `stackPaletteGuard.ts` ; `analyzeStackPaletteGuard` conservé tel quel (référence V7 dans `v8-layers.test.ts`). CSS : `[hidden]` explicite sur `.stack-palette-banner` car `display: flex` annulait le masquage UA.
+Conséquence : bandeau ssi `pal.overLimit` ; pied sans motif = couleur du Fond via `effectiveZones` ; `zones.footColor` reste sérialisé mais n’est plus éditable.

@@ -739,3 +739,19 @@ D47 (défauts V1 = main), D48 (miroirs e2e), D49 (grille CSS / view3d), D50 (doc
 
 ### Blocages
 Aucun pour V7. T18 toujours en attente des tailles fabricant.
+
+## T60 — Palette unique et Fond — 2026-09-27 08:50
+Statut : terminée
+Fait :
+- `planStackPalette` dans `stackPaletteGuard.ts` : une seule vérité (`resolveStackPalette`) pour réduction + bandeau ; liste du bandeau = `pal.palette` avec provenance via `stackPaletteEntries`.
+- `main.ts` : branchement ; `composeGrid` / contrôles / flottés via `effectiveZones(design)` ; Fond visible inclus en mode fils de collection.
+- `panel.ts` : suppression de « Couleur du pied » ; aide « Motif sur le pied » ; curseur `ctl-max-colors` masqué hors modes auto/manuelle.
+- CSS : `.stack-palette-banner[hidden] { display: none }` (le `display: flex` écrasait l’attribut `hidden`).
+- Tests : `v8-palette-plan.test.ts` ; e2e `palette-bandeau.spec.ts` (souris).
+Vérification : typecheck ✅ ; unitaires concernés ✅ ; e2e palette-bandeau ✅ (2/2).
+Contrôle visuel :
+- `visuel-T60-pas-bandeau.png` : Motif Jardin (bleu/blanc) au-dessus de Fleurs ; onglet Chaussette ; **pas** de bandeau orange ; dock avec Jardin / Fleurs / Fond.
+- `visuel-T60-bandeau.png` : après transparence du Jardin, motif Fleurs multicolore visible en 2D/3D ; bandeau avec pastilles hex + bouton « Réduire à 6 couleurs » ; contrôles signalent 10/6 couleurs.
+- `visuel-T60-pied-fond.png` : vue 2D (tige Dunes beige/bleu, bord-côte marine) ; le pied uni noir (Fond BK001) est confirmé par `getStitch` (zone Foot) — la capture cadre surtout la tige.
+Décisions : D51.
+Reste / risques : T61 (cadre sous le talon).
