@@ -39,8 +39,36 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
 }
 #panel { grid-area: opts; min-width: 0; min-height: 0; display: flex; flex-direction: column; border-left: 1px solid var(--line); background: var(--panel); overflow: hidden; }
 #layers-dock { grid-area: dock; border-top: 1px solid var(--line); background: var(--panel); min-width: 0; overflow: hidden; }
-#split-v { grid-area: splitv; cursor: col-resize; background: var(--line); }
-#split-h { grid-area: splith; cursor: col-resize; background: var(--line); }
+#app.hide-2d {
+  grid-template-columns: minmax(0, 1fr) 6px var(--col-opts);
+  grid-template-areas:
+    "bar bar bar"
+    "v3d splith opts"
+    "dock dock dock";
+}
+#app.hide-2d #view2d-wrap,
+#app.hide-2d #split-v { display: none !important; }
+#app.hide-3d {
+  grid-template-columns: minmax(0, 1fr) 6px var(--col-opts);
+  grid-template-areas:
+    "bar bar bar"
+    "v2d splith opts"
+    "dock dock dock";
+}
+#app.hide-3d #view3d-wrap,
+#app.hide-3d #split-v { display: none !important; }
+#app.hide-2d.hide-3d {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "bar"
+    "opts"
+    "dock";
+}
+#app.hide-2d.hide-3d #split-h,
+#app.hide-2d.hide-3d #view2d-wrap,
+#app.hide-2d.hide-3d #view3d-wrap,
+#app.hide-2d.hide-3d #split-v { display: none !important; }
+#app.hide-2d.hide-3d #panel { border-left: none; }
 .zone-toolbar {
   flex: 0 0 auto;
   display: flex;

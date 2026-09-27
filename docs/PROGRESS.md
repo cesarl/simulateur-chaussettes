@@ -788,3 +788,11 @@ Vérification : e2e reperes-faces ✅.
 Contrôle visuel — `visuel-T63-reperes.png` : libellés « Intérieur », « Dos », « Extérieur » en haut (Devant hors cadre à droite selon le pan) ; traits pointillés bleu-gris distincts du raccord rouge brique au centre du Dos ; tige taupe, bord-côte marine.
 Décisions : aucune nouvelle.
 Reste / risques : T64 bascule vues.
+
+## T64 — Bascule vues 2D/3D — 2026-09-27 10:15
+Statut : terminée
+Fait : boutons `ctl-view-2d` / `ctl-view-3d` dans la barre projet ; classes CSS `hide-2d` / `hide-3d` ; localStorage ; mesh 3D suspendu si masqué ; aspect recalculé à la réaffiche.
+Vérification : e2e vues-bascule ✅.
+Contrôle visuel : 4 captures `visuel-T64-{2d-3d,3d-seul,aucune,2d-seul}.png` — combinaisons lisibles, panneau+dock quand aucune vue.
+Décisions : aucune.
+Reste / risques : T65 onglet Global.

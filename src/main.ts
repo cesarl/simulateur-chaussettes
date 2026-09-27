@@ -245,17 +245,13 @@ if (toolbar2dEl instanceof HTMLElement) {
   toolbar2dEl.append(guidesBtn);
 }
 
+applyShellMode(devMode);
+
 const shareHint = document.createElement('p');
 shareHint.className = 'share-hint';
 shareHint.dataset.testid = 'share-hint';
 shareHint.hidden = true;
 view3d.appendChild(shareHint);
-
-mountProjectBar(projectBar, {
-  copyShareLink,
-  openLibrary: () => library.open('collections'),
-});
-
 function showShareHint(message: string | null): void {
   if (!message) {
     shareHint.hidden = true;
@@ -297,6 +293,42 @@ async function copyShareLink(): Promise<void> {
     window.setTimeout(() => showShareHint(null), 2500);
   }
 }
+
+let view2dVisible = true;
+let view3dVisible = true;
+try {
+  if (localStorage.getItem('sim-view-2d') === '0') view2dVisible = false;
+  if (localStorage.getItem('sim-view-3d') === '0') view3dVisible = false;
+} catch {
+  /* ignore */
+}
+
+function applyViewVisibility(): void {
+  app.classList.toggle('hide-2d', !view2dVisible);
+  app.classList.toggle('hide-3d', !view3dVisible);
+  try {
+    localStorage.setItem('sim-view-2d', view2dVisible ? '1' : '0');
+    localStorage.setItem('sim-view-3d', view3dVisible ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+  if (view3dVisible) {
+    window.dispatchEvent(new Event('resize'));
+    handle.requestRender();
+  }
+}
+
+mountProjectBar(projectBar, {
+  copyShareLink,
+  openLibrary: () => library.open('collections'),
+  onToggleView: (which) => {
+    if (which === '2d') view2dVisible = !view2dVisible;
+    else view3dVisible = !view3dVisible;
+    applyViewVisibility();
+  },
+  getViewVisibility: () => ({ view2d: view2dVisible, view3d: view3dVisible }),
+});
+applyViewVisibility();
 
 function applyShellMode(dev: boolean): void {
   devMode = dev;
@@ -667,6 +699,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 function syncMesh(next: StitchGrid): void {
+  if (!view3dVisible) return;
   const { design, knitFidelity, footSide } = getState();
   const key = surfaceKeyOf(design.dimensions, design.zones, footSide);
   const shape = shapeFromDesign(design.dimensions, design.zones, footSide);

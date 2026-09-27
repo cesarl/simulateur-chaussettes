@@ -95,7 +95,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - [x] Capture de la vue 2D avec les 4 repères, décrite.
 - [x] e2e : désactiver « Repères » → ils disparaissent ; recharger → toujours désactivés.
 
-### [ ] T64 — Afficher ou masquer les vues 2D et 3D
+### [x] T64 — Afficher ou masquer les vues 2D et 3D
 
 - Deux boutons bascule « 2D » et « 3D » dans la barre du projet.
   - Masquer une vue libère sa place : l'autre vue, ou le panneau d'options s'il n'y a plus de vue, prend la largeur.
@@ -105,10 +105,10 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - La visionneuse publique (sans `?dev`) ne change pas.
 
 **Critères**
-- [ ] e2e `vues-bascule.spec.ts`, à la souris :
+- [x] e2e `vues-bascule.spec.ts`, à la souris :
   - masquer la 2D, puis la 3D, puis réafficher : les zones ne se chevauchent jamais ;
   - le canvas 3D réaffiché a `camera.aspect` juste à 1 % près.
-- [ ] Captures des 4 combinaisons, décrites.
+- [x] Captures des 4 combinaisons, décrites.
 
 ### [ ] T65 — Onglet « Global »
 
