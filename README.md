@@ -36,17 +36,26 @@ Premier lancement des tests navigateur : `npx playwright install chromium`.
 
 Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites machine sont dans [`config/sizes.json`](config/sizes.json). Elles sont **provisoires** jusqu'à confirmation du fabricant.
 
-## Utilisation
+## Utilisation (V7 — calques)
 
 1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).
 2. **Visionneuse** : uniquement la 3D. Pour les réglages : `/?dev` (puis l’URL perd `?dev` ; le mode reste actif). Bouton **Quitter le mode dev** en bas du panneau.
-3. **Copier le lien** (barre visionneuse ou haut du panneau) : le hash `#p=1.…` embarque tout le projet (collection, couleurs, calepinage, talon, raccord, décor…). Un simple rechargement conserve l’état. Jamais de mode dev dans le lien.
-4. **Collection** (si `public/carreaux/` est synchronisé) : rechercher et choisir une collection — ses variations deviennent les motifs, le calepinage par défaut s’applique. Sinon, dans **Mes carreaux**, « Charger un exemple » ou déposer un PNG/SVG.
-5. **Calepinage** : galerie de préréglages ; **Carreaux sur le tour** (jauge principale, voir [`docs/JAUGE_EXPLIQUEE.md`](docs/JAUGE_EXPLIQUEE.md)) ou taille libre en mailles ; **Raccord du motif** (dos / intérieur / extérieur / devant).
-6. **Couleurs** (mode collection) : bandes « Couleurs d’origine » / suggestions de l’artiste ; pastilles de zones → nuancier ; **Assortir bord-côte, talon et pointe**.
-7. **Dimensions** / **Zones** : taille, tige, talon d’aperçu (mm). **Décor** : aucun / sol / mur / sol + mur en carreaux de ciment (même motif ou autre collection).
-8. Pastille **modifié** + **Réinitialiser** ; **Tout réinitialiser** ; **Annuler / Rétablir** (Ctrl/Cmd+Z).
-9. Basculer sur **À plat** (visionneuse ou mode dev) pour contrôler la grille (trait « raccord »). Dans **Exports**, cocher les vues puis **Exporter**. Raccourcis 3D (mode dev) : R / F / T / E / D / I.
+3. **Mode technique (`?dev`)** : grille CSS — vue à plat | vue 3D | options (onglets Calque / Chaussette / Décor / Export) | **dock des calques** en bas.
+4. **Calques** : Fond (toujours en bas) + Motifs (carreaux de ciment) + Images (PNG/SVG libres). Masquer, verrouiller, réordonner, renommer. Jusqu’à 16 calques.
+5. **Bibliothèque** (barre projet ou « + Motif » / « + Image ») : collections du catalogue et images du projet ; import PNG/SVG embarqué dans le `.json`.
+6. **Poignées** sur la vue 2D : déplacer / tourner / redimensionner une Image ; décaler / bande un Motif.
+7. **Copier le lien** : écrit `#p=2.…` (diff compact). Les anciens liens `#p=1.…` restent lisibles. Images importées → envoyer le fichier projet `.json`.
+8. **Projet** : format version 3 (`design` en calques + tiles/assets utilisés). Lecture v1/v2/v3.
+9. **Exports** : cocher les vues puis exporter. Raccourcis 3D : R / F / T / E / D / I.
+
+Les modes séparés « Carreaux » / « Composition » de V6 sont remplacés par la pile de calques (empreintes golden T41 et liens réels inchangés).
+
+## Partage et limites
+
+- Lien `#p=2.` : état sans images embarquées. Trop long → message ; préférer le `.json`.
+- Palette « automatique d’après les calques » : si le total dépasse la limite machine, bandeau + « Réduire à N couleurs ».
+- Pas de motif sur bord-côte, talon, pointe. Couleurs transparentes par calque pour laisser voir le dessous.
+
 
 ## Collections locales
 
@@ -60,16 +69,17 @@ Format : `collections-locales/collections.json` + `collections-locales/svg/<ID>-
 
 **Admin (mode dev)** : page [`admin.html`](admin.html) (lien « Gérer mes collections » en bas du panneau). Ouvre le dossier via File System Access (Chrome/Edge) ou exporte un ZIP à décompresser. Zones SVG automatiques (moulinette), palettes conseillées, puis `npm run sync:local` + commit.
 
-## Mode composition
+## Calques (remplace le mode composition V6)
 
-En haut du panneau (`?dev`) : bascule **Carreaux** / **Composition**.
+Une chaussette = **pile de calques** (Fond → Motifs → Images) :
 
-- **Composition** : vue à plat éditable à gauche + 3D à droite. Ajouter des images depuis la **bibliothèque** (collections) ou **importer** PNG/SVG (embarqués dans le projet `.json`). Déplacer, tourner, redimensionner, miroir ; clavier : flèches (Maj = 10), Suppr, Ctrl+D, [ ].
-- **Projet** : version 2 = réglages + `assets` embarqués (seulement les images utilisées). Les projets v1 restent lisibles.
-- **Lien de partage** : fonctionne si tous les calques viennent de la bibliothèque. Sinon le bouton est désactivé — envoyer le fichier projet `.json`.
-- Aides : pastille « détails trop fins », aperçu gros pixels, bulle « ? ».
+| Calque | Rôle |
+|---|---|
+| **Fond** | Une couleur, toujours en bas, non masquable |
+| **Motif** | Carreaux (collection ou importés) : calepinage, taille, raccord, bande de rangs, couleurs transparentes |
+| **Image** | PNG/SVG libre : poignées souris, frise, miroir, transparence |
 
-Le mode **Carreaux** (calepinage) reste strictement inchangé (empreintes golden T41).
+Le mode **Composition** V6 n’existe plus : les images sont des calques Image. Les empreintes golden (T41) et les deux liens réels de César restent identiques.
 
 ## Collections du simulateur de carreaux
 

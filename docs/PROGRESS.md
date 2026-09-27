@@ -705,3 +705,37 @@ Fait :
 Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (157 tests unitaires).
 Décisions : aucune nouvelle.
 Reste / risques : bilan V7 → T59.
+
+## T59 — Bilan V7 — 2026-09-27 00:10
+Statut : terminée
+Fait : README mis à jour (calques, bibliothèque, poignées, `#p=2.`, limites). Captures bilan dans `docs/captures/v7/` (écran, dock, options, poignées, bibliothèque, visionneuses Jardin + Palm). `npm run verify` ✅ **157 unitaires + 64 e2e**.
+Vérification : verify complet vert (12 min e2e). Captures liens réels ouvertes :
+- **Jardin** : visionneuse plein écran, titre « Jardin d Dazur », motif bleu/blanc feuilles, décor carreaux assorti, barre ¾/Profil/Dos/Face + Décor coché.
+- **Palm Beach** : titre « Palm Beach », motif orange/rose géométrique, décor assorti, même barre visionneuse ; empreinte grille `5e26e231`.
+Décisions : aucune nouvelle (suite D47–D50).
+Reste / risques : T18 (sizes fabricant) hors scope ; PR draft #9 à merger sur `v6-composition` (ou `main` si #8 mergée).
+
+---
+
+## Point pour César — V7 calques — 2026-09-27
+
+### Ce qui marche
+- Pile de calques Fond / Motif / Image (état V2, projet JSON v3, lien `#p=2.` ; lecture `#p=1.` intacte).
+- Écran `?dev` : 2D | 3D | options (onglets) | dock bas ; visionneuse plein écran inchangée ; aspect 3D correct.
+- Dock : cartes, vignettes, drag, menu, clavier, repli, max 16.
+- Options par type + couleurs transparentes + bande Motif.
+- Poignées 2D (Image + Motif/bande).
+- Bibliothèque (collections + import images).
+- Garde-fou palette multi-calques (« Réduire à N »).
+- Empreintes golden + liens Jardin / Palm inchangées.
+
+### Tester en 5 minutes
+1. `npm run dev` → ouvrir `http://localhost:5173/?dev`
+2. Bibliothèque → Medina ; ajouter une Image ; masquer/réordonner dans le dock ; déplacer l’image à la souris sur la vue 2D.
+3. « Copier le lien » → coller dans un onglet sans `?dev` : visionneuse seule. Rouvrir aussi les deux liens réels (fixtures `tests/unit/layers.test.ts`).
+
+### Décisions à relire
+D47 (défauts V1 = main), D48 (miroirs e2e), D49 (grille CSS / view3d), D50 (dock + bibliothèque minimale).
+
+### Blocages
+Aucun pour V7. T18 toujours en attente des tailles fabricant.

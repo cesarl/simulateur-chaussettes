@@ -267,7 +267,7 @@ Bouton « Bibliothèque » dans la barre du projet, et boutons « + Motif » / �
 **Critères**
 - [x] Test unitaire : 3 calques Motif de 2 couleurs chacun, plus le Fond → le bandeau propose la réduction, et la réduction donne exactement N couleurs.
 
-### [ ] T59 — Bilan V7
+### [x] T59 — Bilan V7
 
 - README : calques, bibliothèque, poignées, liens `#p=2.` (les anciens liens marchent toujours), limites.
 - Captures dans `docs/captures/v7/` :
