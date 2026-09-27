@@ -377,3 +377,15 @@ Contexte : même UX que V8 pour choisir un fil.
 Options : A) `<input type=color>` ; B) dialogue sock / nuancier / récentes.
 Choix : B — `dessin-color-dialog` calqué sur `recolor-dialog` ; récentes en `localStorage` (`sim-dessin-recent-colors`).
 Conséquence : e2e `dessin-couleur`.
+
+## D64 — Boutons +calque à 16 restent cliquables (T74)
+Contexte : désactiver `+ Motif` / `+ Image` / `+ Dessin` à MAX_LAYERS faisait timeout Playwright (T54 attend un clic → message).
+Options : A) `disabled` + title ; B) cliquables, handlers affichent « 16 calques au maximum ».
+Choix : B (comportement T54). Title seul pour le tooltip.
+Conséquence : e2e `calques-dock` 16 calques vert.
+
+## D65 — e2e décor : buildId avant select (T74)
+Contexte : `waitDecorBuild` lisait `decorBuildId` *après* `selectOption` ; le mode `aucun` (build sync) finissait trop vite → timeout 90 s flaky.
+Options : A) allonger timeout ; B) capturer l’id avant l’action.
+Choix : B — `setDecorMode` / `waitDecorAfter` dans `decor-v2`, `decor`, `viewer-decor`.
+Conséquence : verify e2e décor stable.

@@ -618,13 +618,12 @@ export function mountLayersDock(host: HTMLElement, actions: LayersDockActions): 
 
     const selected = design.layers.find((l) => l.id === selectedLayerId);
     selectedName.textContent = selected ? `${kindLabel(selected)} · ${selected.name}` : 'Aucun calque';
+    // Boutons restent cliquables à 16 : le clic affiche le message (T54),
+    // sans ouvrir la bibliothèque ni créer de calque.
     const full = design.layers.length >= MAX_LAYERS;
     addMotif.title = full ? MAX_LAYERS_MESSAGE : 'Ajouter un calque Motif (Bibliothèque)';
     addImage.title = full ? MAX_LAYERS_MESSAGE : 'Ajouter un calque Image (Bibliothèque)';
     addDessin.title = full ? MAX_LAYERS_MESSAGE : 'Ajouter un calque Dessin (pixel art)';
-    addMotif.disabled = full;
-    addImage.disabled = full;
-    addDessin.disabled = full;
 
     if (hadFocus && !renamingId) {
       const card = selectedLayerId ? cards.get(selectedLayerId) : undefined;

@@ -133,7 +133,7 @@ Quand un calque Dessin est sélectionné, une **barre d'outils de dessin** appar
 **Critères**
 - [x] e2e : choisir une couleur du nuancier par sa recherche, dessiner → la maille prend exactement ce fil.
 
-### [ ] T74 — Bilan V9
+### [x] T74 — Bilan V9
 
 - README :
   - vue 2D (vraies couleurs, bouton Alertes) ;

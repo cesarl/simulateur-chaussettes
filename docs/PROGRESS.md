@@ -932,3 +932,28 @@ Fait : pastille `dessin-color` ouvre un dialogue (sock + nuancier recherchable +
 Vérification : e2e `dessin-couleur` ✅ (recherche « noir », peindre → maille = fil choisi).
 Décisions : D63
 Reste / risques : bilan T74.
+
+## T74 — Bilan V9 — 2026-09-27 16:30
+Statut : terminée
+Fait : README V9 (Alertes, Dessin, recette Achille 5 clics) ; captures `docs/captures/v9/` ; Point pour César. Correctifs verify : (1) dock à 16 calques — boutons restent cliquables + message (D64) ; (2) e2e décor — `decorBuildId` capturé avant le select (D65).
+Vérification : `npm run verify` ✅ (189 unitaires, 82 e2e).
+Décisions : D60–D65
+Reste / risques : T18 fabricant ; CI Actions peut échouer pour facturation.
+
+## Point pour César — V9 dessin — 2026-09-27
+
+### Ce qui marche
+- Vue 2D aux **vraies couleurs** ; **Alertes** optionnelles (contours flottés + ronds isolés).
+- Calque **Dessin** : + Dessin, Transformer en dessin, outils pixel art, couleur nuancier, lien `#p=2.`, projet v3.
+- Cas réel : trait 2 mailles au Dos sur toute la tige (2D + 3D dos).
+
+### Tester en 3 étapes
+1. `npm run sync:local && npm run dev` → `http://localhost:5173/?dev`
+2. **+ Dessin** → Trait épaisseur 2 → glisser au Dos du haut au bas de la tige (Maj)
+3. Bouton **Alertes** sur Classique14 ; **⋯ → Transformer en dessin** sur un Motif
+
+### Décisions à relire
+D60 (Alertes), D61 (branchement Dessin), D62 (outils live), D63 (couleur crayon), D64 (dock 16), D65 (e2e décor).
+
+### Blocages
+Aucun pour V9. T18 en attente des tailles fabricant. Ne pas toucher `wrangler.jsonc`. CI GitHub Actions : facturation possible ≠ échec code.

@@ -10,8 +10,10 @@ function trackErrors(page: Page): string[] {
   return errors;
 }
 
-async function waitDecorBuild(page: Page, mode: string): Promise<void> {
+/** Change le mode décor en capturant decorBuildId *avant* le select (évite la course si le build `aucun` finit trop vite). */
+async function setDecorMode(page: Page, mode: string): Promise<void> {
   const before = await page.evaluate(() => window.__SIM__?.decorBuildId ?? 0);
+  await page.getByTestId('ctl-decor-mode').selectOption(mode);
   await page.waitForFunction((m) => window.__SIM__?.design.decor.mode === m, mode);
   await page.waitForFunction((b) => (window.__SIM__?.decorBuildId ?? 0) > b, before, {
     timeout: 90_000,
@@ -51,13 +53,11 @@ test('décor v2 mats : Medina 20cm et RAMO 10cm (sol + mur)', async ({ page }) =
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15000 });
 
   await page.getByTestId('tab-decor').click();
-  await page.getByTestId('ctl-decor-mode').selectOption('sol');
-  await waitDecorBuild(page, 'sol');
+  await setDecorMode(page, 'sol');
   const medinaSol = await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T40-medina-sol.png');
   expect(medinaSol.byteLength).toBeGreaterThan(30_000);
 
-  await page.getByTestId('ctl-decor-mode').selectOption('mur');
-  await waitDecorBuild(page, 'mur');
+  await setDecorMode(page, 'mur');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T40-medina-mur.png');
 
   // Vérifie défauts v2 : joint clair, atténuation 0, grain > 0, tileCm 20
@@ -86,18 +86,15 @@ test('décor v2 mats : Medina 20cm et RAMO 10cm (sol + mur)', async ({ page }) =
 
   // Réactiver le décor pour préremplir tileCm depuis le format
   await page.getByTestId('tab-decor').click();
-  await page.getByTestId('ctl-decor-mode').selectOption('aucun');
-  await waitDecorBuild(page, 'aucun');
-  await page.getByTestId('ctl-decor-mode').selectOption('sol');
-  await waitDecorBuild(page, 'sol');
+  await setDecorMode(page, 'aucun');
+  await setDecorMode(page, 'sol');
 
   const ramoTileCm = await page.evaluate(() => window.__SIM__!.design.decor.tileCm);
   expect(ramoTileCm).toBe(10);
 
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T40-ramo-sol.png');
 
-  await page.getByTestId('ctl-decor-mode').selectOption('mur');
-  await waitDecorBuild(page, 'mur');
+  await setDecorMode(page, 'mur');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T40-ramo-mur.png');
 
   // Grain UI présent

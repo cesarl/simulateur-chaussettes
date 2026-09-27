@@ -36,6 +36,23 @@ Premier lancement des tests navigateur : `npx playwright install chromium`.
 
 Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites machine sont dans [`config/sizes.json`](config/sizes.json). Elles sont **provisoires** jusqu'à confirmation du fabricant.
 
+## Utilisation (V9 — vue 2D lisible + calque Dessin)
+
+1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).
+2. **Visionneuse** : uniquement la 3D. Pour les réglages : `/?dev` ou **Maj+D**.
+3. **Vue 2D** : couleurs exactes de la grille (plus d’assombrissement des flottés). Bouton **Alertes** (défaut off, mémorisé) : contours rouges sur les flottés trop longs + ronds sur les mailles isolées + légende. Les pastilles Contrôles « Flottés » / « Détails » activent aussi Alertes.
+4. **Calque Dessin** : bouton **+ Dessin** dans le dock. Menu **⋯ → Transformer en dessin** sur un Motif ou une Image (copie peinte, original masqué).
+5. **Outils** (barre sous la vue 2D quand un Dessin est sélectionné) : Crayon (B), Gomme (E), Trait (L, Maj = droit), Rectangle (R), Pot (G), Pipette (I / Alt+clic), Main (Espace). Épaisseur 1–4, symétrie Devant↔Dos / Intérieur↔Extérieur, aimantation sur les repères.
+6. **Couleur du crayon** : pastille → déjà sur la chaussette / nuancier (recherche) / 8 dernières.
+7. **Recette — ligne au tendon d’Achille** (5 clics) :
+   1. `/?dev` → **+ Dessin**
+   2. outil **Trait**, épaisseur **2**, aimantation cochée
+   3. pastille couleur (ex. noir)
+   4. glisser du haut de la tige au repère **Dos** jusqu’au bas de la tige (Maj pour un trait droit)
+   5. lâcher : une seule étape d’annulation ; **Copier le lien** pour partager
+
+Captures : [`docs/captures/v9/`](docs/captures/v9/).
+
 ## Utilisation (V8 — calques + retours)
 
 1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).

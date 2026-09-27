@@ -10,8 +10,22 @@ function trackErrors(page: Page): string[] {
   return errors;
 }
 
-async function waitDecorBuild(page: Page, mode: string): Promise<void> {
+async function setDecorMode(page: Page, mode: string): Promise<void> {
   const before = await page.evaluate(() => window.__SIM__?.decorBuildId ?? 0);
+  await page.getByTestId('ctl-decor-mode').selectOption(mode);
+  await page.waitForFunction((m) => window.__SIM__?.design.decor.mode === m, mode);
+  await page.waitForFunction((b) => (window.__SIM__?.decorBuildId ?? 0) > b, before, {
+    timeout: 90_000,
+  });
+}
+
+async function waitDecorAfter(
+  page: Page,
+  mode: string,
+  action: () => Promise<void>,
+): Promise<void> {
+  const before = await page.evaluate(() => window.__SIM__?.decorBuildId ?? 0);
+  await action();
   await page.waitForFunction((m) => window.__SIM__?.design.decor.mode === m, mode);
   await page.waitForFunction((b) => (window.__SIM__?.decorBuildId ?? 0) > b, before, {
     timeout: 90_000,
@@ -47,8 +61,7 @@ test('visionneuse publique : bascule décor on/off', async ({ page }) => {
   await page.getByTestId('coll-item-medina').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15000 });
   await page.getByTestId('tab-decor').click();
-  await page.getByTestId('ctl-decor-mode').selectOption('coin');
-  await waitDecorBuild(page, 'coin');
+  await setDecorMode(page, 'coin');
   await page.getByTestId('tab-global').click();
   await page.getByTestId('leave-dev').click();
 
@@ -60,14 +73,12 @@ test('visionneuse publique : bascule décor on/off', async ({ page }) => {
   await captureView(page, 'test-results/visuel-fix-decor-toggle-on.png');
 
   // Décoche → décor off
-  await page.getByTestId('viewer-decor-toggle').uncheck();
-  await waitDecorBuild(page, 'aucun');
+  await waitDecorAfter(page, 'aucun', () => page.getByTestId('viewer-decor-toggle').uncheck());
   expect(await page.evaluate(() => window.__SIM__!.design.decor.mode)).toBe('aucun');
   await captureView(page, 'test-results/visuel-fix-decor-toggle-off.png');
 
   // Recoche → retrouve coin
-  await page.getByTestId('viewer-decor-toggle').check();
-  await waitDecorBuild(page, 'coin');
+  await waitDecorAfter(page, 'coin', () => page.getByTestId('viewer-decor-toggle').check());
   expect(await page.evaluate(() => window.__SIM__!.design.decor.mode)).toBe('coin');
 
   // Persistance via état design (share / IndexedDB) : le mode est dans design.decor

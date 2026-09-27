@@ -10,8 +10,9 @@ function trackErrors(page: Page): string[] {
   return errors;
 }
 
-async function waitDecorReady(page: Page, mode = 'coin'): Promise<void> {
+async function setDecorMode(page: Page, mode = 'coin'): Promise<void> {
   const before = await page.evaluate(() => window.__SIM__?.decorBuildId ?? 0);
+  await page.getByTestId('ctl-decor-mode').selectOption(mode);
   await page.waitForFunction((m) => window.__SIM__?.design.decor.mode === m, mode);
   await page.waitForFunction((b) => (window.__SIM__?.decorBuildId ?? 0) > b, before, {
     timeout: 90_000,
@@ -54,8 +55,7 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15000 });
 
   await page.getByTestId('tab-decor').click();
-  await page.getByTestId('ctl-decor-mode').selectOption('coin');
-  await waitDecorReady(page, 'coin');
+  await setDecorMode(page, 'coin');
 
   const three = await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-medina-coin.png');
   expect(three.byteLength).toBeGreaterThan(30_000);
@@ -124,12 +124,10 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
   expect(centerIsSock.isBg).toBe(false);
 
   // Captures sol / mur / coin Lianes
-  await page.getByTestId('ctl-decor-mode').selectOption('sol');
-  await waitDecorReady(page, 'sol');
+  await setDecorMode(page, 'sol');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-medina-sol.png');
 
-  await page.getByTestId('ctl-decor-mode').selectOption('mur');
-  await waitDecorReady(page, 'mur');
+  await setDecorMode(page, 'mur');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-medina-mur.png');
 
   await page.getByTestId('tab-calque').click();
@@ -138,8 +136,7 @@ test('décor sol+mur : couleurs hors silhouette ; mur derrière en vue dos', asy
   await page.getByTestId('coll-item-lianes').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(2, { timeout: 15000 });
   await page.getByTestId('tab-decor').click();
-  await page.getByTestId('ctl-decor-mode').selectOption('coin');
-  await waitDecorReady(page, 'coin');
+  await setDecorMode(page, 'coin');
   await captureView(page, 'trois-quarts', 1024, 'test-results/visuel-T38-lianes-coin.png');
 
   expect(errors).toEqual([]);
