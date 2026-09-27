@@ -1,8 +1,8 @@
 {
  "version": 1,
- "synchroniseLe": "2026-09-25T14:59:32.728Z",
+ "synchroniseLe": "2026-09-27T09:23:56.845Z",
  "source": {
-  "dossier": "configurateur-carreaux-cesar-bazaar",
+  "dossier": "configurateur-carreaux-cesar-bazaar+local",
   "commit": "f513e1fb8c7c"
  },
  "nuancier": [
@@ -1535,7 +1535,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/medina-terracotta-bleu-cobalt"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/medina-terracotta-bleu-cobalt",
+   "source": "carreaux"
   },
   {
    "id": "Dunes",
@@ -1604,7 +1605,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/dune-bleu-cobalt"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/dune-bleu-cobalt",
+   "source": "carreaux"
   },
   {
    "id": "fleurs-roda",
@@ -1815,7 +1817,8 @@
     "aleatoire_no_rotation"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fleurs-alex-roda"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fleurs-alex-roda",
+   "source": "carreaux"
   },
   {
    "id": "sunrise",
@@ -1862,7 +1865,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/sunrise-laurie-lecou-tournesol"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/sunrise-laurie-lecou-tournesol",
+   "source": "carreaux"
   },
   {
    "id": "geo-roda",
@@ -1928,7 +1932,8 @@
     "iflip_2"
    ],
    "calepinageParDefaut": "damier_2",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/go-par-alex-roda"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/go-par-alex-roda",
+   "source": "carreaux"
   },
   {
    "id": "sixties",
@@ -1980,7 +1985,8 @@
     "iflip_1"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/alexandra-pascual-retros-annees-60"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/alexandra-pascual-retros-annees-60",
+   "source": "carreaux"
   },
   {
    "id": "Abstract",
@@ -2139,7 +2145,8 @@
     "iflip_10"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/abstract-par-csar-bazaar"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/abstract-par-csar-bazaar",
+   "source": "carreaux"
   },
   {
    "id": "clair-de-lune",
@@ -2202,7 +2209,8 @@
     "Miroir_2"
    ],
    "calepinageParDefaut": "Miroir_2",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/clair-de-lune-berenice-milon"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/clair-de-lune-berenice-milon",
+   "source": "carreaux"
   },
   {
    "id": "lianes",
@@ -2322,7 +2330,8 @@
     "iflip_2"
    ],
    "calepinageParDefaut": "Liane_1",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/lianes-baptiste-vandaele"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/lianes-baptiste-vandaele",
+   "source": "carreaux"
   },
   {
    "id": "pannequin",
@@ -2454,7 +2463,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/formes-expressives-blandine-pannequin"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/formes-expressives-blandine-pannequin",
+   "source": "carreaux"
   },
   {
    "id": "Safran",
@@ -2545,7 +2555,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "damier_4",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/safran-terracotta-bleu-cobalt"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/safran-terracotta-bleu-cobalt",
+   "source": "carreaux"
   },
   {
    "id": "continuum",
@@ -2650,7 +2661,8 @@
     "iflip_3"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/continuum-studio-helioscope-vert"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/continuum-studio-helioscope-vert",
+   "source": "carreaux"
   },
   {
    "id": "interieur",
@@ -2750,7 +2762,8 @@
     "iflip_2"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/interieur-julie-bouche-blan-rose"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/interieur-julie-bouche-blan-rose",
+   "source": "carreaux"
   },
   {
    "id": "oranger",
@@ -2832,7 +2845,8 @@
     "iflip_3"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/oranger-fanny-liennart"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/oranger-fanny-liennart",
+   "source": "carreaux"
   },
   {
    "id": "papyrus",
@@ -2906,7 +2920,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://images.squarespace-cdn.com/content/v1/62aa0fad790ae54c0b65723b/b410e293-0202-4f5c-941b-a12ff218da9f/Justine_Deltang_Papyrus_textless.jpg?format=500w"
+   "urlCollection": "https://images.squarespace-cdn.com/content/v1/62aa0fad790ae54c0b65723b/b410e293-0202-4f5c-941b-a12ff218da9f/Justine_Deltang_Papyrus_textless.jpg?format=500w",
+   "source": "carreaux"
   },
   {
    "id": "serpent-mb",
@@ -2950,7 +2965,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/serpent-marie-blanche-huet-rose-violet"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/serpent-marie-blanche-huet-rose-violet",
+   "source": "carreaux"
   },
   {
    "id": "opale",
@@ -3052,7 +3068,8 @@
     "opale"
    ],
    "calepinageParDefaut": "opale",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carreaux-de-ciment-opale-marie-blanche-huet"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carreaux-de-ciment-opale-marie-blanche-huet",
+   "source": "carreaux"
   },
   {
    "id": "onda",
@@ -3140,7 +3157,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/onda-piscine-lemon-curves-designs"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/onda-piscine-lemon-curves-designs",
+   "source": "carreaux"
   },
   {
    "id": "cala-morell",
@@ -3183,7 +3201,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/cala-morell-bleu-orange"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/cala-morell-bleu-orange",
+   "source": "carreaux"
   },
   {
    "id": "slip",
@@ -3257,7 +3276,8 @@
     "iflip_3"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/moule-bite-nullanus"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/moule-bite-nullanus",
+   "source": "carreaux"
   },
   {
    "id": "envolee",
@@ -3345,7 +3365,8 @@
     "iflip_3"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/envolee-lauren-roman-violet-abstrait"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/envolee-lauren-roman-violet-abstrait",
+   "source": "carreaux"
   },
   {
    "id": "quique",
@@ -3442,7 +3463,8 @@
     "damier"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "brocoli",
@@ -3558,7 +3580,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fleurs-steffie-brocoli-pop"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fleurs-steffie-brocoli-pop",
+   "source": "carreaux"
   },
   {
    "id": "finis-terrae-angolo",
@@ -3610,7 +3633,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "Liane_1",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fini-terrae-orange-vert"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fini-terrae-orange-vert",
+   "source": "carreaux"
   },
   {
    "id": "finis-terrae-linea",
@@ -3663,7 +3687,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fini-terrae-orange-vert"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fini-terrae-orange-vert",
+   "source": "carreaux"
   },
   {
    "id": "finis-terrae-punto",
@@ -3716,7 +3741,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fini-terrae-orange-vert"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fini-terrae-orange-vert",
+   "source": "carreaux"
   },
   {
    "id": "palm-beach",
@@ -3769,7 +3795,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/palm-beach-rose-orange"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/palm-beach-rose-orange",
+   "source": "carreaux"
   },
   {
    "id": "secret-garden",
@@ -3846,7 +3873,8 @@
     "iflip_2"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/secret-garden-zoe-wodarz-coeur-plante-vert"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/secret-garden-zoe-wodarz-coeur-plante-vert",
+   "source": "carreaux"
   },
   {
    "id": "tiznit",
@@ -3922,7 +3950,8 @@
     "ligne_alternee_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tiznit-ze-monsta-design"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tiznit-ze-monsta-design",
+   "source": "carreaux"
   },
   {
    "id": "tulipe",
@@ -3984,7 +4013,8 @@
     "damier_2_random"
    ],
    "calepinageParDefaut": "damier_2",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tulipe-atelier-moeli-sylvie-maillard"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tulipe-atelier-moeli-sylvie-maillard",
+   "source": "carreaux"
   },
   {
    "id": "fruits-roda",
@@ -4113,7 +4143,8 @@
     "iflip_8"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "ciel",
@@ -4179,7 +4210,8 @@
     "nuage"
    ],
    "calepinageParDefaut": "nuage",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/ciel-nuage-aliette-assiette"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/ciel-nuage-aliette-assiette",
+   "source": "carreaux"
   },
   {
    "id": "nature-adoree",
@@ -4283,7 +4315,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "damier_4_random",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/nature-adoree-manon-vermote"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/nature-adoree-manon-vermote",
+   "source": "carreaux"
   },
   {
    "id": "fleur-wodarz",
@@ -4353,7 +4386,8 @@
     "iflip_2"
    ],
    "calepinageParDefaut": "iflip_2",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/flowers-by-zoe-wodarz"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/flowers-by-zoe-wodarz",
+   "source": "carreaux"
   },
   {
    "id": "lune",
@@ -4434,7 +4468,8 @@
     "lunes"
    ],
    "calepinageParDefaut": "lunes",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carrelage-cycle-de-la-lune"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carrelage-cycle-de-la-lune",
+   "source": "carreaux"
   },
   {
    "id": "amour",
@@ -4572,7 +4607,8 @@
     "Amour"
    ],
    "calepinageParDefaut": "Amour",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/amour-par-cesar-bazaar"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/amour-par-cesar-bazaar",
+   "source": "carreaux"
   },
   {
    "id": "ophis",
@@ -4694,7 +4730,8 @@
     "ophis_chaos_fractal_20x8"
    ],
    "calepinageParDefaut": "ophis_sans_frontieres_8x4",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/ophis-serpent-lise-vila"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/ophis-serpent-lise-vila",
+   "source": "carreaux"
   },
   {
    "id": "MTY-TRES",
@@ -4753,7 +4790,8 @@
     "rosace"
    ],
    "calepinageParDefaut": "rosace",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "MTY-QUATRO",
@@ -4796,7 +4834,8 @@
     "rosace"
    ],
    "calepinageParDefaut": "rosace",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "SPIRALE",
@@ -4835,7 +4874,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique1",
@@ -4879,7 +4919,8 @@
     "rosace"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique2",
@@ -4918,7 +4959,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique3",
@@ -4962,7 +5004,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique4",
@@ -5001,7 +5044,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique5",
@@ -5044,7 +5088,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique6",
@@ -5086,7 +5131,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique7",
@@ -5126,7 +5172,8 @@
     "rosace"
    ],
    "calepinageParDefaut": "rosace",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique8",
@@ -5166,7 +5213,8 @@
     "rosace"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique9",
@@ -5210,7 +5258,8 @@
     "rosace"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique10",
@@ -5250,7 +5299,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique11",
@@ -5290,7 +5340,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique12",
@@ -5333,7 +5384,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique13",
@@ -5389,7 +5441,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique14",
@@ -5441,7 +5494,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique15",
@@ -5485,7 +5539,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique16",
@@ -5525,7 +5580,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique17",
@@ -5584,7 +5640,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique18",
@@ -5644,7 +5701,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique19",
@@ -5688,7 +5746,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique20",
@@ -5732,7 +5791,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique21",
@@ -5771,7 +5831,8 @@
     "rosace"
    ],
    "calepinageParDefaut": null,
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique22",
@@ -5815,7 +5876,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique23",
@@ -5859,7 +5921,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique24",
@@ -5899,7 +5962,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "classique25",
@@ -5939,7 +6003,8 @@
     "rosace revert"
    ],
    "calepinageParDefaut": "rosace revert",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "MAILLONS",
@@ -6006,7 +6071,8 @@
     "iflip_1"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": null
+   "urlCollection": null,
+   "source": "carreaux"
   },
   {
    "id": "damier",
@@ -6111,7 +6177,8 @@
     "iflip_4"
    ],
    "calepinageParDefaut": "aleatoire",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carreaux-de-ciment-damier-claire-iglesias"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carreaux-de-ciment-damier-claire-iglesias",
+   "source": "carreaux"
   },
   {
    "id": "jardin-d-dazur",
@@ -6194,7 +6261,8 @@
     "iflip_3"
    ],
    "calepinageParDefaut": "damier_3",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/jardin-d-azur-lea-georgelin"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/jardin-d-azur-lea-georgelin",
+   "source": "carreaux"
   },
   {
    "id": "le-sud-5-couleurs",
@@ -6270,7 +6338,8 @@
     "iflip_3"
    ],
    "calepinageParDefaut": "damier_3",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/le-sud-carrelage-provence-clementine-dabbundo"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/le-sud-carrelage-provence-clementine-dabbundo",
+   "source": "carreaux"
   },
   {
    "id": "prisme",
@@ -6329,7 +6398,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/prisme-geometrique-claire-iglesias"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/prisme-geometrique-claire-iglesias",
+   "source": "carreaux"
   },
   {
    "id": "tentacules",
@@ -6368,7 +6438,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tentacules-justine-caoudal"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tentacules-justine-caoudal",
+   "source": "carreaux"
   },
   {
    "id": "weaves",
@@ -6415,7 +6486,8 @@
     "damier"
    ],
    "calepinageParDefaut": "damier",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tissage-noa-rebout-weave-on-the-wall"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/tissage-noa-rebout-weave-on-the-wall",
+   "source": "carreaux"
   },
   {
    "id": "FABLE",
@@ -6486,7 +6558,8 @@
     "damier_3_random"
    ],
    "calepinageParDefaut": "damier_3",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fable-yaba"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/fable-yaba",
+   "source": "carreaux"
   },
   {
    "id": "RAMO",
@@ -6611,7 +6684,8 @@
     "ramo random"
    ],
    "calepinageParDefaut": "ramo",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carreaux-de-ciment-ramo-emilie-lemoine"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/carreaux-de-ciment-ramo-emilie-lemoine",
+   "source": "carreaux"
   },
   {
    "id": "FLEURKE",
@@ -6685,7 +6759,8 @@
     "damier_3"
    ],
    "calepinageParDefaut": "damier_3",
-   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/pins-landais-par-fleurke"
+   "urlCollection": "https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/pins-landais-par-fleurke",
+   "source": "carreaux"
   }
  ]
 }

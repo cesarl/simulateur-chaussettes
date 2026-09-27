@@ -739,3 +739,137 @@ D47 (défauts V1 = main), D48 (miroirs e2e), D49 (grille CSS / view3d), D50 (doc
 
 ### Blocages
 Aucun pour V7. T18 toujours en attente des tailles fabricant.
+
+## T60 — Palette unique et Fond — 2026-09-27 08:50
+Statut : terminée
+Fait :
+- `planStackPalette` dans `stackPaletteGuard.ts` : une seule vérité (`resolveStackPalette`) pour réduction + bandeau ; liste du bandeau = `pal.palette` avec provenance via `stackPaletteEntries`.
+- `main.ts` : branchement ; `composeGrid` / contrôles / flottés via `effectiveZones(design)` ; Fond visible inclus en mode fils de collection.
+- `panel.ts` : suppression de « Couleur du pied » ; aide « Motif sur le pied » ; curseur `ctl-max-colors` masqué hors modes auto/manuelle.
+- CSS : `.stack-palette-banner[hidden] { display: none }` (le `display: flex` écrasait l’attribut `hidden`).
+- Tests : `v8-palette-plan.test.ts` ; e2e `palette-bandeau.spec.ts` (souris).
+Vérification : typecheck ✅ ; unitaires concernés ✅ ; e2e palette-bandeau ✅ (2/2).
+Contrôle visuel :
+- `visuel-T60-pas-bandeau.png` : Motif Jardin (bleu/blanc) au-dessus de Fleurs ; onglet Chaussette ; **pas** de bandeau orange ; dock avec Jardin / Fleurs / Fond.
+- `visuel-T60-bandeau.png` : après transparence du Jardin, motif Fleurs multicolore visible en 2D/3D ; bandeau avec pastilles hex + bouton « Réduire à 6 couleurs » ; contrôles signalent 10/6 couleurs.
+- `visuel-T60-pied-fond.png` : vue 2D (tige Dunes beige/bleu, bord-côte marine) ; le pied uni noir (Fond BK001) est confirmé par `getStitch` (zone Foot) — la capture cadre surtout la tige.
+Décisions : D51.
+Reste / risques : T61 (cadre sous le talon).
+
+## T61 — Cadre image sous le talon — 2026-09-27 09:15
+Statut : terminée
+Fait :
+- `flatView.ts` : `clientAtMotifStitch` / `clientToMotifStitch` / `revealMotifStitch` via `motifYToGridY` / `gridYToMotifY` (talon sauté ; clic sur talon collé au pied).
+- `flatGizmos.ts` : cadre image découpé en deux polygones s'il chevauche le talon (clipping à la hauteur de tige) ; poignées aux coins réels.
+- e2e `gizmo-pied.spec.ts` (souris) ; `gizmoClient.motifCorners` pour le test d'inclusion.
+Vérification : typecheck ✅ ; e2e gizmo-pied ✅.
+Contrôle visuel :
+- `visuel-T61-avant-pied.png` : image damier (4 carrés noirs + disque rouge) sur la **tige** grise, cadre rouge à poignées blanches + poignée de rotation ; bord-côte marine en haut, talon à peine visible en bas.
+- `visuel-T61-apres-pied.png` : même image sur le **pied**, cadre rouge aligné sur le motif (sous le talon rayé rouge/gris) ; libellé « Pied » ; survol maille 126 rang 299.
+Décisions : D52.
+Reste / risques : T62 fluidité.
+
+## T62 — Vue 2D fluide — 2026-09-27 09:45
+Statut : terminée
+Fait :
+- `flatView` : grille peinte via `ImageData` 1 px/maille + `drawImage` (smoothing off) ; lignes de mailles en un seul chemin ; canvas overlay pour poignées.
+- Glisser image/motif : `dirtyRowsForImage` + `renderStack` partiel ; 1 frame/`rAF` ; aperçu RVB sans quantize ; 3D ≤ 8×/s ; historique / autosave / lien seulement au lâcher.
+- `window.__SIM__.stats` : `dragFrames`, `dragComputeMsAvg`, `motifRgbComputes`.
+- e2e `glisser-fluide.spec.ts`.
+Vérification : typecheck ✅ ; e2e glisser-fluide ✅.
+Temps mesurés (agent) : avant (V7, fillRect plein + recompute/souris) ≈ 80–120 ms/événement estimé ; après `dragComputeMsAvg` ≈ 12–20 ms sur 40 pas (seuil test < 25), `motifRgbComputes` = 0 pendant le glisser image.
+Décisions : D53.
+Reste / risques : T63 repères faces.
+
+## T63 — Repères des faces — 2026-09-27 10:00
+Statut : terminée
+Fait : traits pointillés aux colonnes `faceGuides` (+ Intérieur en W) ; bouton « Repères » (`ctl-face-guides`) mémorisé en localStorage ; aimantation ±2 mailles au glisser d’image.
+Vérification : e2e reperes-faces ✅.
+Contrôle visuel — `visuel-T63-reperes.png` : libellés « Intérieur », « Dos », « Extérieur » en haut (Devant hors cadre à droite selon le pan) ; traits pointillés bleu-gris distincts du raccord rouge brique au centre du Dos ; tige taupe, bord-côte marine.
+Décisions : aucune nouvelle.
+Reste / risques : T64 bascule vues.
+
+## T64 — Bascule vues 2D/3D — 2026-09-27 10:15
+Statut : terminée
+Fait : boutons `ctl-view-2d` / `ctl-view-3d` dans la barre projet ; classes CSS `hide-2d` / `hide-3d` ; localStorage ; mesh 3D suspendu si masqué ; aspect recalculé à la réaffiche.
+Vérification : e2e vues-bascule ✅.
+Contrôle visuel : 4 captures `visuel-T64-{2d-3d,3d-seul,aucune,2d-seul}.png` — combinaisons lisibles, panneau+dock quand aucune vue.
+Décisions : aucune.
+Reste / risques : T65 onglet Global.
+
+## T65 — Onglet Global — 2026-09-27 09:20
+Statut : terminée
+Fait :
+- Onglet `tab-global` / `pane-global` (dernier après Export) ; `OptionsTab` étendu.
+- Contenu de l’ancien `.options-footer` déplacé : « Tout réinitialiser », « Dernier calcul », « Gérer mes collections », « Quitter le mode dev » (`data-testid` inchangés).
+- Plus de pied de panneau ni de propriété `Panes.footer`.
+- e2e `onglet-global.spec.ts` (souris).
+Vérification : typecheck ✅ ; e2e onglet-global ✅.
+Contrôle visuel — `visuel-t65-onglet-global.png` : onglet **Global** actif dans la barre d’onglets (Calque / Chaussette / Décor / Export / Global) ; volet droit montre « Tout réinitialiser », « Dernier calcul : 164 ms », lien « Gérer mes collections », bouton « Quitter le mode dev » ; bandeau Annuler/Rétablir/Copier le lien toujours en tête du panneau ; **aucun** pied `.options-footer` sous les options ; 2D (tige crème, bord-côte marine, repères) et 3D (chaussette) visibles ; dock Motif 1 / Fond en bas.
+Décisions : aucune.
+Reste / risques : T66 bibliothèque d’images.
+
+## T66 — Bibliothèque d’images — 2026-09-27 09:27
+Statut : terminée
+Fait :
+- `AssetRef` + `assetKey` `b:<id>` ; chargement `compositionImages` via `./images/<fichier>` ; `cleanAsset` sans transtypage ; `project.readAssetRef`.
+- `scripts/syncBibliothequeImages.mjs` branché dans `sync-carreaux` / `sync:local` → `public/images/` + `index.json` + rapport.
+- Bibliothèque onglet Images : section « Bibliothèque » (filtre + vignettes) au-dessus de « Images du projet ».
+- Tests : `sync-bibliotheque.test.ts` ; e2e `bibliotheque-images.spec.ts` (souris).
+Vérification : typecheck ✅ ; unit sync ✅ ; e2e bibliotheque-images ✅.
+Contrôle visuel — `visuel-t66-logo-2d.png` : calque **Logo** (IMAGE) sélectionné dans le dock ; logo « CÉSAR BAZAAR » magenta visible sur la **vue 2D** (tige crème) et la **3D** (côté de la chaussette) ; pastilles roses dans « Couleurs transparentes » ; Fond + Motif 1 toujours présents.
+Décisions : D54.
+Reste / risques : T67 œil / remplacement couleurs.
+
+## T67 — Couleurs calque œil / remplacement — 2026-09-27 09:45
+Statut : terminée
+Fait :
+- Composant `colorRow` (pastille, libellé, œil, Remplacer…) ; section « Couleurs du calque » remplace le damier.
+- Zones Motif (palettePanel) : œil + bascule groupée si même fil ; Images : dialogue Remplacer (sock + nuancier + origine).
+- `setImageRecolor` dans state ; `data-testid` `layer-color-*` conservés pour les e2e V7.
+- e2e `couleurs-calque.spec.ts`.
+Vérification : typecheck ✅ ; e2e couleurs-calque ✅.
+Contrôle visuel :
+- `visuel-t67-motif-oeil.png` : Motif Dunes jaune sur Fond bleu marine (blanc transparent) ; lignes zone-1 WT000 Blanc avec œil ; 2D/3D cohérents.
+- `visuel-t67-image-recolor.png` : calque Logo sélectionné ; section « Couleurs du calque » avec pastille + « Changer… » (remplacement actif) ; logo visible en 2D/3D.
+Décisions : D55.
+Reste / risques : T68 bilan + verify complet.
+
+## T68 — Bilan V8 — 2026-09-27 10:06
+Statut : terminée
+Fait :
+- README mis à jour (V8 : repères, bascule 2D/3D, onglet Global, bibliothèque d’images, lignes de couleur).
+- Captures sous `docs/captures/v8/` (et copie `media/v8/`).
+- Correctifs de suivi : `leave-dev` / `reset-all` via onglet Global ; `ctl-max-colors` après mode auto ; œil zone ≠ `layer-color-*` ; rechargement entre liens T59.
+- `npm run verify` complet vert.
+Vérification : typecheck ✅ ; 167 unitaires ✅ ; build ✅ ; 74 e2e ✅.
+Décisions : D51–D55.
+Reste / risques : T18 (tailles fabricant) toujours hors scope ; CI GitHub peut échouer pour facturation.
+
+## Point pour César — V8 retours — 2026-09-27
+
+### Ce qui marche
+- Palette unique (`resolveStackPalette`) + Fond = pied uni ; plus de « Couleur du pied ».
+- Cadre Image correct sous le talon ; glisser 2D fluide (`dragComputeMsAvg` < 25 ms).
+- Repères des faces + aimantation ; bascule 2D/3D mémorisée.
+- Onglet **Global** (réinit / collections / quitter / ms) — plus de pied de panneau.
+- Bibliothèque d’images publiques (`bibliotheque-images/` → `public/images/`) ; Logo partageable dans le lien.
+- Lignes de couleur : œil (transparence) + Remplacer… (Images).
+
+### Tester en 3 étapes
+1. `npm run sync:local && npm run dev` → ouvrir `http://localhost:5173/?dev`
+2. Bibliothèque → Images → Logo ; basculer Repères / 2D / 3D ; onglet Global.
+3. Sur un Motif : œil sur une couleur ; sur le Logo : Remplacer… → Copier le lien → coller sans `?dev`.
+
+### Décisions à relire
+D51 (palette/Fond), D52 (talon), D53 (glisser), D54 (bibliothèque), D55 (œil/recolor).
+
+### Blocages
+Aucun pour V8. T18 en attente des tailles fabricant. Ne pas toucher `wrangler.jsonc`.
+
+## Fix — paletteFromLayers dans le lien de partage — 2026-09-27
+Statut : terminée
+Fait : le réglage « Automatique d’après les calques » (`quantize.paletteFromLayers`) était sérialisé dans `#p=2.` mais `applyShare` le forçait à `false` à l’ouverture. Correction : `quantizeForShareApply` conserve le booléen ; défauts V2 figés + `shareJsonToDesignV2` + migration V1 → `false` si absent (rétrocompat). Tests unit `share-palette-from-layers` + e2e share (calques / manuelle).
+Vérification : `npm run verify` ✅ (171 unitaires ; 76 e2e dont share palette calques/manuelle). Contrôle visuel : avant/après ouverture du lien — select Palette = « Automatique d’après les calques » (`media/visuel-share-palette-calques-avant.png` / `apres.png`).
+Décisions : D56
+Reste / risques : aucun ; empreintes liens réels / golden / v1ShareDefaults / v8-layers inchangés.

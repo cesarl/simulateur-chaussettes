@@ -4,7 +4,12 @@ import { getState, redo, subscribe, undo } from '../state';
 
 export function mountProjectBar(
   host: HTMLElement,
-  actions: { copyShareLink: () => void | Promise<void>; openLibrary?: () => void },
+  actions: {
+    copyShareLink: () => void | Promise<void>;
+    openLibrary?: () => void;
+    onToggleView?: (which: '2d' | '3d') => void;
+    getViewVisibility?: () => { view2d: boolean; view3d: boolean };
+  },
 ): { sync: () => void } {
   host.replaceChildren();
   const body = document.createElement('div');
@@ -58,6 +63,35 @@ export function mountProjectBar(
 
   body.append(title, undoBtn, redoBtn, copy, openBtn, saveBtn, libBtn);
   host.appendChild(body);
+
+  // T64 — bascules 2D / 3D (mode ?dev seulement ; la barre est déjà hidden hors dev).
+  if (actions.onToggleView) {
+    const toggle2d = document.createElement('button');
+    toggle2d.type = 'button';
+    toggle2d.dataset.testid = 'ctl-view-2d';
+    toggle2d.textContent = '2D';
+    const toggle3d = document.createElement('button');
+    toggle3d.type = 'button';
+    toggle3d.dataset.testid = 'ctl-view-3d';
+    toggle3d.textContent = '3D';
+    const syncToggles = (): void => {
+      const v = actions.getViewVisibility?.() ?? { view2d: true, view3d: true };
+      toggle2d.setAttribute('aria-pressed', v.view2d ? 'true' : 'false');
+      toggle3d.setAttribute('aria-pressed', v.view3d ? 'true' : 'false');
+      toggle2d.classList.toggle('active', v.view2d);
+      toggle3d.classList.toggle('active', v.view3d);
+    };
+    toggle2d.addEventListener('click', () => {
+      actions.onToggleView?.('2d');
+      syncToggles();
+    });
+    toggle3d.addEventListener('click', () => {
+      actions.onToggleView?.('3d');
+      syncToggles();
+    });
+    body.append(toggle2d, toggle3d);
+    syncToggles();
+  }
 
   function sync(): void {
     const { design } = getState();

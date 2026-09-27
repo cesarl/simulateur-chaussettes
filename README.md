@@ -36,26 +36,37 @@ Premier lancement des tests navigateur : `npx playwright install chromium`.
 
 Toutes les valeurs de tailles (aiguilles, rangs par zone, jauge) et les limites machine sont dans [`config/sizes.json`](config/sizes.json). Elles sont **provisoires** jusqu'à confirmation du fabricant.
 
-## Utilisation (V7 — calques)
+## Utilisation (V8 — calques + retours)
 
 1. Lancer `npm run dev` et ouvrir l'adresse affichée (par défaut `http://localhost:5173`).
-2. **Visionneuse** : uniquement la 3D. Pour les réglages : `/?dev` (puis l’URL perd `?dev` ; le mode reste actif). Bouton **Quitter le mode dev** en bas du panneau.
-3. **Mode technique (`?dev`)** : grille CSS — vue à plat | vue 3D | options (onglets Calque / Chaussette / Décor / Export) | **dock des calques** en bas.
-4. **Calques** : Fond (toujours en bas) + Motifs (carreaux de ciment) + Images (PNG/SVG libres). Masquer, verrouiller, réordonner, renommer. Jusqu’à 16 calques.
-5. **Bibliothèque** (barre projet ou « + Motif » / « + Image ») : collections du catalogue et images du projet ; import PNG/SVG embarqué dans le `.json`.
-6. **Poignées** sur la vue 2D : déplacer / tourner / redimensionner une Image ; décaler / bande un Motif.
-7. **Copier le lien** : écrit `#p=2.…` (diff compact). Les anciens liens `#p=1.…` restent lisibles. Images importées → envoyer le fichier projet `.json`.
-8. **Projet** : format version 3 (`design` en calques + tiles/assets utilisés). Lecture v1/v2/v3.
-9. **Exports** : cocher les vues puis exporter. Raccourcis 3D : R / F / T / E / D / I.
+2. **Visionneuse** : uniquement la 3D. Pour les réglages : `/?dev` (puis l’URL perd `?dev` ; le mode reste actif). Bouton **Quitter le mode dev** dans l’onglet **Global**.
+3. **Mode technique (`?dev`)** : grille CSS — vue à plat | vue 3D | options (onglets Calque / Chaussette / Décor / Export / **Global**) | **dock des calques** en bas.
+4. **Vues 2D / 3D** : boutons bascule dans la barre projet (choix mémorisé). Masquer une vue libère sa place ; les deux masquées → options + dock seulement.
+5. **Repères** (vue 2D) : traits pointillés Intérieur / Dos / Extérieur / Devant ; aimantation au glisser d’image (± 2 mailles). Bouton « Repères » mémorisé.
+6. **Calques** : Fond (toujours en bas) + Motifs + Images. Masquer, verrouiller, réordonner, renommer. Jusqu’à 16 calques. Le **Fond** colore aussi le pied uni (plus de « Couleur du pied »).
+7. **Bibliothèque** (barre projet ou « + Motif » / « + Image ») :
+   - Collections du catalogue ;
+   - section **Bibliothèque** (images publiques sous `bibliotheque-images/`, ex. Logo) — passent dans le lien de partage ;
+   - Images du projet (PNG/SVG embarqués dans le `.json`).
+8. **Couleurs d’un calque** : lignes avec pastille, nom/code, **œil** (transparence). Sur une Image, **Remplacer…** choisit un fil déjà sur la chaussette ou du nuancier.
+9. **Poignées** sur la vue 2D : déplacer / tourner / redimensionner une Image (cadre correct sous le talon) ; décaler / bande un Motif.
+10. **Copier le lien** : `#p=2.…`. Images bibliothèque OK ; images importées → fichier projet `.json`.
+11. **Projet** : format version 3. Lecture v1/v2/v3.
+12. **Exports** : cocher les vues puis exporter. Raccourcis 3D : R / F / T / E / D / I.
 
 Les modes séparés « Carreaux » / « Composition » de V6 sont remplacés par la pile de calques (empreintes golden T41 et liens réels inchangés).
 
+### Ajouter une image à la bibliothèque publique
+
+1. Déposer le fichier (SVG de préférence, sinon PNG) dans [`bibliotheque-images/`](bibliotheque-images/).
+2. Ajouter une ligne dans `bibliotheque-images/images.json` (`id`, `nom`, `fichier`, `categorie`).
+3. Lancer `npm run sync:local` (copie vers `public/images/` + `index.json`), puis committer.
+
 ## Partage et limites
 
-- Lien `#p=2.` : état sans images embarquées. Trop long → message ; préférer le `.json`.
-- Palette « automatique d’après les calques » : si le total dépasse la limite machine, bandeau + « Réduire à N couleurs ».
-- Pas de motif sur bord-côte, talon, pointe. Couleurs transparentes par calque pour laisser voir le dessous.
-
+- Lien `#p=2.` : état sans images embarquées (les images **bibliothèque** y passent). Trop long → message ; préférer le `.json`.
+- Palette unique (`resolveStackPalette`) : le bandeau n’apparaît que si les couleurs **visibles** dépassent la limite machine.
+- Pas de motif sur bord-côte, talon, pointe. Œil barré sur une couleur de calque pour laisser voir le dessous.
 
 ## Collections locales
 
@@ -76,8 +87,8 @@ Une chaussette = **pile de calques** (Fond → Motifs → Images) :
 | Calque | Rôle |
 |---|---|
 | **Fond** | Une couleur, toujours en bas, non masquable |
-| **Motif** | Carreaux (collection ou importés) : calepinage, taille, raccord, bande de rangs, couleurs transparentes |
-| **Image** | PNG/SVG libre : poignées souris, frise, miroir, transparence |
+| **Motif** | Carreaux (collection ou importés) : calepinage, taille, raccord, bande de rangs, œil par couleur |
+| **Image** | PNG/SVG libre ou bibliothèque publique : poignées souris, frise, miroir, œil, Remplacer… |
 
 Le mode **Composition** V6 n’existe plus : les images sont des calques Image. Les empreintes golden (T41) et les deux liens réels de César restent identiques.
 

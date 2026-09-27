@@ -4,8 +4,11 @@ import { loadCompositionImages } from './io/compositionImages';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
-import { createMotifRgbCache, computeStackRgb, stackPaletteIfEnabled } from './core/stackCompute';
+import { createMotifRgbCache, computeStackRgb, tilesForMotifLayer } from './core/stackCompute';
 import {
+  dirtyRowsForImage,
+  effectiveZones,
+  fondVisible,
   layerKeyColors,
   primaryMotifLayer,
   renderStack,
@@ -13,6 +16,8 @@ import {
   imageGizmo,
   motifGizmo,
   layerAtStitch,
+  type ImageLayer,
+  type MotifLayer,
   type SockDesignV2,
   type StackLayer,
 } from './core/layers';
@@ -72,9 +77,9 @@ import { countIsolatedStitches } from './core/compositionAids';
 import { composeGrid, gridFingerprint, rowRanges } from './core/grid';
 import { motifRows } from './core/layout';
 import {
-  analyzeStackPaletteGuard,
   firstFloatLayerHint,
   firstIsolatedLayerHint,
+  planStackPalette,
   reduceStackPaletteQuantize,
 } from './core/stackPaletteGuard';
 import * as THREE from 'three';
@@ -145,7 +150,14 @@ if (!(flatCanvasEl instanceof HTMLCanvasElement)) {
   throw new Error('Canvas vue 2D introuvable');
 }
 mountFlatGizmos(flat, flatCanvasEl, {
-  getDesign: () => getState().design,
+  getDesign: () => {
+    const design = getState().design;
+    if (!dragLive?.pending) return design;
+    return {
+      ...design,
+      layers: design.layers.map((l) => (l.id === dragLive!.pending!.id ? dragLive!.pending! : l)),
+    } as SockDesignV2;
+  },
   getSelectedId: () => getState().selectedLayerId,
   getStackOwner: () => stackOwner,
   getImages: () => compositionImages,
@@ -153,6 +165,48 @@ mountFlatGizmos(flat, flatCanvasEl, {
   patchImage: patchImageLayer,
   patchMotif: patchLayerCoalesced,
   setMotifBounds,
+  onDragStart(kind, id, start) {
+    motifRgbCache.resetStats();
+    dragLive = {
+      kind,
+      id,
+      beforeImage: kind === 'image' && start.kind === 'image' ? { ...start } : null,
+      lastStack: null,
+      raf: null,
+      pending: start,
+      frames: 0,
+      computeMsSum: 0,
+      last3dMs: 0,
+    };
+    dragStats.dragFrames = 0;
+    dragStats.dragComputeMsAvg = 0;
+  },
+  onDragTick(_kind, _id, next) {
+    if (!dragLive) return;
+    dragLive.pending = next;
+    scheduleDragFrame();
+  },
+  onDragEnd(kind, id, next) {
+    if (dragLive?.raf !== null && dragLive) {
+      cancelAnimationFrame(dragLive.raf);
+      dragLive.raf = null;
+    }
+    const session = dragLive;
+    dragLive = null;
+    // Un seul commit historique au lâcher (coalesce).
+    if (kind === 'image' && next.kind === 'image') {
+      patchImageLayer(id, next, true);
+    } else if (next.kind === 'motif') {
+      patchLayerCoalesced(id, next);
+    }
+    syncMesh(grid);
+    if (session) {
+      dragStats.dragFrames = session.frames;
+      dragStats.dragComputeMsAvg =
+        session.frames > 0 ? session.computeMsSum / session.frames : 0;
+    }
+    publish();
+  },
 });
 const compositionEditor = mountCompositionEditor(view3d);
 const viewer = mountViewerBar(view3d, {
@@ -176,19 +230,28 @@ if (toolbar2dEl instanceof HTMLElement) {
   label.className = 'zone-label';
   label.textContent = 'Vue à plat';
   toolbar2dEl.prepend(label);
+  const guidesBtn = document.createElement('button');
+  guidesBtn.type = 'button';
+  guidesBtn.dataset.testid = 'ctl-face-guides';
+  guidesBtn.textContent = 'Repères';
+  guidesBtn.setAttribute('aria-pressed', flat.getFaceGuides() ? 'true' : 'false');
+  guidesBtn.classList.toggle('active', flat.getFaceGuides());
+  guidesBtn.addEventListener('click', () => {
+    const next = !flat.getFaceGuides();
+    flat.setFaceGuides(next);
+    guidesBtn.setAttribute('aria-pressed', next ? 'true' : 'false');
+    guidesBtn.classList.toggle('active', next);
+  });
+  toolbar2dEl.append(guidesBtn);
 }
+
+applyShellMode(devMode);
 
 const shareHint = document.createElement('p');
 shareHint.className = 'share-hint';
 shareHint.dataset.testid = 'share-hint';
 shareHint.hidden = true;
 view3d.appendChild(shareHint);
-
-mountProjectBar(projectBar, {
-  copyShareLink,
-  openLibrary: () => library.open('collections'),
-});
-
 function showShareHint(message: string | null): void {
   if (!message) {
     shareHint.hidden = true;
@@ -231,6 +294,42 @@ async function copyShareLink(): Promise<void> {
   }
 }
 
+let view2dVisible = true;
+let view3dVisible = true;
+try {
+  if (localStorage.getItem('sim-view-2d') === '0') view2dVisible = false;
+  if (localStorage.getItem('sim-view-3d') === '0') view3dVisible = false;
+} catch {
+  /* ignore */
+}
+
+function applyViewVisibility(): void {
+  app.classList.toggle('hide-2d', !view2dVisible);
+  app.classList.toggle('hide-3d', !view3dVisible);
+  try {
+    localStorage.setItem('sim-view-2d', view2dVisible ? '1' : '0');
+    localStorage.setItem('sim-view-3d', view3dVisible ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+  if (view3dVisible) {
+    window.dispatchEvent(new Event('resize'));
+    handle.requestRender();
+  }
+}
+
+mountProjectBar(projectBar, {
+  copyShareLink,
+  openLibrary: () => library.open('collections'),
+  onToggleView: (which) => {
+    if (which === '2d') view2dVisible = !view2dVisible;
+    else view3dVisible = !view3dVisible;
+    applyViewVisibility();
+  },
+  getViewVisibility: () => ({ view2d: view2dVisible, view3d: view3dVisible }),
+});
+applyViewVisibility();
+
 function applyShellMode(dev: boolean): void {
   devMode = dev;
   app.classList.toggle('viewer-mode', !dev);
@@ -263,7 +362,12 @@ function applyShellMode(dev: boolean): void {
 
 applyShellMode(devMode);
 
-let grid: StitchGrid = composeGrid(getState().design.dimensions, getState().design.zones, null, []);
+let grid: StitchGrid = composeGrid(
+  getState().design.dimensions,
+  effectiveZones(getState().design),
+  null,
+  [],
+);
 let patternPalette: string[] = [];
 let patternCounts: number[] = [];
 let computeId = 0;
@@ -282,6 +386,119 @@ let stackOwner: Int16Array | null = null; // sélection 2D (T56)
 /** Derniers pixels par calque Motif et couleurs de fil : vignettes du dock. */
 let lastMotifRgb = new Map<string, Uint8ClampedArray>();
 let lastKeyColors = new Map<string, readonly string[]>();
+
+/** Session de glisser fluide (T62) : recalcul partiel, pas d’autosave / lien / historique. */
+type DragLive = {
+  kind: 'image' | 'motif';
+  id: string;
+  beforeImage: ImageLayer | null;
+  lastStack: { rgb: Uint8ClampedArray; owner: Int16Array } | null;
+  raf: number | null;
+  pending: ImageLayer | MotifLayer | null;
+  frames: number;
+  computeMsSum: number;
+  last3dMs: number;
+};
+let dragLive: DragLive | null = null;
+const dragStats = { dragFrames: 0, dragComputeMsAvg: 0 };
+
+function suppressSideEffects(): boolean {
+  return dragLive !== null;
+}
+
+function scheduleDragFrame(): void {
+  if (!dragLive || dragLive.raf !== null) return;
+  dragLive.raf = requestAnimationFrame(() => {
+    if (!dragLive) return;
+    dragLive.raf = null;
+    runDragCompute();
+  });
+}
+
+function runDragCompute(): void {
+  if (!dragLive?.pending) return;
+  const started = performance.now();
+  const { design } = getState();
+  const pending = dragLive.pending;
+  const layers = design.layers.map((l) => (l.id === pending.id ? pending : l));
+  const previewDesign = { ...design, layers } as SockDesignV2;
+  const gauge = stackGauge(previewDesign.dimensions, previewDesign.zones);
+
+  // Image : Motifs inchangés → lastMotifRgb, aucun motifLayerRgb.
+  // Motif : le cache ne recalcule que le calque touché.
+  let motifRgb = lastMotifRgb;
+  if (dragLive.kind === 'motif') {
+    const { tiles, calepPresets } = getState();
+    motifRgb = motifRgbCache.getMotifRgb(
+      previewDesign,
+      (layer) => tilesForMotifLayer(layer, tiles),
+      calepPresets,
+    );
+    lastMotifRgb = motifRgb;
+  }
+
+  let stackResult: { rgb: Uint8ClampedArray; owner: Int16Array };
+  if (dragLive.kind === 'image' && pending.kind === 'image' && dragLive.beforeImage) {
+    const img = compositionImages.get(assetKey(pending.asset));
+    const rows = img
+      ? dirtyRowsForImage(dragLive.beforeImage, pending, img, gauge)
+      : ([0, gauge.rows] as [number, number]);
+    stackResult = renderStack(
+      {
+        layers,
+        gauge,
+        motifRgb,
+        images: compositionImages,
+        keyColors: lastKeyColors,
+      },
+      dragLive.lastStack ? { rows, into: dragLive.lastStack } : { rows },
+    );
+  } else {
+    stackResult = renderStack({
+      layers,
+      gauge,
+      motifRgb,
+      images: compositionImages,
+      keyColors: lastKeyColors,
+    });
+  }
+  dragLive.lastStack = stackResult;
+  stackOwner = stackResult.owner;
+
+  // Aperçu 2D immédiat depuis le RVB empilé (sans quantize).
+  flat.paintMotifRgbPreview(stackResult.rgb, gauge.needles, gauge.rows);
+
+  const now = performance.now();
+  // 3D au plus 8×/s : quantize + compose + texture.
+  if (now - dragLive.last3dMs >= 125) {
+    const palette =
+      patternPalette.length > 0
+        ? patternPalette
+        : design.quantize.palette.length > 0
+          ? design.quantize.palette
+          : ['#f4f1ea', '#1f3a5f'];
+    const reduced = quantize(stackResult.rgb, design.dimensions.needles, {
+      ...design.quantize,
+      paletteMode: 'manuelle',
+      palette,
+      maxColors: Math.max(2, Math.min(8, palette.length)),
+      despeckle: false,
+    });
+    grid = composeGrid(
+      design.dimensions,
+      effectiveZones(previewDesign),
+      reduced.indices,
+      reduced.palette,
+    );
+    syncMesh(grid);
+    dragLive.last3dMs = now;
+  }
+
+  dragLive.frames += 1;
+  dragLive.computeMsSum += now - started;
+  dragStats.dragFrames = dragLive.frames;
+  dragStats.dragComputeMsAvg = dragLive.computeMsSum / Math.max(1, dragLive.frames);
+}
 
 /** Clé de cache d’une vignette : rien ne change tant que le calque et la jauge sont identiques. */
 function thumbKey(layer: StackLayer, design: SockDesignV2): string {
@@ -482,6 +699,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 function syncMesh(next: StitchGrid): void {
+  if (!view3dVisible) return;
   const { design, knitFidelity, footSide } = getState();
   const key = surfaceKeyOf(design.dimensions, design.zones, footSide);
   const shape = shapeFromDesign(design.dimensions, design.zones, footSide);
@@ -661,6 +879,7 @@ function publish(): void {
           rotate: rotate ?? undefined,
           scaleCorner: br ?? undefined,
           imageCenter: center ?? undefined,
+          motifCorners: gz.corners.map(([c, r]) => [c, r] as [number, number]),
         };
       }
       const gz = motifGizmo(layer, g);
@@ -683,6 +902,17 @@ function publish(): void {
     flatMotifCenter: (col, motifRow) => flat.clientAtMotifStitch(col, motifRow),
     flatRevealMotif: (col, motifRow) => flat.revealMotifStitch(col, motifRow),
     motifStitchFromLocal: (px, py) => flat.clientToMotifStitch(px, py),
+    stats: {
+      get dragFrames() {
+        return dragStats.dragFrames;
+      },
+      get dragComputeMsAvg() {
+        return dragStats.dragComputeMsAvg;
+      },
+      get motifRgbComputes() {
+        return motifRgbCache.stats.motifRgbComputes;
+      },
+    },
   };
   window.__SIM__ = hook;
 }
@@ -725,53 +955,58 @@ function recompute(): void {
   lastMotifRgb = motifRgb;
   lastKeyColors = keyColors;
 
-  if (rgb) {
-    let quantizeSettings = { ...design.quantize };
-    const fromLayers = stackPaletteIfEnabled(design, motifRgb, compositionImages, keyColors, rgb);
-    if (fromLayers) {
-      quantizeSettings = {
-        ...quantizeSettings,
-        paletteMode: 'manuelle',
-        palette: fromLayers.palette,
-        maxColors: fromLayers.maxColors,
-      };
-    } else {
-      // Collection sur Motif primaire : palette fils (comportement V6).
-      const motif = primaryMotifLayer(design.layers);
-      const motifSrc = motif?.source;
-      if (motifSrc?.kind === 'collection' && catalogue) {
-        const collection = catalogue.collections.find((c) => c.id === motifSrc.collectionId);
-        if (collection && !isPngCollection(collection) && Object.keys(motifSrc.colors).length > 0) {
-          const yarns = yarnColors(collection, motifSrc.colors, nuancierMap(catalogue));
-          quantizeSettings = {
-            ...quantizeSettings,
-            paletteMode: 'manuelle',
-            palette: yarns.map((y) => y.hex),
-            maxColors: Math.max(2, Math.min(8, yarns.length || 2)),
-          };
-        }
+  const zonesEff = effectiveZones(design);
+  const fondLayer = design.layers[0];
+  const fondColor = fondLayer?.kind === 'fond' ? fondLayer.color : design.zones.footColor;
+
+  let primaryYarns: string[] | null = null;
+  {
+    const motif = primaryMotifLayer(design.layers);
+    const motifSrc = motif?.source;
+    if (motifSrc?.kind === 'collection' && catalogue) {
+      const collection = catalogue.collections.find((c) => c.id === motifSrc.collectionId);
+      if (collection && !isPngCollection(collection) && Object.keys(motifSrc.colors).length > 0) {
+        primaryYarns = yarnColors(collection, motifSrc.colors, nuancierMap(catalogue)).map((y) => y.hex);
       }
     }
-    const reduced = quantize(rgb, design.dimensions.needles, quantizeSettings);
+  }
+
+  if (rgb) {
+    const plan = planStackPalette({
+      design,
+      input: { motifRgb, images: compositionImages, keyColors },
+      rendered: rgb,
+      primaryYarns,
+      fondColor,
+      fondVisible: fondVisible(owner),
+      limits: MACHINE_LIMITS,
+    });
+    const reduced = quantize(rgb, design.dimensions.needles, plan.quantizeSettings);
     pattern = reduced.indices;
     patternPalette = reduced.palette;
     patternCounts = reduced.counts;
+    renderStackPaletteGuard(plan.guard, () => {
+      const patch = reduceStackPaletteQuantize(rgb, MACHINE_LIMITS);
+      update({ design: { quantize: { ...getState().design.quantize, ...patch } } });
+    });
+  } else {
+    renderStackPaletteGuard(null, () => undefined);
   }
 
-  grid = composeGrid(design.dimensions, design.zones, pattern, patternPalette);
+  grid = composeGrid(design.dimensions, zonesEff, pattern, patternPalette);
   flat.setGrid(grid, stitchAspect(design.dimensions));
   const layout = editingLayoutSettings(design, tiles);
-  const report = checkFabrication(grid, layout, design.zones, MACHINE_LIMITS, design.quantize.maxFloat);
+  const report = checkFabrication(grid, layout, zonesEff, MACHINE_LIMITS, design.quantize.maxFloat);
   flat.setFloatMask(report.floatMask);
 
   const floatLayerHint =
     !report.floatsOk && stackOwner
-      ? firstFloatLayerHint(report.floatMask, grid, design.zones, stackOwner, design.layers)
+      ? firstFloatLayerHint(report.floatMask, grid, zonesEff, stackOwner, design.layers)
       : null;
 
   let checkDetail: { tooFine: boolean; isolatedCount: number; layerHint?: string | null } | null = null;
   if (pattern) {
-    const motifH = motifRows(design.dimensions, design.zones);
+    const motifH = motifRows(design.dimensions, zonesEff);
     const isolated = countIsolatedStitches(pattern, design.dimensions.needles, motifH);
     if (isolated.isolatedCount > 0) {
       const layerHint = stackOwner
@@ -782,21 +1017,6 @@ function recompute(): void {
   }
 
   renderChecks(report, checkDetail, { floatLayerHint });
-
-  if (rgb) {
-    const guard = analyzeStackPaletteGuard(
-      design,
-      { motifRgb, images: compositionImages, keyColors },
-      rgb,
-      MACHINE_LIMITS,
-    );
-    renderStackPaletteGuard(guard, () => {
-      const patch = reduceStackPaletteQuantize(rgb, MACHINE_LIMITS);
-      update({ design: { quantize: { ...getState().design.quantize, ...patch } } });
-    });
-  } else {
-    renderStackPaletteGuard(null, () => undefined);
-  }
 
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
@@ -994,6 +1214,7 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
 let autosaveAssetsOmitted = false;
 
 function scheduleSave(): void {
+  if (suppressSideEffects()) return;
   window.clearTimeout(saveTimer);
   saveTimer = window.setTimeout(() => {
     const { design, tiles, embeddedAssets } = getState();
@@ -1033,6 +1254,7 @@ function scheduleSave(): void {
 
 let shareTimer: number | undefined;
 function scheduleShareHash(): void {
+  if (suppressSideEffects()) return;
   window.clearTimeout(shareTimer);
   shareTimer = window.setTimeout(() => {
     const { design, embeddedAssets } = getState();
@@ -1085,7 +1307,7 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
               name: design.name,
               dimensions: design.dimensions,
               zones: design.zones,
-              quantize: { ...design.quantize, paletteFromLayers: false },
+              quantize: design.quantize,
               decor: design.decor,
               layers: design.layers,
             },
@@ -1133,7 +1355,7 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
           name: design.name,
           dimensions: design.dimensions,
           zones: design.zones,
-          quantize: { ...design.quantize, paletteFromLayers: false },
+          quantize: design.quantize,
           decor: design.decor,
           layers: design.layers,
         },
@@ -1151,7 +1373,7 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
         name: design.name,
         dimensions: design.dimensions,
         zones: design.zones,
-        quantize: { ...design.quantize, paletteFromLayers: false },
+        quantize: design.quantize,
         decor: design.decor,
         layers: design.layers,
       },
@@ -1201,6 +1423,7 @@ async function boot(): Promise<void> {
     tabs: optionsTabs,
     layerKeyColors: layerColorsOf,
     drawAssetPreview,
+    sockPalette: () => patternPalette,
     exportImages: (request) => {
       const { design, footSide } = getState();
       const shape = shapeFromDesign(design.dimensions, design.zones, footSide);

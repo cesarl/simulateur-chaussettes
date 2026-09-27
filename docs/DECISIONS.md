@@ -299,3 +299,39 @@ Choix : B, plus les décisions techniques suivantes.
 - Le bouton « Bibliothèque » de la barre projet est branché sur ce dialogue (défaut V6 n° 2 : « Bibliothèque ne fait rien de visible »).
 - Le Fond n’a ni œil, ni menu, ni glisser ; il garde son cadenas.
 Conséquence : l’ajout de calques est testable à la souris dès T54 ; T57 remplace le contenu du dialogue sans toucher au dock. Limite connue : la palette reste celle du design (`paletteFromLayers`) — un projet migré (palette exacte) ne prend pas automatiquement les couleurs d’un calque ajouté ; T58 traite la palette multi-calques.
+
+## D51 — planStackPalette unique + Fond = pied (T60)
+Contexte : V7 avait deux comptes de couleurs (bandeau vs réduction) et un réglage « Couleur du pied » distinct du Fond.
+Options : A) faire dépendre `analyzeStackPaletteGuard` de `resolveStackPalette` ; B) nouvelle fonction `planStackPalette` qui produit réglages quantize + garde-fou.
+Choix : B — `planStackPalette` dans `stackPaletteGuard.ts` ; `analyzeStackPaletteGuard` conservé tel quel (référence V7 dans `v8-layers.test.ts`). CSS : `[hidden]` explicite sur `.stack-palette-banner` car `display: flex` annulait le masquage UA.
+Conséquence : bandeau ssi `pal.overLimit` ; pied sans motif = couleur du Fond via `effectiveZones` ; `zones.footColor` reste sérialisé mais n’est plus éditable.
+
+## D52 — Cadre 2D scindé au talon (T61)
+Contexte : V7 ajoutait seulement le bord-côte (`motifOriginRow`) → cadre décalé sous le talon.
+Options : A) offset = cuff+leg+heel à partir d'un seuil ; B) `motifYToGridY` / `gridYToMotifY` déjà dans `layers.ts`.
+Choix : B — conversions continues partout (souris, coins, reveal) ; cadre image clipé en deux polygones à `legH` si chevauchement ; poignées non clipées.
+Conséquence : un glisser qui traverse le talon reste cohérent avec le rendu grille ; le talon n'est plus une zone « morte » pour la souris (collé au 1er rang du pied).
+
+## D53 — Glisser 2D : aperçu RVB + quantize 8 Hz (T62)
+Contexte : 80 000 fillRect/frame et un `recompute` à chaque mousemove figeaient la vue.
+Options : A) WebWorker ; B) ImageData + pipeline drag dédié (dirty rows, rAF, pas d’autosave).
+Choix : B — pendant le glisser, peindre le RVB empilé directement ; quantize/compose/3D au plus 8×/s ; un commit store au lâcher (`coalesce`). Overlay canvas pour les poignées.
+Conséquence : `dragComputeMsAvg` passe sous 25 ms ; les Motifs ne sont pas recalculés pendant un glisser d’image.
+
+## D54 — Bibliothèque d’images publique (T66)
+Contexte : les images importées (embarquées) ne passent pas dans le lien de partage ; César veut un logo et d’autres assets publics.
+Options : A) tout embarquer en base64 dans le lien ; B) AssetRef `bibliotheque` + fichiers sous `public/images/` synchronisés depuis `bibliotheque-images/`.
+Choix : B — `assetKey` = `b:<id>` ; sync via `syncBibliothequeImages.mjs` appelé par `sync-carreaux` / `sync:local` ; entrée absente → avertissement, sync continue. Section admin Images reportée (bonus).
+Conséquence : Logo et futures images passent dans `#p=2.` sans message « images importées ».
+
+## D55 — Lignes de couleur œil + recolor Image (T67)
+Contexte : pastilles damier peu lisibles ; besoin de remplacer une couleur d’image par un fil.
+Options : A) garder les pastilles + menu contextuel ; B) ligne unifiée (œil + Remplacer…).
+Choix : B — `colorRow.ts` partagé Motif/Image ; zones Motif reçoivent le même œil ; dialogue modal pour le recolor (palette sock + nuancier public + origine).
+Conséquence : `transparentColors` / `recolor` inchangés en cœur ; UI FR avec `layer-color-*` stables.
+
+## D56 — paletteFromLayers dans le lien `#p=2.`
+Contexte : le select « Automatique d’après les calques » était perdu à l’ouverture d’un lien partagé.
+Options : A) forcer `false` à l’apply (comportement V7, incorrect pour V8) ; B) sérialiser le booléen et le restaurer, défaut rétrocompat `false` si absent.
+Choix : B — `designV2ToShareJson` inclut déjà `quantize` ; `frozenDefaultsV2` et `shareJsonToDesignV2` fixent `paletteFromLayers: false` par défaut ; `migrateDesignV1` aussi ; `applyShare` n’écrase plus le champ ; `quantizeForShareApply` normalise `=== true`.
+Conséquence : un lien V2 avec calques restaure le mode ; un ancien lien sans le champ reste en réduction/manuelle. `v1ShareDefaults.json` inchangé (pas de version 3 du lien).

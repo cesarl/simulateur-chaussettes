@@ -6,6 +6,7 @@ import type { RasterImage } from '../core/composition';
 import {
   dragImage,
   dragMotif,
+  faceGuides,
   imageGizmo,
   layerAtStitch,
   motifGizmo,
@@ -18,6 +19,8 @@ import {
   type SockDesignV2,
   type StackLayer,
 } from '../core/layers';
+import { rowRanges } from '../core/grid';
+import type { SockDimensions, ZoneSettings } from '../core/types';
 import type { FlatHandle } from './flatView';
 
 const HANDLE_PX = 10;
@@ -31,6 +34,10 @@ export interface FlatGizmoDeps {
   patchImage: (id: string, patch: Partial<ImageLayer>, coalesce: boolean) => void;
   patchMotif: (id: string, patch: Partial<MotifLayer>, coalesce: boolean) => void;
   setMotifBounds: (id: string, bounds: ReturnType<typeof setMotifBand>, coalesce: boolean) => void;
+  /** Glisser fluide (T62) : démarrage / tick rAF / lâcher. */
+  onDragStart?: (kind: 'image' | 'motif', id: string, start: ImageLayer | MotifLayer) => void;
+  onDragTick?: (kind: 'image' | 'motif', id: string, next: ImageLayer | MotifLayer) => void;
+  onDragEnd?: (kind: 'image' | 'motif', id: string, next: ImageLayer | MotifLayer) => void;
 }
 
 type ActiveDrag =
@@ -79,6 +86,95 @@ function canEdit(layer: StackLayer | undefined): layer is MotifLayer | ImageLaye
   return true;
 }
 
+/** Hauteur de la tige en rangs de motif (frontière avant le saut du talon). */
+function legMotifHeight(dims: SockDimensions, zones: ZoneSettings): number {
+  const r = rowRanges(dims, zones);
+  return r.leg.end - r.leg.start;
+}
+
+/**
+ * Découpe un polygone motif en deux (dessus / dessous du talon) par clipping
+ * horizontal à `legH` (Sutherland–Hodgman).
+ */
+function clipMotifPolyAtHeel(
+  corners: Array<[number, number]>,
+  legH: number,
+  side: 'above' | 'below',
+): Array<[number, number]> {
+  if (corners.length === 0) return [];
+  const keep = (y: number): boolean => (side === 'above' ? y < legH : y >= legH);
+  const out: Array<[number, number]> = [];
+  for (let i = 0; i < corners.length; i++) {
+    const cur = corners[i]!;
+    const prev = corners[(i + corners.length - 1) % corners.length]!;
+    const curIn = keep(cur[1]);
+    const prevIn = keep(prev[1]);
+    if (curIn !== prevIn) {
+      const t = (legH - prev[1]) / (cur[1] - prev[1] || 1e-9);
+      const ix = prev[0] + t * (cur[0] - prev[0]);
+      // Côté dessus : juste sous legH pour rester dans la tige ; dessous : legH = 1er rang pied.
+      const iy = side === 'above' ? legH - 1e-4 : legH;
+      out.push([ix, iy]);
+    }
+    if (curIn) out.push(cur);
+  }
+  return out;
+}
+
+function strokeMotifPoly(
+  ctx: CanvasRenderingContext2D,
+  flat: FlatHandle,
+  corners: Array<[number, number]>,
+): void {
+  const pts = corners
+    .map(([col, row]) => flat.clientAtMotifStitch(col, row))
+    .filter((p): p is { x: number; y: number } => p !== null);
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  });
+  ctx.closePath();
+  ctx.stroke();
+}
+
+/** Cadre image : un ou deux morceaux s'il chevauche le talon. Poignées = coins réels. */
+function drawImageFrame(
+  ctx: CanvasRenderingContext2D,
+  flat: FlatHandle,
+  dims: SockDimensions,
+  zones: ZoneSettings,
+  corners: Array<[number, number]>,
+): Array<{ x: number; y: number }> {
+  const legH = legMotifHeight(dims, zones);
+  const ys = corners.map(([, y]) => y);
+  const straddles = Math.min(...ys) < legH && Math.max(...ys) > legH;
+  ctx.save();
+  ctx.strokeStyle = '#b5462f';
+  ctx.lineWidth = 2;
+  if (straddles) {
+    strokeMotifPoly(ctx, flat, clipMotifPolyAtHeel(corners, legH, 'above'));
+    strokeMotifPoly(ctx, flat, clipMotifPolyAtHeel(corners, legH, 'below'));
+  } else {
+    strokeMotifPoly(ctx, flat, corners);
+  }
+  const handlePts = corners
+    .map(([col, row]) => flat.clientAtMotifStitch(col, row))
+    .filter((p): p is { x: number; y: number } => p !== null);
+  for (const p of handlePts) {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#b5462f';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.restore();
+  return handlePts;
+}
+
 export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, deps: FlatGizmoDeps): () => void {
   let active: ActiveDrag | null = null;
   let panning = false;
@@ -100,49 +196,30 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
     const layer = layerById(design.layers, selectedId);
     if (!canEdit(layer)) return;
     const g = stackGauge(design.dimensions, design.zones);
-    const ctx = canvas.getContext('2d');
+    const ctx = flat.getOverlayContext();
     if (!ctx) return;
 
     if (layer.kind === 'image') {
       const gz = imageGizmo(layer, imageSize(layer, deps.getImages()), g);
-      const pts = gz.corners.map(([col, row]) =>
-        flat.clientAtMotifStitch(col, row),
-      ).filter((p): p is { x: number; y: number } => p !== null);
-      if (pts.length < 4) return;
-      ctx.save();
-      ctx.strokeStyle = '#b5462f';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      pts.forEach((p, i) => {
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      ctx.closePath();
-      ctx.stroke();
-      for (const p of pts) {
-        ctx.fillStyle = '#ffffff';
-        ctx.strokeStyle = '#b5462f';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      }
+      const handlePts = drawImageFrame(ctx, flat, design.dimensions, design.zones, gz.corners);
+      if (handlePts.length < 4) return;
       const rot = flat.clientAtMotifStitch(gz.rotate[0], gz.rotate[1]);
-      const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-      const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      const cx = handlePts.reduce((s, p) => s + p.x, 0) / handlePts.length;
+      const cy = handlePts.reduce((s, p) => s + p.y, 0) / handlePts.length;
       if (rot) {
+        ctx.save();
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(rot.x, rot.y);
         ctx.strokeStyle = '#b5462f';
+        ctx.lineWidth = 2;
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(rot.x, rot.y, 6, 0, Math.PI * 2);
         ctx.fillStyle = '#b5462f';
         ctx.fill();
+        ctx.restore();
       }
-      ctx.restore();
       return;
     }
 
@@ -317,6 +394,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             start: { ...selected },
             from: [st.col + 0.5, st.row + 0.5],
           };
+          deps.onDragStart?.('image', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           event.preventDefault();
           return;
@@ -329,6 +407,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             start: { ...selected },
             from: [st.col + 0.5, st.row + 0.5],
           };
+          deps.onDragStart?.('image', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           event.preventDefault();
           return;
@@ -344,6 +423,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
           const origin: [number, number] = [gz.tile.x, gz.tile.y];
           const startFactor = 1;
           active = { kind: 'motif-scale', id: selected.id, start: { ...selected }, startFactor, origin };
+          deps.onDragStart?.('motif', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           return;
         }
@@ -354,6 +434,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             edge: hit === 'band-haut' ? 'haut' : 'bas',
             band: { from: selected.bounds.fromRow, to: selected.bounds.toRow },
           };
+          deps.onDragStart?.('motif', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           return;
         }
@@ -364,6 +445,7 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
             start: { ...selected },
             from: [st.col + 0.5, st.row + 0.5],
           };
+          deps.onDragStart?.('motif', selected.id, selected);
           canvas.setPointerCapture(event.pointerId);
           return;
         }
@@ -408,12 +490,35 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
 
     if (active.kind === 'image') {
       const g = stackGauge(design.dimensions, design.zones);
-      const patch = dragImage(active.start, g, active.handle, active.from, to, {
+      let patch = dragImage(active.start, g, active.handle, active.from, to, {
         snapDeg: event.shiftKey ? 15 : undefined,
       });
-      deps.patchImage(active.id, patch, true);
-      scheduleHeavy();
-      flat.redraw();
+      // Aimantation aux centres de faces (± 2 mailles) si repères actifs.
+      if (active.handle === 'deplacer' && flat.getFaceGuides?.()) {
+        const nextX = patch.x ?? active.start.x;
+        const centers = faceGuides(g.needles).map((f) => f.col);
+        centers.push(g.needles); // Intérieur côté W
+        let best = nextX;
+        let bestDist = Infinity;
+        for (const c of centers) {
+          let d = Math.abs(nextX - c);
+          d = Math.min(d, g.needles - d);
+          if (d < bestDist) {
+            bestDist = d;
+            best = c;
+          }
+        }
+        if (bestDist <= 2) patch = { ...patch, x: ((best % g.needles) + g.needles) % g.needles };
+      }
+      const next = { ...active.start, ...patch };
+      if (deps.onDragTick) {
+        deps.onDragTick('image', active.id, next);
+        flat.redrawOverlay();
+      } else {
+        deps.patchImage(active.id, patch, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
       return;
     }
 
@@ -421,9 +526,15 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
       const dx = to[0] - active.from[0];
       const dy = to[1] - active.from[1];
       const patch = dragMotif(active.start, [dx, dy]);
-      deps.patchMotif(active.id, patch, true);
-      scheduleHeavy();
-      flat.redraw();
+      const next = { ...active.start, ...patch };
+      if (deps.onDragTick) {
+        deps.onDragTick('motif', active.id, next);
+        flat.redrawOverlay();
+      } else {
+        deps.patchMotif(active.id, patch, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
       return;
     }
 
@@ -437,26 +548,46 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
       const db = Math.hypot(to[0] - cx, to[1] - cy);
       const factor = db / da;
       const patch = scaleMotif(active.start, factor, g);
-      deps.patchMotif(active.id, patch, true);
-      scheduleHeavy();
-      flat.redraw();
+      const next = { ...active.start, ...patch };
+      if (deps.onDragTick) {
+        deps.onDragTick('motif', active.id, next);
+        flat.redrawOverlay();
+      } else {
+        deps.patchMotif(active.id, patch, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
       return;
     }
 
     if (active.kind === 'motif-band') {
       const g = stackGauge(design.dimensions, design.zones);
       const row = Math.round(st.row);
-      const next =
+      const nextBounds =
         active.edge === 'haut'
           ? setMotifBand(g.rows, { from: row, to: active.band.to })
           : setMotifBand(g.rows, { from: active.band.from, to: row });
-      deps.setMotifBounds(active.id, next, true);
-      scheduleHeavy();
-      flat.redraw();
+      const designLayer = layerById(design.layers, active.id);
+      if (designLayer?.kind === 'motif' && deps.onDragTick) {
+        deps.onDragTick('motif', active.id, { ...designLayer, bounds: nextBounds });
+        flat.redrawOverlay();
+      } else {
+        deps.setMotifBounds(active.id, nextBounds, true);
+        scheduleHeavy();
+        flat.redraw();
+      }
     }
   };
 
   const onPointerUp = (): void => {
+    if (active && deps.onDragEnd) {
+      const design = deps.getDesign();
+      const layer = layerById(design.layers, active.id);
+      if (layer && (layer.kind === 'image' || layer.kind === 'motif')) {
+        // getDesign merges pending already during drag; on end pending is the latest.
+        deps.onDragEnd(layer.kind === 'image' ? 'image' : 'motif', active.id, layer);
+      }
+    }
     active = null;
     panning = false;
     flat.setPanMode(false);

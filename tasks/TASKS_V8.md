@@ -33,7 +33,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 
 ---
 
-### [ ] T60 — Brancher la palette unique et le Fond
+### [x] T60 — Brancher la palette unique et le Fond
 
 - `main.ts › recompute()` :
   - calculer une seule fois `const pal = resolveStackPalette({ quantize, suggested: suggestStackPalette(…, rgb), primaryYarns, fondColor, fondVisible: fondVisible(owner), machineMax })` ;
@@ -50,23 +50,23 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Le Fond fait maintenant toujours partie de la palette quand il est visible (mode « fils de la collection »). Il n'est plus remplacé en douce par le fil le plus proche.
 
 **Critères**
-- [ ] Test unitaire (`main`, ou une fonction extraite de `recompute`) : la palette appliquée et le compte du bandeau sont toujours égaux.
-- [ ] e2e `palette-bandeau.spec.ts`, à la souris :
+- [x] Test unitaire (`main`, ou une fonction extraite de `recompute`) : la palette appliquée et le compte du bandeau sont toujours égaux.
+- [x] e2e `palette-bandeau.spec.ts`, à la souris :
   - deux Motifs dont celui du dessus recouvre tout, en mode « d'après les calques » → pas de bandeau ;
   - rendre transparentes des couleurs jusqu'à dépasser 6 couleurs visibles → bandeau ; « Réduire à 6 » → 6 couleurs ;
   - le curseur « Couleurs du motif » est invisible en mode calques et visible en mode manuel.
-- [ ] e2e : décocher « Motif sur le pied », changer la couleur du Fond → le pied de la vue 2D prend cette couleur ; « Couleur du pied » n'existe plus.
+- [x] e2e : décocher « Motif sur le pied », changer la couleur du Fond → le pied de la vue 2D prend cette couleur ; « Couleur du pied » n'existe plus.
 
-### [ ] T61 — Vue 2D : le cadre suit l'image sous le talon
+### [x] T61 — Vue 2D : le cadre suit l'image sous le talon
 
 - Remplacer tous les calculs « rang de motif ↔ rang de la grille » de `flatView.ts` et `flatGizmos.ts` (`motifOriginRow() + …`, `row - motifOriginRow()`) par `motifYToGridY` / `gridYToMotifY` (coordonnées continues : coins, poignées, souris) et `motifRowToGridRow` / `gridRowToMotifRow` (mailles entières).
 - Un cadre d'image qui chevauche le talon se dessine en deux morceaux : le haut au-dessus du talon, le reste sous le talon. C'est ce que fait la grille. Les poignées restent sur les coins réels.
 
 **Critères**
-- [ ] e2e `gizmo-pied.spec.ts`, à la souris : glisser une image sous le talon → toutes les mailles dont `owner` est cette image sont à l'intérieur du cadre dessiné, à 1 maille près ; puis cliquer au centre de l'image → elle est bien sélectionnée.
-- [ ] Capture avant / après (image sur le pied, sélectionnée), décrite.
+- [x] e2e `gizmo-pied.spec.ts`, à la souris : glisser une image sous le talon → toutes les mailles dont `owner` est cette image sont à l'intérieur du cadre dessiné, à 1 maille près ; puis cliquer au centre de l'image → elle est bien sélectionnée.
+- [x] Capture avant / après (image sur le pied, sélectionnée), décrite.
 
-### [ ] T62 — Vue 2D fluide
+### [x] T62 — Vue 2D fluide
 
 - **Dessin** : la grille est peinte dans un `ImageData` à 1 pixel par maille, puis agrandie avec `drawImage` (`imageSmoothingEnabled = false`). Fini les 80 000 `fillRect` + `strokeRect` par image.
   - Les lignes de mailles sont tracées en un seul chemin, et seulement à partir du zoom où elles sont lisibles.
@@ -80,10 +80,10 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Glisser un Motif (décalage, taille) : même régulation par image, avec un rendu complet (le cache des Motifs recalcule seulement ce calque).
 
 **Critères**
-- [ ] `window.__SIM__.stats` expose `dragFrames` et `dragComputeMsAvg`. e2e `glisser-fluide.spec.ts` : glisser une image sur 40 pas à la souris → `dragComputeMsAvg < 25` et aucun appel à `motifLayerRgb` pendant le glisser.
-- [ ] Note dans `PROGRESS.md` : temps mesurés avant et après sur la machine de l'agent.
+- [x] `window.__SIM__.stats` expose `dragFrames` et `dragComputeMsAvg`. e2e `glisser-fluide.spec.ts` : glisser une image sur 40 pas à la souris → `dragComputeMsAvg < 25` et aucun appel à `motifLayerRgb` pendant le glisser.
+- [x] Note dans `PROGRESS.md` : temps mesurés avant et après sur la machine de l'agent.
 
-### [ ] T63 — Repères des faces sur la vue 2D
+### [x] T63 — Repères des faces sur la vue 2D
 
 - Traits verticaux fins en pointillés aux colonnes de `faceGuides(aiguilles)`, sur toute la hauteur tricotée, avec leur libellé en haut : « Intérieur », « Dos », « Extérieur », « Devant ».
   - Au bord : le repère « Intérieur » est dessiné en colonne 0 **et** en colonne W, pour qu'on le voie des deux côtés de la vue.
@@ -92,10 +92,10 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Le glisser d'une image s'**aimante** au centre d'une face (± 2 mailles) quand l'aimantation est active, comme pour le reste.
 
 **Critères**
-- [ ] Capture de la vue 2D avec les 4 repères, décrite.
-- [ ] e2e : désactiver « Repères » → ils disparaissent ; recharger → toujours désactivés.
+- [x] Capture de la vue 2D avec les 4 repères, décrite.
+- [x] e2e : désactiver « Repères » → ils disparaissent ; recharger → toujours désactivés.
 
-### [ ] T64 — Afficher ou masquer les vues 2D et 3D
+### [x] T64 — Afficher ou masquer les vues 2D et 3D
 
 - Deux boutons bascule « 2D » et « 3D » dans la barre du projet.
   - Masquer une vue libère sa place : l'autre vue, ou le panneau d'options s'il n'y a plus de vue, prend la largeur.
@@ -105,12 +105,12 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - La visionneuse publique (sans `?dev`) ne change pas.
 
 **Critères**
-- [ ] e2e `vues-bascule.spec.ts`, à la souris :
+- [x] e2e `vues-bascule.spec.ts`, à la souris :
   - masquer la 2D, puis la 3D, puis réafficher : les zones ne se chevauchent jamais ;
   - le canvas 3D réaffiché a `camera.aspect` juste à 1 % près.
-- [ ] Captures des 4 combinaisons, décrites.
+- [x] Captures des 4 combinaisons, décrites.
 
-### [ ] T65 — Onglet « Global »
+### [x] T65 — Onglet « Global »
 
 - Le pied de panneau (`options-footer`) disparaît. Son contenu va dans un nouvel onglet **« Global »**, le dernier après Calque, Chaussette, Décor, Export :
   - « Tout réinitialiser » ;
@@ -120,9 +120,9 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - `data-testid` inchangés, pour que les tests existants suivent.
 
 **Critères**
-- [ ] e2e : les 3 boutons sont dans l'onglet Global, et il n'y a plus d'élément `.options-footer`.
+- [x] e2e : les 3 boutons sont dans l'onglet Global, et il n'y a plus d'élément `.options-footer`.
 
-### [ ] T66 — Bibliothèque d'images intégrée (+ logo fourni par César)
+### [x] T66 — Bibliothèque d'images intégrée (+ logo fourni par César)
 
 - Nouveau dossier **`bibliotheque-images/`** à la racine, déjà créé par Claude :
   - `images.json` : `[{ id, nom, fichier, categorie }]` ;
@@ -142,12 +142,12 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Outil « Gérer mes collections » : section « Images » pour ajouter, renommer ou retirer une image de `bibliotheque-images/`, sur le modèle des collections locales. C'est un bonus, si le temps le permet.
 
 **Critères**
-- [ ] Test unitaire : synchronisation de `bibliotheque-images/` (fixture minimale) → `index.json` correct ; une entrée dont le fichier manque est ignorée avec un avertissement.
-- [ ] e2e `bibliotheque-images.spec.ts`, à la souris :
+- [x] Test unitaire : synchronisation de `bibliotheque-images/` (fixture minimale) → `index.json` correct ; une entrée dont le fichier manque est ignorée avec un avertissement.
+- [x] e2e `bibliotheque-images.spec.ts`, à la souris :
   - Bibliothèque → Images → « Logo » → calque Image magenta visible dans la vue 2D ;
   - « Copier le lien » → ouvrir le lien → même image (pas de message « images importées »).
 
-### [ ] T67 — Couleurs d'un calque : œil (transparence) et remplacement
+### [x] T67 — Couleurs d'un calque : œil (transparence) et remplacement
 
 Un seul composant **« ligne de couleur »** pour les Motifs et les Images : pastille, code ou nom du fil, **œil**, et pour les Images **« Remplacer… »**.
 
@@ -165,13 +165,13 @@ Un seul composant **« ligne de couleur »** pour les Motifs et les Images : pas
 - L'ancienne section « Couleurs transparentes » (pastilles en damier) est remplacée par ces lignes.
 
 **Critères**
-- [ ] e2e `couleurs-calque.spec.ts`, à la souris :
+- [x] e2e `couleurs-calque.spec.ts`, à la souris :
   - œil barré sur le blanc d'un Motif jaune et blanc → le Fond apparaît dans la vue 2D ;
   - sur une Image, « Remplacer… » → choisir une couleur de « Déjà sur la chaussette » → dans la vue 2D, les mailles de l'image passent à cette couleur ;
   - l'œil et le remplacement survivent à « Copier le lien » puis à la réouverture.
-- [ ] Capture des lignes de couleurs d'un Motif et d'une Image (avec un remplacement), décrite.
+- [x] Capture des lignes de couleurs d'un Motif et d'une Image (avec un remplacement), décrite.
 
-### [ ] T68 — Bilan V8
+### [x] T68 — Bilan V8
 
 - README : repères, vues à masquer, onglet Global, bibliothèque d'images (comment ajouter une image : déposer le fichier dans `bibliotheque-images/`, compléter `images.json`, `npm run sync:local`), couleurs des calques.
 - Captures dans `docs/captures/v8/`.

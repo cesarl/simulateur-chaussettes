@@ -81,5 +81,6 @@ describe('T52 — lien 4 calques aller-retour', () => {
     expect(again.layers.map((l) => l.kind)).toEqual(['fond', 'motif', 'motif', 'image']);
     expect(again.name).toBe('Quatre');
     expect(again.layers[0]).toMatchObject({ kind: 'fond', color: '#abcdef' });
+    expect(again.quantize.paletteFromLayers).toBe(true);
   });
 });

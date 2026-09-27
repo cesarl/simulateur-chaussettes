@@ -24,6 +24,7 @@ test('visionneuse publique : bascule 3D / À plat', async ({ page }) => {
 
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
+  await page.getByTestId('tab-global').click();
   await page.getByTestId('leave-dev').click();
 
   await expect(page.getByTestId('panel')).toBeHidden();

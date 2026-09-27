@@ -13,9 +13,17 @@ import {
   type SockDesignV2,
   V1_SHARE_DEFAULTS,
 } from '../core/layers';
-import type { SockDesign, TileAsset } from '../core/types';
+import type { QuantizeSettings, SockDesign, TileAsset } from '../core/types';
 import { editingCollection, getState, type AppState } from '../state';
 import { encodeShare, decodeShare, SHARE_SOFT_LIMIT, type Json } from './shareLink';
+
+/**
+ * Quantize à écrire dans l’état après lecture d’un lien.
+ * Préserve `paletteFromLayers` ; absent / autre → `false` (rétrocompat liens anciens).
+ */
+export function quantizeForShareApply(q: QuantizeSettings): QuantizeSettings {
+  return { ...q, paletteFromLayers: q.paletteFromLayers === true };
+}
 
 export type ShareDesignJson = Json;
 
@@ -209,7 +217,7 @@ export async function decodeShareHash(
       paletteOptionId: v1.paletteOptionId,
       tileIds: [],
     });
-    designV2.quantize = { ...designV2.quantize, paletteFromLayers: false };
+    designV2.quantize = quantizeForShareApply({ ...designV2.quantize, paletteFromLayers: false });
     return {
       ok: true,
       parsed: {
@@ -224,7 +232,11 @@ export async function decodeShareHash(
     };
   }
 
-  const { design: designV2 } = designFromShare(decoded.version, decoded.design);
+  const { design: rawV2 } = designFromShare(decoded.version, decoded.design);
+  const designV2: SockDesignV2 = {
+    ...rawV2,
+    quantize: quantizeForShareApply(rawV2.quantize),
+  };
   const motif = primaryMotifLayer(designV2.layers);
   const activeCollectionId =
     motif?.source.kind === 'collection' ? motif.source.collectionId : null;

@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { syncBibliothequeImages } from './syncBibliothequeImages.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
@@ -455,7 +456,34 @@ if (!LOCAL_ONLY) {
 }
 fs.writeFileSync(path.join(outDir, 'SYNC_REPORT.md'), report);
 
+// ---------------------------------------------------------------- bibliothèque d'images (T66)
+const bibSource = path.join(projectRoot, 'bibliotheque-images');
+const bibOut = path.join(projectRoot, 'public', 'images');
+const bib = syncBibliothequeImages({
+  sourceDir: bibSource,
+  outDir: bibOut,
+  warn: (msg) => warn(msg),
+});
+const bibReport = [
+  '',
+  '## Bibliothèque d’images',
+  '',
+  `- Entrées synchronisées : ${bib.index.length}`,
+  `- Fichiers copiés : ${bib.copied.length}`,
+  ...(bib.warnings.length
+    ? ['', '### Avertissements bibliothèque', '', ...bib.warnings.map((w) => `- ${w}`)]
+    : ['', 'Aucun avertissement bibliothèque.']),
+  '',
+].join('\n');
+fs.appendFileSync(path.join(outDir, 'SYNC_REPORT.md'), bibReport);
+fs.writeFileSync(
+  path.join(bibOut, 'SYNC_REPORT.md'),
+  [`# Rapport bibliothèque d’images`, '', ...bibReport.trim().split('\n'), ''].join('\n'),
+);
+
 console.log(
   `\n✔ ${collections.length} collections (${localeCount} locales), ${toCopy.length} fichiers, ${nuancier.size} couleurs, ${calepinagesRaw.length} calepinages.`,
 );
+console.log(`✔ Bibliothèque d’images : ${bib.index.length} entrée(s) → public/images/`);
+
 console.log(warnings.length ? `⚠ ${warnings.length} avertissement(s) : voir SYNC_REPORT.md` : 'Aucun avertissement.');

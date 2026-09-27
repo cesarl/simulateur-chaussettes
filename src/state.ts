@@ -662,6 +662,21 @@ export function toggleLayerTransparentColor(id: string, color: Hex): void {
   update({ design: { layers: updateStackLayer(state.design.layers, id, { transparentColors }) } });
 }
 
+/** Remplace une couleur principale d’un calque Image (ou annule avec `null`). */
+export function setImageRecolor(id: string, from: Hex, to: Hex | null): void {
+  const layer = state.design.layers.find((l) => l.id === id);
+  if (layer?.kind !== 'image') return;
+  const key = from.toLowerCase() as Hex;
+  const next: Record<string, Hex> = { ...(layer.recolor ?? {}) };
+  if (to === null) delete next[key];
+  else next[key] = to.toLowerCase() as Hex;
+  update({
+    design: {
+      layers: updateStackLayer<ImageLayer>(state.design.layers, id, { recolor: next }),
+    },
+  });
+}
+
 /** Réglages d’un calque Image (position, taille, rotation, miroirs, frise). */
 export function patchImageLayer(id: string, patch: Partial<ImageLayer>, coalesce = false): void {
   const layer = state.design.layers.find((l) => l.id === id);

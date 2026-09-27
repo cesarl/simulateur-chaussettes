@@ -4,9 +4,9 @@
  * les abonnés (le panneau affiche le volet correspondant).
  */
 
-export type OptionsTab = 'calque' | 'chaussette' | 'decor' | 'export';
+export type OptionsTab = 'calque' | 'chaussette' | 'decor' | 'export' | 'global';
 
-export const OPTIONS_TABS: readonly OptionsTab[] = ['calque', 'chaussette', 'decor', 'export'];
+export const OPTIONS_TABS: readonly OptionsTab[] = ['calque', 'chaussette', 'decor', 'export', 'global'];
 
 export interface OptionsTabsApi {
   open: (tab: OptionsTab) => void;

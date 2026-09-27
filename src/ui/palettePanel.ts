@@ -11,8 +11,10 @@ import {
   type ZoneColors,
 } from '../core/collections';
 import { MACHINE_LIMITS } from '../core/sizes';
-import { editingCollection, getState, setMotifCollection, update } from '../state';
+import type { Hex } from '../core/types';
+import { editingCollection, getState, setMotifCollection, toggleLayerTransparentColor, update } from '../state';
 import { nuancierMap, tilesFromCollection } from '../io/collectionTiles';
+import { createColorRow } from './colorRow';
 
 function familyOf(id: string): string {
   const m = /^([A-Z]+)/.exec(id);
@@ -324,20 +326,58 @@ export function mountPalettePanel(host: HTMLElement): PalettePanelApi {
     }
 
     swatches.replaceChildren();
+    const motifLayer = state.design.layers.find((l) => l.id === state.selectedLayerId);
+    const motifId =
+      motifLayer?.kind === 'motif'
+        ? motifLayer.id
+        : (state.design.layers.find((l) => l.kind === 'motif')?.id ?? null);
+    const transparent = new Set(
+      (motifId
+        ? state.design.layers.find((l) => l.id === motifId)?.transparentColors
+        : []
+      )?.map((c) => c.toLowerCase()) ?? [],
+    );
+    // Zones partageant le même fil : bascule groupée + info-bulle.
+    const hexToZones = new Map<string, string[]>();
     for (const z of collection.zones) {
       const code = zoneColors[z];
       const col = code ? nuancier.get(code) : undefined;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'zone-swatch';
-      btn.dataset.testid = `zone-swatch-${z}`;
-      const chip = document.createElement('i');
-      chip.style.background = col?.hex ?? '#ccc';
-      const label = document.createElement('span');
-      label.textContent = col ? `${z} · ${col.id} · ${col.nom}` : `${z} · —`;
-      btn.append(chip, label);
-      btn.addEventListener('click', () => openPicker('zone', z));
-      swatches.appendChild(btn);
+      const hex = (col?.hex ?? '#cccccc').toLowerCase();
+      const list = hexToZones.get(hex) ?? [];
+      list.push(z);
+      hexToZones.set(hex, list);
+    }
+    for (const z of collection.zones) {
+      const code = zoneColors[z];
+      const col = code ? nuancier.get(code) : undefined;
+      const hex = (col?.hex ?? '#cccccc').toLowerCase() as Hex;
+      const siblings = hexToZones.get(hex) ?? [z];
+      const shared = siblings.length > 1;
+      const eyeTitle = shared
+        ? `Même fil que ${siblings.filter((s) => s !== z).join(', ')} — bascule groupée`
+        : undefined;
+      const row = createColorRow({
+        hex,
+        label: col ? `${z} · ${col.id} · ${col.nom}` : `${z} · —`,
+        transparent: transparent.has(hex),
+        eyeTitle,
+        testId: `zone-swatch-${z}`,
+        onToggleEye: () => {
+          if (!motifId) return;
+          toggleLayerTransparentColor(motifId, hex);
+        },
+      });
+      // Œil de zone : testid distinct pour éviter le double `layer-color-*` (section Couleurs du calque).
+      const eye = row.querySelector('.color-row-eye');
+      if (eye instanceof HTMLElement) {
+        eye.dataset.testid = `zone-eye-${z}`;
+      }
+      row.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target instanceof Element && target.closest('.color-row-eye, .color-row-recolor')) return;
+        openPicker('zone', z);
+      });
+      swatches.appendChild(row);
     }
   }
 

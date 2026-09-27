@@ -14,10 +14,11 @@
 
 export type Hex = string;
 
-/** Référence d'image : une variation d'une collection, ou une image embarquée dans le projet. */
+/** Référence d'image : collection, embarquée dans le projet, ou bibliothèque publique. */
 export type AssetRef =
   | { kind: 'collection'; collectionId: string; variation: string } // ex. { 'medina', 'VAR2' }
-  | { kind: 'embarquee'; assetId: string };
+  | { kind: 'embarquee'; assetId: string }
+  | { kind: 'bibliotheque'; imageId: string };
 
 /** Image embarquée dans le fichier projet (jamais envoyée sur un serveur). */
 export interface EmbeddedAsset {
@@ -57,7 +58,9 @@ export interface Composition {
 export const EMPTY_COMPOSITION: Composition = { background: '#f1e9dc', layers: [] };
 
 export function assetKey(ref: AssetRef): string {
-  return ref.kind === 'collection' ? `c:${ref.collectionId}/${ref.variation}` : `e:${ref.assetId}`;
+  if (ref.kind === 'collection') return `c:${ref.collectionId}/${ref.variation}`;
+  if (ref.kind === 'bibliotheque') return `b:${ref.imageId}`;
+  return `e:${ref.assetId}`;
 }
 
 /** Image pixelisée prête à échantillonner (SVG recoloré ou PNG décodé). Alpha < 128 = transparent. */
@@ -263,5 +266,5 @@ export function usedEmbeddedAssets(comp: Composition, assets: EmbeddedAsset[]): 
 
 /** Le lien de partage n'est possible que si aucune image embarquée n'est utilisée. */
 export function isLinkShareable(comp: Composition): boolean {
-  return comp.layers.every((l) => l.asset.kind === 'collection');
+  return comp.layers.every((l) => l.asset.kind === 'collection' || l.asset.kind === 'bibliotheque');
 }

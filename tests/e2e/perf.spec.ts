@@ -22,6 +22,8 @@ test('dix changements rapides laissent le dernier réglage, sans erreur', async 
   await page.mouse.up();
 
   await page.getByTestId('tab-chaussette').click();
+  await page.getByTestId('ctl-palette-mode').selectOption('auto');
+  await expect(page.getByTestId('ctl-max-colors')).toBeVisible();
   const colors = page.getByTestId('ctl-max-colors');
   for (let step = 0; step < 10; step++) {
     await colors.fill(String(2 + (step % 7)));

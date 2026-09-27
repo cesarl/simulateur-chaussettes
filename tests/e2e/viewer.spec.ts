@@ -64,6 +64,7 @@ test('?dev active le panneau, retire le paramètre, mémorise, leave-dev revient
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await expect(page.getByTestId('panel')).toBeVisible();
+  await page.getByTestId('tab-global').click();
   await expect(page.getByTestId('leave-dev')).toBeVisible();
   await expect(page.getByTestId('viewer-bar')).toBeHidden();
   expect(page.url()).not.toMatch(/[?&]dev(=|&|$)/);
@@ -73,6 +74,7 @@ test('?dev active le panneau, retire le paramètre, mémorise, leave-dev revient
   await page.waitForFunction(() => window.__SIM__?.ready === true);
   await expect(page.getByTestId('panel')).toBeVisible();
 
+  await page.getByTestId('tab-global').click();
   await page.getByTestId('leave-dev').click();
   await page.reload();
   await page.waitForFunction(() => window.__SIM__?.ready === true);
