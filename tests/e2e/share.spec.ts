@@ -148,3 +148,107 @@ test('lien de partage : collection modifiée → nouvel onglet → même chausse
   expect(errorsB.filter((e) => !e.includes('404'))).toEqual([]);
   await contextB.close();
 });
+
+test('lien de partage : palette d’après les calques survit à l’ouverture', async ({ browser }) => {
+  const dir = syncMiniCatalogue();
+  const contextA = await browser.newContext();
+  const page = await contextA.newPage();
+  const errors = trackErrors(page);
+  await routeCarreaux(page, dir);
+  await page.goto('/?dev');
+  await page.waitForFunction(() => window.__SIM__?.ready === true && window.__SIM__?.catalogue != null);
+
+  await page.getByTestId('coll-search').fill('medina');
+  await expect(page.getByTestId('coll-item-medina')).toBeVisible();
+  const before = await page.evaluate(() => window.__SIM__?.computeId ?? 0);
+  await page.getByTestId('coll-item-medina').click();
+  await page.waitForFunction(
+    (id) => (window.__SIM__?.computeId ?? 0) > id && window.__SIM__?.activeCollectionId === 'medina',
+    before,
+    { timeout: 30_000 },
+  );
+
+  await page.getByTestId('tab-chaussette').click();
+  await page.getByTestId('ctl-palette-mode').selectOption('calques');
+  await page.waitForFunction(() => window.__SIM__?.design.quantize.paletteFromLayers === true);
+  await expect(page.getByTestId('ctl-palette-mode')).toHaveValue('calques');
+  await page.getByTestId('viewport').screenshot({ path: 'test-results/visuel-share-palette-calques-avant.png' });
+
+  await page.waitForFunction(() => window.location.hash.startsWith('#p=2.'), null, { timeout: 5_000 });
+  const hashBefore = await page.evaluate(() => window.location.hash);
+  await page.getByTestId('panel-copy-link').click();
+  await page.waitForFunction(
+    (prev) => window.location.hash.startsWith('#p=2.') && window.location.hash.length >= prev.length,
+    hashBefore,
+  );
+  const hash = await page.evaluate(() => window.location.hash);
+  expect(hash.startsWith('#p=2.')).toBe(true);
+  await contextA.close();
+
+  const contextB = await browser.newContext();
+  const pageB = await contextB.newPage();
+  const errorsB = trackErrors(pageB);
+  await routeCarreaux(pageB, dir);
+  await pageB.goto(`/?dev${hash}`);
+  await pageB.waitForFunction(() => window.__SIM__?.ready === true, null, { timeout: 60_000 });
+  await pageB.waitForFunction(() => window.__SIM__?.design.quantize.paletteFromLayers === true, null, {
+    timeout: 30_000,
+  });
+  await pageB.getByTestId('tab-chaussette').click();
+  await expect(pageB.getByTestId('ctl-palette-mode')).toHaveValue('calques');
+  await pageB.getByTestId('viewport').screenshot({ path: 'test-results/visuel-share-palette-calques-apres.png' });
+
+  expect(errors.filter((e) => !e.includes('404'))).toEqual([]);
+  expect(errorsB.filter((e) => !e.includes('404'))).toEqual([]);
+  await contextB.close();
+});
+
+test('lien de partage : palette manuelle (pas calques) survit aussi', async ({ browser }) => {
+  const dir = syncMiniCatalogue();
+  const contextA = await browser.newContext();
+  const page = await contextA.newPage();
+  const errors = trackErrors(page);
+  await routeCarreaux(page, dir);
+  await page.goto('/?dev');
+  await page.waitForFunction(() => window.__SIM__?.ready === true && window.__SIM__?.catalogue != null);
+
+  await page.getByTestId('tab-chaussette').click();
+  const hashBeforeMode = await page.evaluate(() => window.location.hash);
+  await page.getByTestId('ctl-palette-mode').selectOption('manuelle');
+  await page.waitForFunction(
+    () =>
+      window.__SIM__?.design.quantize.paletteFromLayers === false &&
+      window.__SIM__?.design.quantize.paletteMode === 'manuelle',
+  );
+  // Attendre que le hash intègre le mode manuelle (anti-rebond 500 ms).
+  await page.waitForFunction(
+    (prev) =>
+      window.location.hash.startsWith('#p=2.') &&
+      window.location.hash !== prev &&
+      window.location.hash.length > 10,
+    hashBeforeMode,
+    { timeout: 5_000 },
+  );
+  const hash = await page.evaluate(() => window.location.hash);
+  await contextA.close();
+
+  const contextB = await browser.newContext();
+  const pageB = await contextB.newPage();
+  const errorsB = trackErrors(pageB);
+  await routeCarreaux(pageB, dir);
+  await pageB.goto(`/?dev${hash}`);
+  await pageB.waitForFunction(() => window.__SIM__?.ready === true, null, { timeout: 60_000 });
+  await pageB.waitForFunction(
+    () =>
+      window.__SIM__?.design.quantize.paletteFromLayers === false &&
+      window.__SIM__?.design.quantize.paletteMode === 'manuelle',
+    null,
+    { timeout: 30_000 },
+  );
+  await pageB.getByTestId('tab-chaussette').click();
+  await expect(pageB.getByTestId('ctl-palette-mode')).toHaveValue('manuelle');
+
+  expect(errors.filter((e) => !e.includes('404'))).toEqual([]);
+  expect(errorsB.filter((e) => !e.includes('404'))).toEqual([]);
+  await contextB.close();
+});

@@ -719,7 +719,8 @@ export function migrateDesignV1(d: SockDesign, ctx: V1Context): SockDesignV2 {
     name: d.name,
     dimensions: structuredClone(d.dimensions),
     zones: structuredClone(d.zones),
-    quantize: structuredClone(d.quantize),
+    // V1 n’avait pas ce réglage : palette exacte du lien / projet, jamais « d’après les calques ».
+    quantize: { ...structuredClone(d.quantize), paletteFromLayers: false },
     decor: structuredClone(d.decor),
   };
   if (d.pattern?.kind === 'composition') {
@@ -830,7 +831,8 @@ function frozenDefaultsV2(): SockDesignV2 {
     name: V1.name,
     dimensions: structuredClone(V1.dimensions),
     zones: structuredClone(V1.zones),
-    quantize: structuredClone(V1.quantize),
+    // paletteFromLayers absent des défauts V1 figés → false (rétrocompat liens sans le champ).
+    quantize: { ...structuredClone(V1.quantize), paletteFromLayers: false },
     decor: structuredClone(V1.decor),
     layers: [newFondLayer()],
   };
@@ -957,12 +959,13 @@ export function shareJsonToDesignV2(json: unknown): SockDesignV2 {
   const defaults = frozenDefaultsV2();
   const r = isObj(json) ? json : {};
   const pick = <T>(k: string, fallback: T): T => (isObj(r[k]) ? (mergeJ(JSON.parse(JSON.stringify(fallback)) as J, r[k]) as T) : structuredClone(fallback));
+  const quantize = pick('quantize', defaults.quantize);
   return {
     version: 2,
     name: typeof r.name === 'string' ? r.name : defaults.name,
     dimensions: pick('dimensions', defaults.dimensions),
     zones: pick('zones', defaults.zones),
-    quantize: pick('quantize', defaults.quantize),
+    quantize: { ...quantize, paletteFromLayers: quantize.paletteFromLayers === true },
     decor: pick('decor', defaults.decor),
     layers: Array.isArray(r.layers) ? unpackLayers(r.layers) : structuredClone(defaults.layers),
   };

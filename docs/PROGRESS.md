@@ -866,3 +866,10 @@ D51 (palette/Fond), D52 (talon), D53 (glisser), D54 (bibliothèque), D55 (œil/r
 
 ### Blocages
 Aucun pour V8. T18 en attente des tailles fabricant. Ne pas toucher `wrangler.jsonc`.
+
+## Fix — paletteFromLayers dans le lien de partage — 2026-09-27
+Statut : terminée
+Fait : le réglage « Automatique d’après les calques » (`quantize.paletteFromLayers`) était sérialisé dans `#p=2.` mais `applyShare` le forçait à `false` à l’ouverture. Correction : `quantizeForShareApply` conserve le booléen ; défauts V2 figés + `shareJsonToDesignV2` + migration V1 → `false` si absent (rétrocompat). Tests unit `share-palette-from-layers` + e2e share (calques / manuelle).
+Vérification : `npm run verify` ✅ (171 unitaires ; 76 e2e dont share palette calques/manuelle). Contrôle visuel : avant/après ouverture du lien — select Palette = « Automatique d’après les calques » (`media/visuel-share-palette-calques-avant.png` / `apres.png`).
+Décisions : D56
+Reste / risques : aucun ; empreintes liens réels / golden / v1ShareDefaults / v8-layers inchangés.

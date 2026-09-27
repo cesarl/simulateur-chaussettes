@@ -329,3 +329,9 @@ Contexte : pastilles damier peu lisibles ; besoin de remplacer une couleur d’i
 Options : A) garder les pastilles + menu contextuel ; B) ligne unifiée (œil + Remplacer…).
 Choix : B — `colorRow.ts` partagé Motif/Image ; zones Motif reçoivent le même œil ; dialogue modal pour le recolor (palette sock + nuancier public + origine).
 Conséquence : `transparentColors` / `recolor` inchangés en cœur ; UI FR avec `layer-color-*` stables.
+
+## D56 — paletteFromLayers dans le lien `#p=2.`
+Contexte : le select « Automatique d’après les calques » était perdu à l’ouverture d’un lien partagé.
+Options : A) forcer `false` à l’apply (comportement V7, incorrect pour V8) ; B) sérialiser le booléen et le restaurer, défaut rétrocompat `false` si absent.
+Choix : B — `designV2ToShareJson` inclut déjà `quantize` ; `frozenDefaultsV2` et `shareJsonToDesignV2` fixent `paletteFromLayers: false` par défaut ; `migrateDesignV1` aussi ; `applyShare` n’écrase plus le champ ; `quantizeForShareApply` normalise `=== true`.
+Conséquence : un lien V2 avec calques restaure le mode ; un ancien lien sans le champ reste en réduction/manuelle. `v1ShareDefaults.json` inchangé (pas de version 3 du lien).
