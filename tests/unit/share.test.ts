@@ -24,12 +24,15 @@ describe('lien de partage', () => {
       decor: { mode: 'sol', tileCm: 20 },
     });
     const { hash, length, tooLong } = await encodeShare({ design }, defaults);
-    expect(hash.startsWith('#p=1.')).toBe(true);
+    expect(hash.startsWith('#p=2.')).toBe(true);
     expect(length).toBeLessThan(600);
     expect(tooLong).toBe(false);
     const back = await decodeShare(hash, defaults);
     expect(back.ok).toBe(true);
-    if (back.ok) expect(back.design).toEqual(design);
+    if (back.ok) {
+      expect(back.version).toBe(2);
+      expect(back.design).toEqual(design);
+    }
   });
   it('état par défaut → lien minimal', async () => {
     const { length } = await encodeShare({ design: defaults }, defaults);
@@ -40,6 +43,17 @@ describe('lien de partage', () => {
     const { hash } = await encodeShare({ design: defaults, tiles: [{ name: 'rouge.svg', svg }] }, defaults);
     const back = await decodeShare(hash, defaults);
     expect(back.ok && back.tiles[0]).toEqual({ name: 'rouge.svg', svg });
+  });
+  it('un hash #p=1. se lit toujours', async () => {
+    const design = merge(defaults, { name: 'Ancien lien V1' });
+    const { hash: v2 } = await encodeShare({ design }, defaults);
+    const v1Hash = v2.replace('#p=2.', '#p=1.');
+    const back = await decodeShare(v1Hash, defaults);
+    expect(back.ok).toBe(true);
+    if (back.ok) {
+      expect(back.version).toBe(1);
+      expect(back.design).toEqual(design);
+    }
   });
   it('un lien abîmé ou d’une version future ne casse rien', async () => {
     expect((await decodeShare('#p=1.%%%abc', defaults)).ok).toBe(false);

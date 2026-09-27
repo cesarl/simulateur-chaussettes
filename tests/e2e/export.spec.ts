@@ -18,6 +18,7 @@ test('les exports face et plat exact ont la bonne taille et les bonnes couleurs'
   const errors = trackErrors(page);
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
+  await page.getByTestId('tab-export').click();
   await page.getByTestId('export-size').selectOption('1024');
 
   const faceEvent = page.waitForEvent('download');

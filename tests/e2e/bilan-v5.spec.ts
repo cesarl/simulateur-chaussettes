@@ -33,6 +33,7 @@ test('T39 captures bilan V5', async ({ page }) => {
   await expect(page.getByTestId('tile-thumb')).toHaveCount(4, { timeout: 15_000 });
 
   const beforeDecor = await page.evaluate(() => window.__SIM__?.decorBuildId ?? 0);
+  await page.getByTestId('tab-decor').click();
   await page.getByTestId('ctl-decor-mode').selectOption('coin');
   await page.waitForFunction(() => window.__SIM__?.design.decor.mode === 'coin');
   await page.waitForFunction((b) => (window.__SIM__?.decorBuildId ?? 0) > b, beforeDecor, {
@@ -50,6 +51,7 @@ test('T39 captures bilan V5', async ({ page }) => {
   fs.writeFileSync('test-results/visuel-T39-medina-decor.png', Buffer.from(medina.split(',')[1]!, 'base64'));
 
   const beforeLianes = await page.evaluate(() => window.__SIM__?.decorBuildId ?? 0);
+  await page.getByTestId('tab-calque').click();
   await page.getByTestId('coll-search').fill('lianes');
   await page.getByTestId('coll-item-lianes').scrollIntoViewIfNeeded();
   await page.getByTestId('coll-item-lianes').click();

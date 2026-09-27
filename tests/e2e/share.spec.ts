@@ -61,9 +61,11 @@ test('lien de partage : collection modifiée → nouvel onglet → même chausse
     { timeout: 30_000 },
   );
 
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-heel-height').fill('92');
   await page.waitForFunction(() => window.__SIM__?.design.zones.heelHeightMm === 92);
 
+  await page.getByTestId('tab-calque').click();
   const calep = page.getByTestId('calep-collection-presets').getByTestId('calep-thumb-damier_4');
   if (await calep.count()) {
     const c0 = await page.evaluate(() => window.__SIM__?.computeId ?? 0);
@@ -72,16 +74,16 @@ test('lien de partage : collection modifiée → nouvel onglet → même chausse
   }
 
   // Laisser le hash se mettre à jour (anti-rebond 500 ms) puis copier
-  await page.waitForFunction(() => window.location.hash.startsWith('#p=1.'), null, { timeout: 5_000 });
+  await page.waitForFunction(() => window.location.hash.startsWith('#p=2.'), null, { timeout: 5_000 });
   const hashBefore = await page.evaluate(() => window.location.hash);
   await page.getByTestId('panel-copy-link').click();
   await expect(page.getByTestId('share-hint')).toContainText(/Lien copié|carreaux importés|Lien long/i);
   await page.waitForFunction(
-    (prev) => window.location.hash.startsWith('#p=1.') && window.location.hash.length >= prev.length,
+    (prev) => window.location.hash.startsWith('#p=2.') && window.location.hash.length >= prev.length,
     hashBefore,
   );
   const hash = await page.evaluate(() => window.location.hash);
-  expect(hash.startsWith('#p=1.')).toBe(true);
+  expect(hash.startsWith('#p=2.')).toBe(true);
   // Empreinte après copie (état courant)
   const fingerprint = await page.evaluate(() => window.__SIM__?.gridHash ?? '');
   expect(fingerprint.length).toBeGreaterThan(4);

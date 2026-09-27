@@ -27,6 +27,7 @@ test('enregistrer, recharger et ouvrir retrouve la même grille', async ({ page 
   await waitReady(page);
   await page.getByTestId('tile-fixture').click();
   await expect(page.getByTestId('tile-thumb')).toHaveCount(1, { timeout: 30_000 });
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-size').selectOption('femme');
   await page.waitForFunction(
     () => {
@@ -40,12 +41,14 @@ test('enregistrer, recharger et ouvrir retrouve la même grille', async ({ page 
   expect(hash).not.toBe('');
 
   const downloadPromise = page.waitForEvent('download', { timeout: 30_000 });
+  await page.getByTestId('tab-export').click();
   await page.getByTestId('project-save').click();
   const download = await downloadPromise;
   const tmp = path.join(os.tmpdir(), `projet-e2e-${Date.now()}.json`);
   await download.saveAs(tmp);
   expect(fs.existsSync(tmp)).toBe(true);
 
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-size').selectOption('homme');
   await page.waitForFunction(() => window.__SIM__?.design.dimensions.size === 'homme', null, {
     timeout: 30_000,

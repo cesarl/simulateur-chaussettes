@@ -28,6 +28,7 @@ test('rendu simple et fidèle : captures et export plat inchangé', async ({ pag
   await page.evaluate(() => window.__SIM__?.loadFixture('carreau-test-etoile.svg'));
   await page.waitForFunction((id) => (window.__SIM__?.computeId ?? 0) > id, beforeFixture);
 
+  await page.getByTestId('tab-chaussette').click();
   await page.getByTestId('ctl-knit-fidelity').selectOption('simple');
   await page.waitForFunction(() => window.__SIM__?.knitFidelity === 'simple');
   await zoomViewport(page);
@@ -38,6 +39,7 @@ test('rendu simple et fidèle : captures et export plat inchangé', async ({ pag
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.getByTestId('viewport').screenshot({ path: 'test-results/visuel-t14-fidele.png' });
 
+  await page.getByTestId('tab-export').click();
   await page.getByTestId('export-face').uncheck();
   await page.getByTestId('export-plat-exact').check();
   const flatEvent = page.waitForEvent('download');

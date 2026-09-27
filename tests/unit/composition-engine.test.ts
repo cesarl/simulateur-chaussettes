@@ -7,11 +7,12 @@ import {
   type RasterImage,
 } from '../../src/core/composition';
 import { compositionYarnColors } from '../../src/core/compositionPalette';
-import { computePatternRgb } from '../../src/core/patternSource';
+import { createMotifRgbCache, computeStackRgb } from '../../src/core/stackCompute';
 import { defaultDesign } from '../../src/state';
 import { BUILTIN_PRESETS } from '../../src/core/presets';
 import { gridFingerprint, composeGrid } from '../../src/core/grid';
 import { quantize } from '../../src/core/quantize';
+import { newFondLayer, normalizeStack, newImageLayer } from '../../src/core/layers';
 
 function solid(w: number, h: number, r: number, g: number, b: number): RasterImage {
   const rgba = new Uint8ClampedArray(w * h * 4);
@@ -24,7 +25,7 @@ function solid(w: number, h: number, r: number, g: number, b: number): RasterIma
   return { width: w, height: h, rgba };
 }
 
-describe('composition branchée (T45)', () => {
+describe('composition / pile (T45→T51)', () => {
   it('renderComposition 5 calques sur 168×380 < 300 ms', () => {
     const g = { needles: 168, rows: 380, stitchesPerCm: 7.5, rowsPerCm: 10 };
     const images = new Map<string, RasterImage>();
@@ -42,16 +43,21 @@ describe('composition branchée (T45)', () => {
     expect(ms).toBeLessThan(300);
   });
 
-  it('computePatternRgb composition + palette yarns', () => {
-    const design = defaultDesign();
-    design.pattern = {
-      kind: 'composition',
-      composition: { background: '#112233', layers: [] },
+  it('renderStack fond seul + palette yarns composition', () => {
+    const design = {
+      ...defaultDesign(),
+      layers: normalizeStack([newFondLayer('#112233')]),
     };
-    const rgb = computePatternRgb({ design, tiles: [], calepPresets: BUILTIN_PRESETS });
+    const cache = createMotifRgbCache();
+    const { rgb } = computeStackRgb({
+      design,
+      tiles: [],
+      presets: BUILTIN_PRESETS,
+      cache,
+    });
     expect(rgb![0]).toBe(0x11);
     const yarns = compositionYarnColors({
-      composition: design.pattern.composition,
+      composition: { background: '#112233', layers: [] },
       svgYarnHexes: new Map(),
       rasterImages: new Map(),
       pngMaxColors: 4,
@@ -59,13 +65,15 @@ describe('composition branchée (T45)', () => {
     expect(yarns.palette).toContain('#112233');
   });
 
-  it('golden carreaux inchangé via chaîne patternSource', async () => {
-    // fumée : mode carreaux sans tiles → null, grille fond seule
+  it('pile sans motif → grille fond seule', () => {
     const design = defaultDesign();
-    const rgb = computePatternRgb({ design, tiles: [], calepPresets: BUILTIN_PRESETS });
-    expect(rgb).toBeNull();
+    // Motif sans carreaux → fond
+    const cache = createMotifRgbCache();
+    const { rgb } = computeStackRgb({ design, tiles: [], presets: BUILTIN_PRESETS, cache });
+    expect(rgb).not.toBeNull();
     const grid = composeGrid(design.dimensions, design.zones, null, []);
     expect(gridFingerprint(grid).length).toBeGreaterThan(0);
     void quantize;
+    void newImageLayer;
   });
 });

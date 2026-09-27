@@ -1,7 +1,8 @@
-import type { StitchGrid } from '../core/types';
+import type { SockDimensions, StitchGrid, ZoneSettings } from '../core/types';
 import { Zone } from '../core/types';
 import { seamColumn } from '../core/calepinage';
-import { getState } from '../state';
+import { rowRanges } from '../core/grid';
+import { editingLayoutSettings, getState } from '../state';
 
 /**
  * Vue à plat : une maille = un rectangle au rapport réel.
@@ -26,19 +27,44 @@ export interface FlatHandle {
   setGrid: (grid: StitchGrid, aspect: number) => void;
   setFloatMask: (mask: Uint8Array | null) => void;
   centerOf: (col: number, row: number) => { x: number; y: number } | null;
+  /** Centre écran d'une maille en coordonnées motif (rang 0 = haut de la tige). */
+  clientAtMotifStitch: (col: number, motifRow: number) => { x: number; y: number } | null;
+  /** Souris → maille motif, ou null hors zone motif. */
+  clientToMotifStitch: (px: number, py: number) => { col: number; row: number } | null;
+  redraw: () => void;
+  panBy: (dx: number, dy: number) => void;
+  setPanMode: (active: boolean) => void;
+  setOverlayDrawer: (draw: (() => void) | null) => void;
+  /** Décale la vue 2D pour centrer une maille motif. */
+  revealMotifStitch: (col: number, motifRow: number) => void;
   setDevTools: (visible: boolean) => void;
-  /** Affiche la vue à plat (true) ou la 3D (false). */
+  /** Affiche la vue à plat (true) ou la 3D (false). En double panneau, no-op (toujours visible). */
   setFlat: (flat: boolean) => void;
   isFlat: () => boolean;
+  /** Reparentage visionneuse ↔ mode technique. */
+  setHosts: (hosts: FlatHosts) => void;
 }
 
-export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): FlatHandle {
-  const gl = viewport.querySelector('canvas');
-  if (gl instanceof HTMLCanvasElement) gl.dataset.testid = 'sock-canvas';
+export interface FlatHosts {
+  /** Conteneur du canvas à plat. */
+  canvasHost: HTMLElement;
+  /** Conteneur des boutons 3D / À plat (optionnel). */
+  toolsHost?: HTMLElement | null;
+  /** Barre d’outils de la vue 3D : raccourcis caméra. */
+  shortcutsHost?: HTMLElement | null;
+  /** Canvas WebGL 3D à masquer en mode plat (visionneuse). */
+  sockCanvas?: HTMLCanvasElement | null;
+  /** true = 2D et 3D côte à côte (mode ?dev) : pas de bascule. */
+  dualPane?: boolean;
+}
+
+export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatHandle {
+  let sockCanvas = hosts.sockCanvas ?? null;
+  let dualPane = hosts.dualPane === true;
 
   const layer = document.createElement('div');
   layer.className = 'flat-layer';
-  layer.hidden = true;
+  layer.hidden = !dualPane;
 
   const canvas = document.createElement('canvas');
   canvas.dataset.testid = 'flat-canvas';
@@ -52,22 +78,27 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
 
   const switcher = document.createElement('div');
   switcher.className = 'view-switch';
+  switcher.dataset.testid = 'view-switch';
   const button3d = document.createElement('button');
   button3d.type = 'button';
   button3d.dataset.testid = 'view-3d';
   button3d.textContent = '3D';
-  button3d.setAttribute('aria-pressed', 'true');
+  button3d.setAttribute('aria-pressed', dualPane ? 'false' : 'true');
   const buttonFlat = document.createElement('button');
   buttonFlat.type = 'button';
   buttonFlat.dataset.testid = 'view-flat';
   buttonFlat.textContent = 'À plat';
-  buttonFlat.setAttribute('aria-pressed', 'false');
+  buttonFlat.setAttribute('aria-pressed', dualPane ? 'true' : 'false');
   switcher.append(button3d, buttonFlat);
   const shortcuts = document.createElement('p');
   shortcuts.className = 'view-shortcuts';
   shortcuts.dataset.testid = 'view-shortcuts';
   shortcuts.textContent = 'R : réinitialiser · F : face · T : ¾ · E : extérieur · D : dos · I : intérieur';
-  viewport.append(layer, switcher, shortcuts);
+
+  hosts.canvasHost.append(layer);
+  const toolsTarget = hosts.toolsHost ?? hosts.canvasHost;
+  toolsTarget.append(switcher);
+  placeShortcuts(hosts.shortcutsHost, toolsTarget);
 
   let grid: StitchGrid | null = null;
   let floatMask: Uint8Array | null = null;
@@ -75,15 +106,29 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
   let zoom = 1;
   let panX = 0;
   let panY = 0;
-  let dragging = false;
-  let lastX = 0;
-  let lastY = 0;
+  let panMode = false;
+  let toolsVisible = true;
+  let overlayDrawer: (() => void) | null = null;
+  let dims: SockDimensions = getState().design.dimensions;
+  let zones: ZoneSettings = getState().design.zones;
 
   const context = canvas.getContext('2d');
 
+  function motifOriginRow(): number {
+    return rowRanges(dims, zones).leg.start;
+  }
+
+  function isMotifFullRow(row: number): boolean {
+    if (!grid || row < 0 || row >= grid.height) return false;
+    const z = grid.zone[row * grid.width] ?? Zone.Empty;
+    if (z === Zone.Leg) return true;
+    return z === Zone.Foot && zones.patternOnFoot;
+  }
+
   function cells(): { w: number; h: number } {
     const w = 4 * zoom;
-    const h = Math.max(1, Math.round(4 * aspect)) * zoom;
+    const ar = aspect > 0 && Number.isFinite(aspect) ? aspect : 0.75;
+    const h = Math.max(1, Math.round(4 * ar)) * zoom;
     return { w, h };
   }
 
@@ -98,105 +143,49 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
   }
 
   function draw(): void {
-    if (!context || !grid) return;
-    if (layer.hidden) return;
-    resizeCanvasOnly();
-    const { w, h } = cells();
-    const originX = MARGIN_LEFT + panX;
-    const originY = MARGIN_TOP + panY;
+    if (!context || layer.hidden) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = '#f4f1ec';
     context.fillRect(0, 0, canvas.width, canvas.height);
+    if (!grid) return;
 
-    const byColor = new Map<string, number[]>();
-    for (let index = 0; index < grid.colorIndex.length; index++) {
-      const color = grid.palette[grid.colorIndex[index] ?? 0] ?? '#000000';
-      const bucket = byColor.get(color);
-      if (bucket) bucket.push(index);
-      else byColor.set(color, [index]);
+    const { w, h } = cells();
+    const showGrid = w >= GRID_MIN_PX;
+    const originX = MARGIN_LEFT + panX;
+    const originY = MARGIN_TOP + panY;
+
+    for (let row = 0; row < grid.height; row += 1) {
+      for (let col = 0; col < grid.width; col += 1) {
+        const index = row * grid.width + col;
+        const color = grid.palette[grid.colorIndex[index] ?? 0] ?? '#cccccc';
+        const x = originX + col * w;
+        const y = originY + row * h;
+        if (x + w < 0 || y + h < 0 || x > canvas.width || y > canvas.height) continue;
+        context.fillStyle = color;
+        context.fillRect(x, y, w, h);
+        if (floatMask && floatMask[index]) {
+          context.fillStyle = 'rgba(0,0,0,0.35)';
+          context.fillRect(x, y, w, h);
+        }
+        if (showGrid) {
+          context.strokeStyle = 'rgba(0,0,0,0.12)';
+          context.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+        }
+      }
     }
-    for (const [color, indices] of byColor) {
-      context.fillStyle = color;
+
+    const seam = seamColumn(editingLayoutSettings().seam, grid.width);
+    if (grid.width > 0) {
+      const sx = originX + seam * w;
+      context.strokeStyle = 'rgba(181,70,47,0.7)';
       context.beginPath();
-      for (const index of indices) {
-        const col = index % grid.width;
-        const row = Math.floor(index / grid.width);
-        context.rect(originX + col * w, originY + row * h, w, h);
-      }
-      context.fill();
-    }
-
-    if (floatMask && floatMask.length === grid.colorIndex.length) {
-      context.fillStyle = '#d9822b';
-      for (let index = 0; index < floatMask.length; index++) {
-        if (floatMask[index] !== 1) continue;
-        const col = index % grid.width;
-        const row = Math.floor(index / grid.width);
-        context.fillRect(originX + col * w, originY + row * h, 1, 1);
-      }
-    }
-
-    if (w >= GRID_MIN_PX) {
-      context.strokeStyle = 'rgba(29, 29, 27, 0.28)';
-      context.lineWidth = 1;
-      context.beginPath();
-      for (let col = 0; col <= grid.width; col++) {
-        const x = originX + col * w + 0.5;
-        context.moveTo(x, originY);
-        context.lineTo(x, originY + grid.height * h);
-      }
-      for (let row = 0; row <= grid.height; row++) {
-        const y = originY + row * h + 0.5;
-        context.moveTo(originX, y);
-        context.lineTo(originX + grid.width * w, y);
-      }
+      context.moveTo(sx, originY);
+      context.lineTo(sx, originY + grid.height * h);
       context.stroke();
     }
 
-    context.fillStyle = '#6b6760';
-    context.font = '11px system-ui, sans-serif';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    for (let col = 0; col < grid.width; col += 10) {
-      const x = originX + col * w + w / 2;
-      if (x < MARGIN_LEFT || x > canvas.width - 4) continue;
-      context.fillText(String(col), x, 11);
-    }
-    context.textAlign = 'right';
-    for (let row = 0; row < grid.height; row += 10) {
-      const y = originY + row * h + h / 2;
-      if (y < MARGIN_TOP || y > canvas.height - 4) continue;
-      context.fillText(String(row), MARGIN_LEFT - 8, y);
-    }
-
-    // Trait du raccord (colonne où le tour se referme)
-    const col = Math.round(seamColumn(getState().design.layout.seam, grid.width));
-    const sx = originX + col * w + 0.5;
-    context.save();
-    context.setLineDash([4, 4]);
-    context.strokeStyle = '#b5462f';
-    context.lineWidth = 1.5;
-    context.beginPath();
-    context.moveTo(sx, originY);
-    context.lineTo(sx, originY + grid.height * h);
-    context.stroke();
-    context.setLineDash([]);
-    context.fillStyle = '#b5462f';
-    context.font = '11px system-ui, sans-serif';
-    context.textAlign = 'left';
-    context.textBaseline = 'top';
-    context.fillText('raccord', sx + 4, originY + 4);
-    context.restore();
-
     drawZones(originY, h);
-  }
-
-  function resizeCanvasOnly(): void {
-    const width = Math.max(1, layer.clientWidth);
-    const height = Math.max(1, layer.clientHeight);
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
-    }
+    overlayDrawer?.();
   }
 
   function drawZones(originY: number, cellH: number): void {
@@ -234,6 +223,20 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
     return { x, y };
   }
 
+  function clientAtMotifStitch(col: number, motifRow: number): { x: number; y: number } | null {
+    return centerOf(col, motifOriginRow() + motifRow);
+  }
+
+  function clientToMotifStitch(px: number, py: number): { col: number; row: number } | null {
+    if (!grid) return null;
+    const { w, h } = cells();
+    const col = Math.floor((px - MARGIN_LEFT - panX) / w);
+    const row = Math.floor((py - MARGIN_TOP - panY) / h);
+    if (col < 0 || row < 0 || col >= grid.width || row >= grid.height) return null;
+    if (!isMotifFullRow(row)) return null;
+    return { col, row: row - motifOriginRow() };
+  }
+
   function stitchAt(px: number, py: number): { col: number; row: number } | null {
     if (!grid) return null;
     const { w, h } = cells();
@@ -255,11 +258,31 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
     hover.textContent = `Maille ${hit.col} · rang ${hit.row} · ${ZONE_LABEL[zone] ?? 'Zone'} · ${color}`;
   }
 
+  function placeShortcuts(host: HTMLElement | null | undefined, fallback: HTMLElement): void {
+    const target = host ?? fallback;
+    if (shortcuts.parentElement !== target) target.append(shortcuts);
+  }
+
+  function applyToolsVisibility(): void {
+    // En double panneau : pas de bascule 3D/plat (les deux sont visibles).
+    // Les raccourcis caméra restent dans la barre d’outils 3D.
+    switcher.hidden = dualPane || !toolsVisible;
+    shortcuts.hidden = !toolsVisible;
+  }
+
   function setMode(flat: boolean): void {
+    if (dualPane) {
+      layer.hidden = false;
+      if (sockCanvas) sockCanvas.style.display = 'block';
+      buttonFlat.setAttribute('aria-pressed', 'true');
+      button3d.setAttribute('aria-pressed', 'false');
+      resize();
+      return;
+    }
     layer.hidden = !flat;
     buttonFlat.setAttribute('aria-pressed', flat ? 'true' : 'false');
     button3d.setAttribute('aria-pressed', flat ? 'false' : 'true');
-    if (gl instanceof HTMLCanvasElement) gl.style.display = flat ? 'none' : 'block';
+    if (sockCanvas) sockCanvas.style.display = flat ? 'none' : 'block';
     if (flat) {
       resize();
     } else {
@@ -277,28 +300,12 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
     draw();
   }, { passive: false });
 
-  canvas.addEventListener('pointerdown', (event) => {
-    dragging = true;
-    lastX = event.clientX;
-    lastY = event.clientY;
-    canvas.setPointerCapture(event.pointerId);
-  });
-  canvas.addEventListener('pointerup', () => {
-    dragging = false;
-  });
   canvas.addEventListener('pointermove', (event) => {
-    if (dragging) {
-      panX += event.clientX - lastX;
-      panY += event.clientY - lastY;
-      lastX = event.clientX;
-      lastY = event.clientY;
-      draw();
-    }
     const rect = canvas.getBoundingClientRect();
     showHover(event.clientX - rect.left, event.clientY - rect.top);
   });
   canvas.addEventListener('pointerleave', () => {
-    if (!dragging) hover.textContent = 'Survolez une maille.';
+    hover.textContent = 'Survolez une maille.';
   });
 
   const observer = new ResizeObserver(() => {
@@ -306,10 +313,16 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
   });
   observer.observe(layer);
 
+  applyToolsVisibility();
+  if (dualPane) setMode(true);
+
   return {
     setGrid(next, nextAspect) {
       grid = next;
-      aspect = nextAspect > 0 ? nextAspect : 0.75;
+      aspect = nextAspect > 0 && Number.isFinite(nextAspect) ? nextAspect : aspect > 0 ? aspect : 0.75;
+      const state = getState();
+      dims = state.design.dimensions;
+      zones = state.design.zones;
       draw();
     },
     setFloatMask(mask: Uint8Array | null) {
@@ -317,16 +330,57 @@ export function mountFlatView(viewport: HTMLElement, onReturnTo3d: () => void): 
       draw();
     },
     centerOf,
+    clientAtMotifStitch,
+    clientToMotifStitch,
+    redraw: draw,
+    panBy(dx: number, dy: number) {
+      panX += dx;
+      panY += dy;
+      draw();
+    },
+    setPanMode(active: boolean) {
+      panMode = active;
+      canvas.style.cursor = active || panMode ? 'grabbing' : '';
+    },
+    setOverlayDrawer(fn: (() => void) | null) {
+      overlayDrawer = fn;
+      draw();
+    },
+    revealMotifStitch(col: number, motifRow: number) {
+      if (!grid) return;
+      const { w, h } = cells();
+      const fullRow = motifOriginRow() + motifRow;
+      const targetX = MARGIN_LEFT + col * w + w / 2;
+      const targetY = MARGIN_TOP + fullRow * h + h / 2;
+      panX = canvas.width / 2 - targetX;
+      panY = canvas.height / 2 - targetY;
+      draw();
+    },
     setDevTools(visible: boolean) {
-      // En visionneuse : bascule via la barre (comme le décor). En ?dev : switcher coin.
-      switcher.hidden = !visible;
-      shortcuts.hidden = !visible;
+      toolsVisible = visible;
+      applyToolsVisibility();
     },
     setFlat(flat: boolean) {
       setMode(flat);
     },
     isFlat() {
       return !layer.hidden;
+    },
+    setHosts(next: FlatHosts) {
+      sockCanvas = next.sockCanvas ?? null;
+      dualPane = next.dualPane === true;
+      if (layer.parentElement !== next.canvasHost) {
+        next.canvasHost.append(layer);
+      }
+      const tools = next.toolsHost ?? next.canvasHost;
+      if (switcher.parentElement !== tools) tools.append(switcher);
+      placeShortcuts(next.shortcutsHost, tools);
+      applyToolsVisibility();
+      if (dualPane) {
+        setMode(true);
+      } else {
+        setMode(false);
+      }
     },
   };
 }

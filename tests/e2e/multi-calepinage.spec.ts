@@ -41,7 +41,6 @@ test('3 carreaux à la suite, rotation aléatoire : motifs visibles 3D et à pla
   });
   writeFileSync('test-results/visuel-T25-suite-rotalea-3d.png', Buffer.from(dataUrl.split(',')[1] ?? '', 'base64'));
 
-  await page.getByTestId('view-flat').click();
   await expect(page.getByTestId('flat-canvas')).toBeVisible();
   await page.locator('[data-testid="flat-canvas"]').screenshot({ path: 'test-results/visuel-T25-suite-rotalea-plat.png' });
 

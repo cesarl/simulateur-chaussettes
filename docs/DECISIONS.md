@@ -264,3 +264,38 @@ Conséquence : composition bibliothèque partageable ; composition avec import �
 Contexte : détecter détails trop fins après réduction.
 Choix : même critère que le despeckle (maille dont les 4 voisins sont égaux et différents) ; seuil 2 % de mailles isolées. Pastille `check-detail` visible seulement en mode composition. Couleurs / flottés : contrôles existants inchangés.
 Conséquence : alerte lisible sans nouveau panneau.
+
+## D47 — Défauts de partage V1 figés = production main (T50)
+Contexte : les liens `#p=1.` déjà partagés fusionnent sur des défauts figés (`v1ShareDefaults.json`). Il faut vérifier qu’ils correspondent à `defaultDesign()` de la production (`main`).
+Options : A) garder le JSON tel quel si égal à main ; B) réécrire le JSON avec les valeurs de main en cas d’écart.
+Choix : A — comparaison champ à champ (layout hors `tileIds`, dimensions, zones, quantize) entre `git show main:src/state.ts` `defaultDesign()` résolu et `v1ShareDefaults.json` : **aucune différence**. Les champs `collection` et `pattern` du JSON sont des enveloppes de partage (absents du `SockDesign` nu de main) ; `decor` de main via `defaultDecor()` coïncide aussi.
+Conséquence : `v1ShareDefaults.json` reste intouchable ; `shareDefaultsFor(1)` et la lecture des liens réels restent valides. `SHARE_VERSION` passe à 2 (écriture `#p=2.`) ; lecture `#p=1.` et `#p=2.` conservée.
+
+## D48 — État runtime SockDesignV2 + miroirs e2e (T51)
+Contexte : T51 remplace `layout` / `pattern` / collection active par des calques. Les e2e V3–V6 lisent encore `window.__SIM__.design.layout`.
+Options : A) réécrire tous les e2e immédiatement ; B) exposer sur le hook un `layout` / `pattern` dérivés du Motif en cours.
+Choix : B — `publish()` attache `editingLayoutSettings()` et `pattern: { kind: 'carreaux' }` sur le design cloné (`HookDesign`). L’état réel reste `SockDesignV2` pur. `defaultDesignV1()` exporté pour les fixtures de migration (layers.test).
+Conséquence : e2e anciens compilent ; T53+ les adaptera au dock / options calques. `patternSource.ts` supprimé ; `stackCompute.ts` porte le cache `motifLayerRgb`.
+
+
+## D49 — Grille CSS V7 et `#view3d` = viewport (T53)
+Contexte : V6 montait la scène sur `#viewport` (toute la zone gauche) alors que le canvas n’occupait qu’une fraction → `camera.aspect` faux. V7 exige 2D | 3D | options + dock.
+Options : A) wrapper + scène sur le body 3D seul ; B) `#view3d` = conteneur canvas, wraps pour toolbars.
+Choix : B — `createScene(view3d)` observe exactement l’élément du canvas ; toolbars dans `#view*-wrap`. `data-testid="viewport"` reste sur `#view3d` pour les e2e visionneuse. Breakpoint empilement à `max-width: 1100px` (le critère e2e teste 1100×800 en pile). Splitters : ratios `localStorage` clé `sim-layout-splits`.
+Conséquence : visionneuse inchangée (plein écran `#view3d`) ; dual-pane en `?dev` ; flat reparenté visionneuse ↔ `#view2d`.
+
+## D50 — Dock des calques : bibliothèque minimale, vignettes et carreaux par collection (T54)
+Contexte : T54 demande une liste de calques sans ascenseur, avec vignette « rendu réel du calque seul », glisser pour réordonner, et des boutons « + Motif » / « + Image » qui ouvrent la Bibliothèque — laquelle n’arrive qu’en T57. Les critères imposent de tout faire **à la souris** dans l’e2e.
+Options : A) désactiver « + Motif / + Image » jusqu’à T57 et tester l’ajout via `__SIM__` ; B) écrire tout de suite une Bibliothèque minimale, enrichie en T57.
+Choix : B, plus les décisions techniques suivantes.
+- `src/ui/library.ts` : dialogue modal `<dialog>` (Échap ferme), onglet **Collections** (recherche + vignette VAR1 → ajoute un calque Motif) et onglet **Images** (image d’exemple `public/fixtures/carreau-test-damier.png`, import PNG/SVG embarqué, images déjà dans le projet). T57 ajoute variations, glisser-déposer et « importer comme carreau ».
+- Vignettes : `renderStack` sur `[Fond, calque]` avec `supersample: 1`, cadrage **couvrant** depuis le haut de la tige (millimètres réels : le motif n’est pas déformé), résolution = boîte de la vignette ×2, cache par empreinte du calque (`canvas.dataset.thumbKey`). Le dock est resynchronisé à la fin de `recompute()` pour que les pixels tout juste calculés soient utilisés.
+- **Carreaux par calque Motif de collection** : `tilesForMotifLayer` filtre désormais les carreaux du projet par préfixe `<collectionId>-` (nom donné par `tilesFromCollection`), repli sur tous les carreaux si aucun ne correspond (comportement V6 conservé, empreintes des liens réels inchangées). Même filtre dans `editingLayoutSettings`. Sans cela, deux calques de collections différentes affichaient les mêmes carreaux.
+- `MAX_LAYERS = 16` dans `state.ts` : `addMotifLayer` / `addImageLayer` renvoient `null` et posent le message « 16 calques au maximum » (dock et état) ; `duplicateLayer` refuse de même.
+- Identifiants de calques déterministes (`motif-2`, `image-1`…) via `nextLayerId` au lieu de `Date.now()` : `data-testid` stables.
+- Raccourci **H** = bascule masquer / afficher (le cahier dit « masquer » ; sans bascule le raccourci n’a pas de retour visible).
+- Sélectionner un calque ne crée plus d’étape d’annulation (`skipHistory`) : « Annuler » doit défaire une modification, pas un clic.
+- `src/ui/optionsTabs.ts` : activation des onglets Calque / Chaussette / Décor / Export seulement (le contenu reste le panneau V6 jusqu’à T55).
+- Le bouton « Bibliothèque » de la barre projet est branché sur ce dialogue (défaut V6 n° 2 : « Bibliothèque ne fait rien de visible »).
+- Le Fond n’a ni œil, ni menu, ni glisser ; il garde son cadenas.
+Conséquence : l’ajout de calques est testable à la souris dès T54 ; T57 remplace le contenu du dialogue sans toucher au dock. Limite connue : la palette reste celle du design (`paletteFromLayers`) — un projet migré (palette exacte) ne prend pas automatiquement les couleurs d’un calque ajouté ; T58 traite la palette multi-calques.

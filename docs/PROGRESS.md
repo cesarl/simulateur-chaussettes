@@ -578,3 +578,164 @@ Vérification T49 : `npm run verify` ✅ (52 e2e).
 Statut : terminée
 Fait : e2e projet — timeout 120 s, `saveAs` fiable, purge IndexedDB avant rechargement (évite course autosave homme vs ouverture femme), attentes ready/hash élargies. Golden T41 inchangé.
 Vérification : `npm run verify` ✅ (52 e2e).
+
+## T50 — Filets de sécurité et module de référence — 2026-09-26 19:26
+Statut : terminée
+Fait : `src/core/layers.ts` + `v1ShareDefaults.json` copiés depuis `reference/layers/` (imports locaux seulement). `src/io/shareLink.ts` remplacé par la version 2 (`#p=2.` en écriture, lit `#p=1.` et `#p=2.`). `layers.test.ts` pointe vers `src/core/layers`. Assertions partage adaptées + test lecture `#p=1.`. Comparaison `defaultDesign()` de `main` vs `v1ShareDefaults.json` : identité (D47).
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (139 tests unitaires, dont `layers.test.ts` et `golden.test.ts`).
+Décisions : D47
+Reste / risques : l’UI et `state.ts` sont encore V6 ; T51 branche l’état sur les calques. Les e2e partage qui attendent `#p=1.` seront adaptés en T52.
+
+## T51 — État V2 calques — 2026-09-26 19:44
+Statut : terminée
+Fait : `SockDesignV2` runtime (`state.ts`) : Fond + 1 Motif, actions calques, undo/redo, `paletteFromLayers`. `recompute` via `stackCompute` (cache `motifLayerRgb` + `renderStack`). `patternSource.ts` supprimé. Projet : lecture V1→migration calques, écriture design V2. Lien : écriture `#p=2.`, lecture V1/V2 (`designV2` + `design` V1 pour empreintes). Hook e2e : miroir `layout`/`pattern` (D48). UI adaptée (commit précédent).
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (139, dont `golden` + `layers` + cache/undo T51). Empreintes liens réels inchangées.
+Décisions : D48
+Reste / risques : UI encore branchée sur le Motif « en cours » (pas le dock T54) ; e2e composition stub ; T52 finalise projet v3 + e2e liens réels + verify jalon A.
+
+## T52 — Projet v3, liens, e2e liens réels — 2026-09-26 19:48
+Statut : en cours (verify jalon A)
+Fait : projet JSON `version: 3` (lecture 1/2/3, migration V1/composition → calques, tiles/assets utilisés seulement). Lien `#p=2.` + lecture V1/V2. e2e `liens-reels.spec.ts` (Jardin / Palm) vert. share.spec adapté `#p=2.`.
+Vérification : unitaires ✅ (141) ; e2e liens-reels ✅ (4). `npm run verify` en cours.
+Décisions : aucune nouvelle (suite D47/D48)
+Reste / risques : e2e composition / modes carreaux à adapter ou retirer si cassés par V7.
+
+## T52 — verify jalon A — adaptations e2e — 2026-09-26 19:58
+Statut : en cours
+Fait : e2e composition (`composition-aids`, `composition-editor`, `composition-share`) **supprimés** (mode remplacé par calques Image). `editingLayoutSettings` expose les tileIds de collection (miroir V6). checks.spec force la taille libre avant décalage.
+Vérification : `npm run verify` relancé.
+
+## T52 — Projet v3 + verify jalon A — 2026-09-26 20:05
+Statut : terminée
+Fait : projet v3 ; e2e `liens-reels` ; e2e composition V6 **supprimés** (mode retiré) ; miroir `layout.tileIds` pour collections ; checks en taille libre. `npm run verify` ✅ (141 unitaires, 53 e2e).
+Vérification : verify complet vert.
+Décisions : D48 (suite) — e2e composition retirés, listés ici.
+Reste / risques : Jalon B (T53–T59) UI calques.
+
+## T53 — Disposition écran + 3D non déformée — 2026-09-26 20:18
+Statut : terminée
+Fait : Grille CSS unique (`#project-bar`, `#view2d-wrap`/`#view2d`, `#view3d-wrap`/`#view3d`, `#panel`, `#layers-dock`, séparateurs). `createScene(#view3d)` + ResizeObserver → `camera.aspect` correct. Visionneuse = `#view3d` plein écran (`data-testid=viewport`). Splitters mémorisés (`sim-layout-splits`). Breakpoint empilement `max-width: 1100px`. Stub barre projet + dock (T54). Flat en dual-pane dans `#view2d`.
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (141) ; e2e `disposition.spec.ts` ✅ (2). Captures ouvertes :
+- **1440×900** (`docs/captures/v7/visuel-T53-disposition-1440.png`) : barre projet en haut (Motif 1, Annuler… Bibliothèque) ; 2D | 3D | options côte à côte sans chevauchement ; dock bas avec Fond + Motif 1 ; chaussette 3D non écrasée (proportions normales après drag séparateur) ; onglets Calque/Chaussette/Décor/Export dans le cadre options.
+- **1100×800** (`docs/captures/v7/visuel-T53-disposition-1100.png`) : 2D au-dessus de 3D, options dessous, dock en bas ; pas de chevauchement visible ; scroll page nul.
+Décisions : D49
+Reste / risques : dock stub (pas de drag / vignettes) → T54 ; options encore le panneau V6 monolithique → T55 ; boutons Ouvrir/Enregistrer/Bibliothèque désactivés → T57.
+
+## T54 — Liste des calques (dock du bas) — 2026-09-26 21:20
+Statut : terminée
+Fait :
+- `src/ui/layersDock.ts` complet : une carte par calque (vignette = rendu réel du calque seul, nom, type, œil, cadenas, menu « ⋯ » dupliquer / monter / descendre / supprimer), ordre dessus → dessous de gauche à droite, Fond fixé à droite sans œil ni menu ni glisser, libellés « dessus » / « dessous » aux extrémités.
+- Clic = sélection + onglet « Calque » (nouveau `src/ui/optionsTabs.ts`, activation seule) ; double-clic sur le nom = renommer (Entrée valide, Échap annule).
+- Glisser à la souris avec repère d’insertion (`dock-insert-marker`) ; Échap annule le glisser.
+- Sans ascenseur : largeur des cartes 140 → 96 → icône seule, calculée d’après la largeur disponible ; au-delà de 16 calques l’ajout est refusé avec le message « 16 calques au maximum » (`MAX_LAYERS` dans `state.ts`, `addMotifLayer` / `addImageLayer` / `duplicateLayer` renvoient le refus).
+- Repli « Calques ▾ » mémorisé (`localStorage: sim-dock-collapsed`, try/catch) ; la barre fine garde le nom du calque sélectionné.
+- Clavier quand le focus est dans le dock : ↑/← et ↓/→ sélectionnent, Suppr supprime (jamais le Fond), Ctrl+D duplique, H bascule masquer.
+- `src/ui/library.ts` : Bibliothèque minimale (dialogue modal) pour « + Motif » (collections, recherche) et « + Image » (image d’exemple, import PNG/SVG embarqué, images du projet) ; le bouton « Bibliothèque » de la barre projet l’ouvre aussi (défaut V6 n° 2 corrigé). T57 l’enrichit.
+- `collectionTiles` (stackCompute) : un calque Motif de collection n’utilise que les carreaux nommés `<collection>-…`, donc deux collections cohabitent. Miroir dans `editingLayoutSettings`.
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (147 unitaires, dont 6 nouveaux dans `tests/unit/layers-dock.test.ts`) ; e2e `calques-dock.spec.ts` ✅ (4 tests, tout à la souris : `click`, `page.mouse.down/move/up`, `dblclick`).
+Contrôles visuels (images ouvertes une par une) :
+- `docs/captures/v7/visuel-T54-dock-3-calques.png` — dock seul, 3 calques : « Calques ▾ », libellé « DESSUS », carte « carreau-test-d… / IMAGE » sélectionnée (cadre rouge) dont la vignette est crème avec une petite marque en damier noir et blanc, carte « Medina par Bl… / MOTIF » avec vignette du motif rose-orange-bleu, carte « Fond / FOND » à vignette crème uni, libellé « DESSOUS », puis « + Motif » et « + Image » à droite. Les cartes Image et Motif portent trois boutons (œil, cadenas, ⋯) ; la carte Fond n’en a qu’un (cadenas). Tout est aligné sur une ligne, rien ne déborde.
+- `docs/captures/v7/visuel-T54-dock-12-calques.png` — dock seul, 12 calques : mode « icône seule », 12 vignettes d’environ 50 px : la première est l’image damier, la deuxième (cadre rouge) est la copie sélectionnée, suivent neuf vignettes du motif Medina (orange / bleu, proportions correctes, non écrasées), puis la carte crème du Fond ; « DESSUS » et « DESSOUS » toujours aux extrémités, « + Motif » / « + Image » toujours visibles. Aucun ascenseur (mesuré : `scrollWidth <= clientWidth`).
+- `docs/captures/v7/visuel-T54-dock-replie.png` — barre fine : « Calques ▸ » puis « Motif · Medina par Bleu Cobalt (copie) (copie) … ». Le nom du calque sélectionné reste lisible ; les cartes et les boutons d’ajout sont masqués. À noter : chaque duplication ajoute « (copie) » au nom (comportement du module de référence `duplicateStackLayer`), ce qui donne un nom très long après neuf copies.
+- `docs/captures/v7/visuel-T54-ecran-apres-reordre.png` — écran entier après le glisser de la carte du bas vers le haut : barre projet « Dunes par Bleu Cobalt », vue 2D qui montre la **vraie grille** du motif Medina (formes terracotta, beige, bleu marine, bord-côte marine en haut), 3D cohérente avec la même chaussette à motif, panneau d’options sur l’onglet « Calque » (collection Medina, 4 couleurs de fil), dock à 4 cartes : Medina (sélectionnée, tout à gauche = dessus), image damier, Dunes, Fond. C’est bien Medina, remontée par le glisser, qui s’affiche.
+- `docs/captures/v7/visuel-T54-ecran-16-calques.png` — écran entier avec 16 calques : 16 cartes icône (vignettes crème, les Motifs dupliqués n’ont pas de carreaux donc seul le Fond se voit), la 3ᵉ sélectionnée, et le message rouge « 16 calques au maximum » à droite de « + Image » après un clic sur « + Motif ». Une seule ligne, pas d’ascenseur.
+- `docs/captures/v7/visuel-T54-carte-motif.png` / `visuel-T54-carte-fond.png` — zoom sur une carte : vignette, nom tronqué avec points de suite, type en petites capitales, boutons œil / cadenas / ⋯ ; la carte Fond n’a que le cadenas.
+Décisions : D50
+Reste / risques :
+- **9 e2e restent rouges, et ils l’étaient déjà avant T54** : vérifié en rejouant les mêmes fichiers sur le commit T53 (`6b3e9d2`) dans un worktree séparé → mêmes 9 échecs. Ils testent la coquille V6 et doivent être adaptés à la disposition T53 : `flat`, `multi-calepinage`, `palettes` (captures), `seam` (clic sur « À plat », bouton masqué en double panneau) ; `project` (`project-save` existe maintenant deux fois : barre projet + panneau) ; `scroll` ×2 (le panneau d’options ne déborde plus à 1400×900 ni 1100×800) ; `ui` (la zone 3D ne fait plus 700 px de large) ; `viewer-flat` (la case « À plat » démarre cochée). Total suite : 50 ✅ / 9 ❌ (59 tests) avant **et** après T54.
+- Sélectionner un calque déclenche un recalcul complet (`recompute` est abonné à tout changement d’état) : avec 12 calques et des images, le clic sur une carte prend un temps visible. À optimiser en T56 (recalcul seulement si le rendu change).
+- La palette d’un design migré (palette exacte, `paletteFromLayers: false`) n’intègre pas automatiquement les couleurs d’un calque ajouté → T58.
+- Poignées 2D → T56 ; Bibliothèque complète → T57.
+
+## T55 — Options du calque sélectionné — 2026-09-26 22:55
+Statut : terminée
+Fait :
+- `src/ui/layerOptions.ts` : en-tête (nom + « Réinitialiser ce calque »), source du calque, **Fond** (nuancier fils + couleur libre), **Motif** étendue (toute / bande, curseurs du rang / au rang, lecture en cm), **Image** (aperçu, remplacement, miroirs, frise + écart, valeurs numériques repliées), **Couleurs transparentes** (pastilles `layerKeyColors`, damier barré si transparente).
+- `src/ui/panel.ts` : volet « Calque » = options par type ; `motif-options` réutilise `collectionPicker`, `palettePanel`, calepinage et carreaux importés via `editingMotif()` ; onglets **Chaussette** (taille, dimensions, zones, gros pixels, contrôles, palette avec « Automatique d'après les calques »), **Décor** et **Export** masquent les autres volets.
+- `src/styles.css` : `[hidden]` sur `.field` / `.row` / `.layer-source` force `display: none` (évite que `display:flex` annule `hidden`).
+- Tests unitaires `tests/unit/layer-options.test.ts` ; e2e `tests/e2e/calque-options.spec.ts` (transparence + bande à la souris, captures des trois types).
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (156 unitaires) ; `npm run build` ✅ ; e2e `calque-options.spec.ts` ✅ (3).
+Contrôles visuels (panneau `#panel`, images ouvertes) :
+- `docs/captures/v7/visuel-T55-options-motif.png` — onglet Calque, calque « Motif · Medina… » : en-tête + source collection ; sections Collection (recherche, vignettes SIGNATURE, Medina sélectionnée), Couleurs (4 fils), Calepinage et réglages motif visibles ; pas de section Fond ni Image.
+- `docs/captures/v7/visuel-T55-options-fond.png` — calque Fond : seule la section « Couleur du fond » (texte d’aide, sélecteur libre beige, grille de pastilles fils bleu/vert/brun) ; pas de motif ni transparence.
+- `docs/captures/v7/visuel-T55-options-image.png` — calque Image damier : aperçu carré, « Remplacer l'image… », miroir horizontal coché, frise décochée, « Valeurs numériques » replié, trois pastilles transparentes (noir, crème, terracotta).
+- `docs/captures/v7/visuel-T55-transparence.png` — bas du volet Motif Dunes jaune/blanc : étendue « Toute la chaussette », pastille blanche en damier barré (transparente), pastille jaune pleine ; pied de panneau avec durée de calcul.
+- `docs/captures/v7/visuel-T55-bande.png` — étendue « Bande de rangs », curseurs 0→66 rangs, libellé « 0,0 cm à 6,6 cm » ; deux pastilles couleurs du motif.
+- `docs/captures/v7/visuel-T55-options-chaussette.png` — onglet Chaussette : Dimensions (Homme, curseurs tige/talon/pied/pointe), Zones (bord-côte, couleurs talon), pas le volet Calque.
+Décisions : aucune nouvelle (réutilisation panneau V6 branché sur calque, D48/D50).
+Reste / risques : bibliothèque enrichie → T57 ; e2e legacy V6 (9 rouges listés en T54) toujours à adapter.
+
+## T56 — Vue 2D : vrai rendu et poignées — 2026-09-26 23:12
+Statut : terminée
+Fait :
+- `src/ui/flatGizmos.ts` : sélection au clic (`layerAtStitch`), Échap pour désélectionner, poignées Image (`imageGizmo`, `dragImage`) et Motif (`motifGizmo`, `dragMotif`, `scaleMotif`, `setMotifBand`), calques verrouillés / Fond sans poignées ; pan avec espace ou clic milieu/droit ; molette = zoom (déjà dans `flatView`).
+- `src/ui/flatView.ts` : coordonnées motif ↔ canvas, overlay poignées, `revealMotifStitch` (centrage), pan sans glisser par défaut sur le fond.
+- `src/main.ts` : branchement gizmos ; crochet `__SIM__` (`gizmoClient`, `stackLayerAt`, `flatRevealMotif`, `motifStitchFromLocal`) pour les e2e.
+- `tests/e2e/poignees.spec.ts` : déplacement image +20 mailles, rotation 90°, échelle ×2, décalage Motif, bande (poignée basse), tout à la souris.
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (156 unitaires) ; `npm run build` ✅ ; e2e `poignees.spec.ts` ✅ (1 test, ~3 min).
+Contrôle visuel — `docs/captures/v7/poignees-2d.png` (copie aussi dans `media/v7/`) :
+- Grille **maille par maille** (barreaux horizontaux, pas de rectangle lissé) : bord-côte marine, tige grise avec le motif Medina quantifié, repères « Bord-côte » / « Tige » à gauche.
+- Calque **Motif en bande** sélectionné : deux lignes rouges pointillées horizontales avec **poignées rondes rouges** à gauche (haut et bas de bande) ; le motif reste visible en vrai tricot dans la bande.
+- (Calque Image tourné sélectionné juste avant la capture : cadre terracotta + poignées visibles pendant le test ; sur la capture finale le Motif bande domine avec ses poignées.)
+Décisions : aucune nouvelle.
+Reste / risques : bibliothèque complète → T57 ; e2e legacy V6 (9 rouges) ; optimiser recalcul à la seule sélection (noté T54).
+
+## T57 — Bibliothèque — 2026-09-26 23:49
+Statut : terminée
+Fait :
+- `src/ui/library.ts` : dialogue modal (Échap natif, `showModal`) ; onglets Collections / Images ; collections groupées (Mes collections, Signature, Classiques, Nouveautés, Autres), vignettes VAR1, recherche, clic → calque Motif (nom catalogue, calepinage défaut) ; menu ▾ « Ajouter une variation comme image » ; images du projet avec vignettes ; import PNG/SVG + glisser-déposer ; case « Importer comme carreau (Motif) » ; calque ajouté sélectionné, dialogue fermé.
+- Branchements existants conservés : barre projet `project-library`, dock `dock-add-motif` / `dock-add-image`.
+- `tests/e2e/bibliotheque.spec.ts` : premier plan (`elementFromPoint`), filtre medina, Motif Medina, import damier PNG + couleurs 2D.
+- `tests/e2e/ui.spec.ts` : aide calepinage lue via `toBeAttached` (curseur masqué tant que « taille libre » est décochée en V7).
+Vérification : `npm run verify` ✅ (156 tests unitaires, 64 e2e).
+Contrôle visuel — `docs/captures/v7/visuel-T57-bibliotheque-dialogue.png` (copie `media/v7/`) :
+- Modal centré au-dessus de l’app, fond assombri ; onglet **Collections** actif, bouton **Fermer** à droite.
+- Ligne d’aide « 70 collections · un clic ajoute un calque Motif », champ de recherche vide.
+- Section **SIGNATURE** : grille de vignettes (Medina terracotta/bleu, Fleurs, Continuum, etc.) avec libellés tronqués et petit bouton ▾ pour les variations en calque Image.
+Décisions : aucune nouvelle.
+Reste / risques : garde-fous multi-calques → T58.
+
+## T58 — Garde-fous jacquard multi-calques — 2026-09-26 23:55
+Statut : terminée
+Fait :
+- `src/core/stackPaletteGuard.ts` : couleurs par calque, bandeau si palette « d’après les calques » > `MACHINE_LIMITS.maxColorsTotal`, réduction aux N fils les plus présents dans le RVB empilé ; indices `owner` pour libellés flottés / mailles isolées.
+- `src/ui/panel.ts` : bandeau `stack-palette-banner` + bouton « Réduire à N couleurs » ; pastilles contrôles enrichies.
+- `src/main.ts` : branchement recalcul ; `src/ui/layerOptions.ts` : bulle « ? » conseil jacquard.
+- `tests/unit/stack-palette-guard.test.ts` : 3 Motifs × 2 couleurs + Fond.
+Vérification : `npm run typecheck` ✅ ; `npm test` ✅ (157 tests unitaires).
+Décisions : aucune nouvelle.
+Reste / risques : bilan V7 → T59.
+
+## T59 — Bilan V7 — 2026-09-27 00:10
+Statut : terminée
+Fait : README mis à jour (calques, bibliothèque, poignées, `#p=2.`, limites). Captures bilan dans `docs/captures/v7/` (écran, dock, options, poignées, bibliothèque, visionneuses Jardin + Palm). `npm run verify` ✅ **157 unitaires + 64 e2e**.
+Vérification : verify complet vert (12 min e2e). Captures liens réels ouvertes :
+- **Jardin** : visionneuse plein écran, titre « Jardin d Dazur », motif bleu/blanc feuilles, décor carreaux assorti, barre ¾/Profil/Dos/Face + Décor coché.
+- **Palm Beach** : titre « Palm Beach », motif orange/rose géométrique, décor assorti, même barre visionneuse ; empreinte grille `5e26e231`.
+Décisions : aucune nouvelle (suite D47–D50).
+Reste / risques : T18 (sizes fabricant) hors scope ; PR draft #9 à merger sur `v6-composition` (ou `main` si #8 mergée).
+
+---
+
+## Point pour César — V7 calques — 2026-09-27
+
+### Ce qui marche
+- Pile de calques Fond / Motif / Image (état V2, projet JSON v3, lien `#p=2.` ; lecture `#p=1.` intacte).
+- Écran `?dev` : 2D | 3D | options (onglets) | dock bas ; visionneuse plein écran inchangée ; aspect 3D correct.
+- Dock : cartes, vignettes, drag, menu, clavier, repli, max 16.
+- Options par type + couleurs transparentes + bande Motif.
+- Poignées 2D (Image + Motif/bande).
+- Bibliothèque (collections + import images).
+- Garde-fou palette multi-calques (« Réduire à N »).
+- Empreintes golden + liens Jardin / Palm inchangées.
+
+### Tester en 5 minutes
+1. `npm run dev` → ouvrir `http://localhost:5173/?dev`
+2. Bibliothèque → Medina ; ajouter une Image ; masquer/réordonner dans le dock ; déplacer l’image à la souris sur la vue 2D.
+3. « Copier le lien » → coller dans un onglet sans `?dev` : visionneuse seule. Rouvrir aussi les deux liens réels (fixtures `tests/unit/layers.test.ts`).
+
+### Décisions à relire
+D47 (défauts V1 = main), D48 (miroirs e2e), D49 (grille CSS / view3d), D50 (dock + bibliothèque minimale).
+
+### Blocages
+Aucun pour V7. T18 toujours en attente des tailles fabricant.

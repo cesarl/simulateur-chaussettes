@@ -3,7 +3,7 @@ import { samplePattern } from '../../src/core/layout';
 import { migrateLegacyKind } from '../../src/core/presets';
 import { quantize } from '../../src/core/quantize';
 import { defaultDimensions } from '../../src/core/sizes';
-import { defaultDesign } from '../../src/state';
+import { defaultDesign, defaultMotifLayout } from '../../src/state';
 import type { TileAsset } from '../../src/core/types';
 
 function noisyTile(id: string, seed: number): TileAsset {
@@ -37,7 +37,7 @@ describe('performances du recalcul', () => {
     };
     const zones = { ...design.zones, cuffEnabled: false, patternOnFoot: false };
     const layout = {
-      ...design.layout,
+      ...defaultMotifLayout(),
       tileIds: ['a', 'b'],
       tileStitches: 24,
       tileRows: 32,

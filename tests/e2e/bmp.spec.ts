@@ -19,6 +19,7 @@ test('export BMP indexé et planche PNG', async ({ page }) => {
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true && (window.__SIM__?.geometryBuilds ?? 0) >= 1);
 
+  await page.getByTestId('tab-export').click();
   await page.getByTestId('export-face').uncheck();
   await page.getByTestId('export-bmp').check();
   const bmpEvent = page.waitForEvent('download');

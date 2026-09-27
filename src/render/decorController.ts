@@ -9,7 +9,7 @@ import type { Collection } from '../core/collections';
 import { resolvePreset } from '../core/presets';
 import type { DecorSettings, TileAsset } from '../core/types';
 import { tilesFromCollection, nuancierMap } from '../io/collectionTiles';
-import { getState } from '../state';
+import { editingCollection, editingLayoutSettings, getState } from '../state';
 import {
   buildTileSurface,
   createDecor,
@@ -142,7 +142,9 @@ export function createDecorController(
   }
 
   function decorKey(): string {
-    const { design, tiles, activeCollectionId } = getState();
+    const { design, tiles } = getState();
+    const layout = editingLayoutSettings();
+    const activeCollectionId = editingCollection()?.id ?? null;
     const d = design.decor;
     return JSON.stringify({
       mode: d.mode,
@@ -156,8 +158,8 @@ export function createDecorController(
       otherCollectionId: d.otherCollectionId,
       sockTiles: tiles.map((t) => t.id),
       activeCollectionId,
-      calep: design.layout.calepinage,
-      graine: design.layout.calepinage.graine,
+      calep: layout.calepinage,
+      graine: layout.calepinage.graine,
     });
   }
 
@@ -165,13 +167,15 @@ export function createDecorController(
     tiles: TileAsset[];
     spec: CalepinageSpec;
   } | null> {
-    const { design, tiles, catalogue, activeCollectionId, calepPresets } = getState();
+    const { design, tiles, catalogue, calepPresets } = getState();
+    const layout = editingLayoutSettings();
+    const activeCollectionId = editingCollection()?.id ?? null;
     const d = design.decor;
     if (d.mode === 'aucun') return null;
 
     if (d.tileSource === 'sock' || !catalogue) {
       if (tiles.length === 0) return null;
-      return { tiles, spec: design.layout.calepinage };
+      return { tiles, spec: layout.calepinage };
     }
 
     let collection: Collection | undefined;
@@ -179,7 +183,7 @@ export function createDecorController(
       collection = catalogue.collections.find((c) => c.id === activeCollectionId);
       if (!collection) {
         if (tiles.length === 0) return null;
-        return { tiles, spec: design.layout.calepinage };
+        return { tiles, spec: layout.calepinage };
       }
     } else {
       const id = d.otherCollectionId;
@@ -204,7 +208,8 @@ export function createDecorController(
     opts: DecorOptions,
     grainSrc: TileSource | null,
   ): void {
-    const { calepPresets, design } = getState();
+    const { calepPresets } = getState();
+    const layout = editingLayoutSettings();
     const sources = mapsTiles.map(tileToCanvas);
     const preset = resolvePreset(spec, calepPresets);
     const maps = buildTileSurface({
@@ -216,7 +221,7 @@ export function createDecorController(
       rows: opts.tilesPerSide,
       options: opts,
       pxPerTile: pxPerTileFor(opts.tileCm),
-      seed: design.layout.calepinage.graine,
+      seed: layout.calepinage.graine,
     });
     disposeHandle();
     handle = createDecor(maps, opts, getCenter(), renderer);

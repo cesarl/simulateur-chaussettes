@@ -59,16 +59,16 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 
 ## Jalon A — le modèle en calques, sans changement visible
 
-### [ ] T50 — Filets de sécurité et module de référence
+### [x] T50 — Filets de sécurité et module de référence
 
 - Copier `reference/layers/layers.ts` vers `src/core/layers.ts` et `v1ShareDefaults.json` vers `src/core/` (imports corrigés, rien d'autre). Faire pointer `tests/unit/layers.test.ts` vers `src/core/layers`.
 - Remplacer `src/io/shareLink.ts` par `reference/share/shareLink.ts` (version 2). Adapter les deux assertions `'#p=1.'` de `share.test.ts` et `share-integration.test.ts`, et ajouter un test : un hash `#p=1.` se lit toujours.
 - Vérifier avec `git show main:src/state.ts` que les valeurs de `defaultDesign()` en production sont celles de `v1ShareDefaults.json`, puisque les liens déjà partagés ont été faits en production. Noter le résultat dans `DECISIONS.md`. S'il y a une différence, **arrêter T50** : écrire la différence dans `PROGRESS.md` et continuer avec les défauts de `main` (c'est la production qui fait foi).
 
 **Critères**
-- [ ] `layers.test.ts`, `golden.test.ts` et tous les tests unitaires sont verts ; commit **avant** toute autre modification.
+- [x] `layers.test.ts`, `golden.test.ts` et tous les tests unitaires sont verts ; commit **avant** toute autre modification.
 
-### [ ] T51 — État V2 : les calques remplacent `layout`, `pattern` et la collection active
+### [x] T51 — État V2 : les calques remplacent `layout`, `pattern` et la collection active
 
 - `SockDesign` devient `SockDesignV2` (`version: 2`, `layers`). Disparaissent de l'état :
   - `design.layout`, `design.pattern` ;
@@ -92,13 +92,13 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 - Décor « comme la chaussette » : utilise `primaryMotifLayer()`.
 
 **Critères**
-- [ ] Tests unitaires :
+- [x] Tests unitaires :
   - un projet V6 ouvert dans V7 (fixtures de `project.test.ts`) calcule la même grille qu'en V6 ;
   - masquer, réordonner ou rendre une couleur transparente ne recalcule pas `motifLayerRgb` (compteur d'appels) ;
   - annuler ou rétablir un ajout de calque fonctionne.
-- [ ] `golden.test.ts` et `layers.test.ts` verts sans modification.
+- [x] `golden.test.ts` et `layers.test.ts` verts sans modification.
 
-### [ ] T52 — Fichiers projet, sauvegarde auto et lien de partage
+### [x] T52 — Fichiers projet, sauvegarde auto et lien de partage
 
 - Projet `.json` en **version 3** : `{version: 3, design: SockDesignV2, tiles, assets}`.
   - La lecture accepte les versions 1, 2 et 3 : les versions 1 et 2 passent par `migrateDesignV1`, avec `collection` (métadonnées V4) → `V1Context`.
@@ -111,19 +111,19 @@ Module testé à intégrer **sans le réécrire** (lire `reference/layers/README
 - La sauvegarde automatique (IndexedDB) relit l'ancien format sans erreur.
 
 **Critères**
-- [ ] Tests unitaires :
+- [x] Tests unitaires :
   - projet V1 (fixture de `project.test.ts`), V2 avec composition et V3 → relus, même grille ;
   - le lien d'un design à 4 calques fait l'aller-retour exact.
-- [ ] e2e `liens-reels.spec.ts` : les deux liens réels (dans `layers.test.ts`) s'ouvrent en visionneuse, sans panneau, sans message d'erreur :
+- [x] e2e `liens-reels.spec.ts` : les deux liens réels (dans `layers.test.ts`) s'ouvrent en visionneuse, sans panneau, sans message d'erreur :
   - la 3D contient les deux couleurs de fil du lien ;
   - en dev, la liste des calques affiche « Fond » et un Motif nommé d'après la collection.
-- [ ] `npm run verify` complet vert (fin du jalon A).
+- [x] `npm run verify` complet vert (fin du jalon A).
 
 ---
 
 ## Jalon B — le nouvel écran
 
-### [ ] T53 — Disposition de l'écran (mode dev) et 3D non déformée
+### [x] T53 — Disposition de l'écran (mode dev) et 3D non déformée
 
 La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 × 900 :
 
@@ -151,13 +151,13 @@ La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 ×
 - La page entière ne défile jamais. Le dock et les vues ne défilent pas ; seul le panneau d'options peut défiler.
 
 **Critères**
-- [ ] e2e `disposition.spec.ts` à 1440 × 900 et 1100 × 800 :
+- [x] e2e `disposition.spec.ts` à 1440 × 900 et 1100 × 800 :
   - les boîtes des zones (2D, 3D, options, dock, et chaque barre d'outils) ne se chevauchent pas deux à deux ;
   - `document.scrollingElement.scrollHeight <= innerHeight` ;
   - le rapport largeur/hauteur du canvas 3D est égal à `camera.aspect` à 1 % près, **après avoir déplacé le séparateur à la souris** et après redimensionnement de la fenêtre.
-- [ ] Capture de l'écran entier aux deux tailles, ouverte et décrite.
+- [x] Capture de l'écran entier aux deux tailles, ouverte et décrite.
 
-### [ ] T54 — Liste des calques (dock du bas)
+### [x] T54 — Liste des calques (dock du bas)
 
 - Une **carte** par calque, en ligne : vignette (rendu réel du calque seul), nom, œil (masquer), cadenas.
   - Ordre : **dessus à gauche → dessous à droite** ; le Fond est fixé à droite, sans œil ni glisser. Libellés discrets « dessus » et « dessous » aux extrémités.
@@ -169,15 +169,15 @@ La visionneuse (mode normal, sans `?dev`) ne change pas. En mode dev, à 1440 ×
 - Clavier, quand le focus est dans le dock : ↑ / ↓ pour sélectionner, Suppr pour supprimer (pas le Fond), Ctrl+D pour dupliquer, H pour masquer.
 
 **Critères**
-- [ ] e2e `calques-dock.spec.ts`, **à la souris** :
+- [x] e2e `calques-dock.spec.ts`, **à la souris** :
   - ajouter 2 Motifs et 1 Image ;
   - glisser la carte du bas vers le haut : l'ordre de la pile change et la couleur d'une maille témoin de la vue 2D change ;
   - masquer puis démasquer ;
   - avec 16 calques, `dock.scrollWidth <= dock.clientWidth` ;
   - replier puis déplier.
-- [ ] Capture du dock avec 3 puis 12 calques, décrite.
+- [x] Capture du dock avec 3 puis 12 calques, décrite.
 
-### [ ] T55 — Options du calque sélectionné
+### [x] T55 — Options du calque sélectionné
 
 L'onglet « Calque » montre les options **du type** de calque sélectionné. On réutilise les réglages existants de `panel.ts`, `collectionPicker.ts`, `palettePanel.ts` et `calepGallery.ts`, branchés sur le calque au lieu de l'état global.
 
@@ -206,10 +206,10 @@ L'onglet « Calque » montre les options **du type** de calque sélectionné. On
   - **Décor** et **Export** : sections actuelles.
 
 **Critères**
-- [ ] e2e `calque-options.spec.ts`, à la souris : choisir un Motif jaune et blanc, rendre le blanc transparent → dans la vue 2D, une maille qui était blanche prend la couleur du Fond ; limiter ce motif à une bande → hors de la bande, on voit le Fond.
-- [ ] Capture de l'onglet pour chacun des trois types, décrite.
+- [x] e2e `calque-options.spec.ts`, à la souris : choisir un Motif jaune et blanc, rendre le blanc transparent → dans la vue 2D, une maille qui était blanche prend la couleur du Fond ; limiter ce motif à une bande → hors de la bande, on voit le Fond.
+- [x] Capture de l'onglet pour chacun des trois types, décrite.
 
-### [ ] T56 — Vue 2D : vrai rendu et poignées
+### [x] T56 — Vue 2D : vrai rendu et poignées
 
 - La vue 2D affiche **la grille réelle**, c'est-à-dire la sortie de `renderStack` après la réduction des couleurs, maille par maille. Les images y apparaissent donc comme elles seront tricotées, jamais comme des rectangles.
   - Pendant qu'on déplace une image, l'aperçu peut être allégé (image posée en transparence sur la grille). La grille exacte est recalculée au lâcher, ou toutes les 100 ms au plus.
@@ -228,15 +228,15 @@ L'onglet « Calque » montre les options **du type** de calque sélectionné. On
 - Zoom avec la molette et déplacement de la vue avec la barre espace ou le bouton du milieu (bonus, si le temps le permet).
 
 **Critères**
-- [ ] e2e `poignees.spec.ts`, **uniquement à la souris** :
+- [x] e2e `poignees.spec.ts`, **uniquement à la souris** :
   - déplacer une image de 20 mailles vers la droite : la couleur de l'image apparaît 20 mailles plus loin dans la grille ;
   - la tourner de 90° avec la poignée ronde : `rotation` = 90 ± 1 ;
   - l'agrandir par un coin : la largeur double à ± 5 % ;
   - décaler un Motif ;
   - régler la bande par sa poignée basse.
-- [ ] Capture 2D avec une image tournée sélectionnée et un Motif en bande sélectionné, décrite (on doit voir le vrai dessin, pas un rectangle).
+- [x] Capture 2D avec une image tournée sélectionnée et un Motif en bande sélectionné, décrite (on doit voir le vrai dessin, pas un rectangle).
 
-### [ ] T57 — Bibliothèque
+### [x] T57 — Bibliothèque
 
 Bouton « Bibliothèque » dans la barre du projet, et boutons « + Motif » / « + Image » du dock. Il ouvre un **panneau par-dessus l'écran** (dialogue modal, Échap pour fermer) avec deux onglets :
 
@@ -251,23 +251,23 @@ Bouton « Bibliothèque » dans la barre du projet, et boutons « + Motif » / �
 - Tout ce qui est ajouté est placé au-dessus et sélectionné, puis le dialogue se ferme.
 
 **Critères**
-- [ ] e2e `bibliotheque.spec.ts`, à la souris :
+- [x] e2e `bibliotheque.spec.ts`, à la souris :
   - ouvrir → le dialogue est visible et au premier plan (`elementFromPoint` au centre = dialogue) ;
   - filtrer « medina » ;
   - cliquer → un calque Motif « Medina » apparaît dans le dock ;
   - importer un PNG de test → un calque Image, dont la vue 2D montre les couleurs.
-- [ ] Capture du dialogue, décrite.
+- [x] Capture du dialogue, décrite.
 
-### [ ] T58 — Garde-fous jacquard avec plusieurs calques
+### [x] T58 — Garde-fous jacquard avec plusieurs calques
 
 - La palette automatique réunit les couleurs de tous les calques visibles. **Au-delà du maximum de couleurs de la machine**, un bandeau le dit, avec la liste des couleurs et le calque d'où vient chacune, plus le bouton « Réduire à N couleurs » (qui passe en palette manuelle avec les N plus présentes).
 - Contrôles existants (flottés, mailles isolées) : inchangés. Ils indiquent en plus le calque concerné quand c'est possible, via `owner`.
 - Conseils (bulle « ? » de V6) : repris dans l'onglet « Calque ».
 
 **Critères**
-- [ ] Test unitaire : 3 calques Motif de 2 couleurs chacun, plus le Fond → le bandeau propose la réduction, et la réduction donne exactement N couleurs.
+- [x] Test unitaire : 3 calques Motif de 2 couleurs chacun, plus le Fond → le bandeau propose la réduction, et la réduction donne exactement N couleurs.
 
-### [ ] T59 — Bilan V7
+### [x] T59 — Bilan V7
 
 - README : calques, bibliothèque, poignées, liens `#p=2.` (les anciens liens marchent toujours), limites.
 - Captures dans `docs/captures/v7/` :

@@ -2,11 +2,14 @@ import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest';
 import {
   canRedo,
   canUndo,
-  defaultDesign,
+  defaultMotifLayout,
+  editingLayoutSettings,
   getState,
+  isMotifLayoutDirty,
   isSectionDirty,
   redo,
   resetAllDesign,
+  resetSelectedLayer,
   resetSection,
   resetState,
   undo,
@@ -24,12 +27,12 @@ describe('réinitialiser / annuler / rétablir', () => {
 
   it('réinitialiser une section ne touche pas les autres', () => {
     update({ design: { layout: { tileStitches: 40 }, zones: { heelHeightMm: 90 } } });
-    expect(isSectionDirty('layout')).toBe(true);
+    expect(isMotifLayoutDirty()).toBe(true);
     expect(isSectionDirty('zones')).toBe(true);
-    resetSection('layout');
-    expect(getState().design.layout.tileStitches).toBe(defaultDesign().layout.tileStitches);
+    resetSelectedLayer();
+    expect(editingLayoutSettings().tileStitches).toBe(defaultMotifLayout().tileStitches);
     expect(getState().design.zones.heelHeightMm).toBe(90);
-    expect(isSectionDirty('layout')).toBe(false);
+    expect(isMotifLayoutDirty()).toBe(false);
     expect(isSectionDirty('zones')).toBe(true);
   });
 
@@ -45,12 +48,12 @@ describe('réinitialiser / annuler / rétablir', () => {
   });
 
   it('un glissement de curseur (coalesce) compte pour un seul pas', () => {
-    update({ design: { zones: { heelHeightMm: 40 } }, }, { coalesce: true });
-    update({ design: { zones: { heelHeightMm: 55 } }, }, { coalesce: true });
-    update({ design: { zones: { heelHeightMm: 95 } }, }, { coalesce: true });
+    update({ design: { zones: { heelHeightMm: 40 } } }, { coalesce: true });
+    update({ design: { zones: { heelHeightMm: 55 } } }, { coalesce: true });
+    update({ design: { zones: { heelHeightMm: 95 } } }, { coalesce: true });
     expect(getState().design.zones.heelHeightMm).toBe(95);
     undo();
-    expect(getState().design.zones.heelHeightMm).toBe(55); // défaut avant le geste
+    expect(getState().design.zones.heelHeightMm).toBe(55);
     expect(canUndo()).toBe(false);
   });
 
@@ -71,8 +74,14 @@ describe('réinitialiser / annuler / rétablir', () => {
     expect(getState().tiles).toHaveLength(1);
     resetAllDesign();
     expect(getState().tiles).toHaveLength(1);
-    expect(getState().design.layout.tileIds).toEqual(['a']);
+    expect(editingLayoutSettings().tileIds).toEqual(['a']);
     expect(getState().design.zones.heelHeightMm).toBe(55);
-    expect(getState().design.layout.tileStitches).toBe(defaultDesign().layout.tileStitches);
+    expect(editingLayoutSettings().tileStitches).toBe(defaultMotifLayout().tileStitches);
+  });
+
+  it('resetSection zones fonctionne', () => {
+    update({ design: { zones: { heelHeightMm: 99 } } });
+    resetSection('zones');
+    expect(getState().design.zones.heelHeightMm).toBe(55);
   });
 });

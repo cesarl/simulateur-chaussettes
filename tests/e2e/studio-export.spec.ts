@@ -29,6 +29,7 @@ test('export studio : trois-quarts 2048, transparent, vue inchangée', async ({ 
     };
   });
 
+  await page.getByTestId('tab-export').click();
   await page.getByTestId('export-face').uncheck();
   await page.getByTestId('export-trois-quarts').check();
   await page.getByTestId('export-size').selectOption('2048');

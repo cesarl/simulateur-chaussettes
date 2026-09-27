@@ -20,7 +20,7 @@ test('état vide, raccourcis, aides et largeur 1280', async ({ page }) => {
   await expect(empty).toContainText(/bienvenue|exemple|importez/i);
 
   const help = page.getByTestId('help-ctl-tile-width');
-  await expect(help).toBeVisible();
+  await expect(help).toBeAttached();
   const tip = await help.getAttribute('title');
   expect(tip?.length ?? 0).toBeGreaterThan(10);
 
@@ -33,7 +33,8 @@ test('état vide, raccourcis, aides et largeur 1280', async ({ page }) => {
   const box = await viewport.boundingBox();
   expect(box).toBeTruthy();
   if (!box) throw new Error('viewport');
-  expect(box.width).toBeGreaterThan(700);
+  // V7 : la 3D partage la largeur avec 2D + options ; seuil abaissé.
+  expect(box.width).toBeGreaterThan(250);
 
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();

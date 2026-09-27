@@ -9,7 +9,7 @@ import {
   type Collection,
 } from '../core/collections';
 import { DEFAULT_CALEPINAGE } from '../core/calepinage';
-import { getState, update } from '../state';
+import { editingCollection, getState, setMotifCollection, update } from '../state';
 import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 
 const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
@@ -36,7 +36,8 @@ function matchesQuery(c: Collection, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
-function calepinageForCollection(c: Collection) {
+/** Calepinage par défaut d’une collection (préréglage du catalogue s’il existe). */
+export function calepinageForCollection(c: Collection) {
   const id = c.calepinageParDefaut;
   if (!id) return { ...DEFAULT_CALEPINAGE };
   return {
@@ -111,11 +112,9 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
       const tiles = await tilesFromCollection(c, colors, nuancier);
       const png = isPngCollection(c);
       const yarns = png ? [] : yarnColors(c, colors, nuancier);
+      setMotifCollection(c.id, png ? {} : colors, 'defaut');
       update({
         tiles,
-        activeCollectionId: c.id,
-        zoneColors: png ? {} : colors,
-        paletteOptionId: 'defaut',
         design: {
           layout: { calepinage: calepinageForCollection(c) },
           name: c.nom,
@@ -152,6 +151,7 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
   function render(): void {
     const state = getState();
     const cat = state.catalogue;
+    const activeCollectionId = editingCollection()?.id ?? null;
     missing.hidden = !!cat;
     list.replaceChildren();
     if (!cat) {
@@ -159,7 +159,7 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
       return;
     }
 
-    const active = cat.collections.find((c) => c.id === state.activeCollectionId) ?? null;
+    const active = cat.collections.find((c) => c.id === activeCollectionId) ?? null;
     current.textContent = active
       ? `Collection : ${active.nom} (${active.variations.length} motif${active.variations.length > 1 ? 's' : ''})`
       : 'Aucune collection sélectionnée.';
@@ -185,7 +185,7 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
       for (const c of cols) {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = state.activeCollectionId === c.id ? 'coll-item selected' : 'coll-item';
+        btn.className = activeCollectionId === c.id ? 'coll-item selected' : 'coll-item';
         btn.dataset.testid = `coll-item-${c.id}`;
         btn.title = c.nom;
         const img = document.createElement('img');

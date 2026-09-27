@@ -1,12 +1,23 @@
-import { layoutRaccord, motifRows, seamMismatch } from './core/layout';
-import { computePatternRgb, normalizePatternSource } from './core/patternSource';
-import { compositionYarnColors } from './core/compositionPalette';
-import { assetKey, isLinkShareable, type RasterImage } from './core/composition';
-import { countIsolatedStitches } from './core/compositionAids';
+import { layoutRaccord, seamMismatch } from './core/layout';
+import { type RasterImage } from './core/composition';
 import { loadCompositionImages } from './io/compositionImages';
 import { resolvePreset } from './core/presets';
 import { quantize } from './core/quantize';
 import { defaultDimensions, MACHINE_LIMITS, stitchAspect } from './core/sizes';
+import { createMotifRgbCache, computeStackRgb, stackPaletteIfEnabled } from './core/stackCompute';
+import {
+  layerKeyColors,
+  primaryMotifLayer,
+  renderStack,
+  stackGauge,
+  imageGizmo,
+  motifGizmo,
+  layerAtStitch,
+  type SockDesignV2,
+  type StackLayer,
+} from './core/layers';
+import { assetKey } from './core/composition';
+import { yarnColors, isPngCollection } from './core/collections';
 import { runExports, renderPair } from './io/exportPng';
 import { loadCatalogue } from './io/catalogue';
 import { tilesFromCollection, nuancierMap } from './io/collectionTiles';
@@ -28,28 +39,72 @@ import { createScene } from './render/scene';
 import { createSockObject, type SockObject } from './render/sock3d/sockObject';
 import type { SockShapeInput } from './render/sock3d/sockShape';
 import { capturePng, frameView, type ViewName } from './render/sock3d/studio';
-import { getState, subscribe, update, undo, redo, type DesignPatch } from './state';
+import {
+  editingCollection,
+  editingLayoutSettings,
+  getState,
+  subscribe,
+  update,
+  undo,
+  redo,
+  selectLayer,
+  patchImageLayer,
+  patchLayerCoalesced,
+  setMotifBounds,
+  type DesignPatch,
+} from './state';
 import type { SimHook, StitchRead } from './testHook';
 import type { SockDimensions, StitchGrid, ZoneSettings } from './core/types';
 import { mountFlatView } from './ui/flatView';
+import { mountFlatGizmos } from './ui/flatGizmos';
 import { mountCompositionEditor } from './ui/compositionEditor';
-import { mountPanel, renderChecks, renderStatus } from './ui/panel';
+import { mountPanel, renderChecks, renderStackPaletteGuard, renderStatus, type PanelApi } from './ui/panel';
 import { yarnLegendLabels } from './ui/palettePanel';
 import { mountViewerBar } from './ui/viewerBar';
+import { mountSplitters } from './ui/splitters';
+import { mountLayersDock } from './ui/layersDock';
+import { mountLibrary } from './ui/library';
+import { mountOptionsTabs } from './ui/optionsTabs';
+import { mountProjectBar } from './ui/projectBar';
 import { createDecorController } from './render/decorController';
-import { yarnColors, isPngCollection, zoneHex } from './core/collections';
 import { checkFabrication } from './core/checks';
-import { composeGrid, gridFingerprint } from './core/grid';
+import { countIsolatedStitches } from './core/compositionAids';
+import { composeGrid, gridFingerprint, rowRanges } from './core/grid';
+import { motifRows } from './core/layout';
+import {
+  analyzeStackPaletteGuard,
+  firstFloatLayerHint,
+  firstIsolatedLayerHint,
+  reduceStackPaletteQuantize,
+} from './core/stackPaletteGuard';
 import * as THREE from 'three';
-const viewportEl = document.getElementById('viewport');
+
 const panelEl = document.getElementById('panel');
 const appEl = document.getElementById('app');
-if (!(viewportEl instanceof HTMLElement) || !(panelEl instanceof HTMLElement) || !(appEl instanceof HTMLElement)) {
+const view3dEl = document.getElementById('view3d');
+const view2dEl = document.getElementById('view2d');
+const projectBarEl = document.getElementById('project-bar');
+const layersDockEl = document.getElementById('layers-dock');
+const toolbar2dEl = document.querySelector('[data-testid="toolbar-2d"]');
+const toolbar3dEl = document.querySelector('[data-testid="toolbar-3d"]');
+if (
+  !(panelEl instanceof HTMLElement) ||
+  !(appEl instanceof HTMLElement) ||
+  !(view3dEl instanceof HTMLElement) ||
+  !(view2dEl instanceof HTMLElement) ||
+  !(projectBarEl instanceof HTMLElement) ||
+  !(layersDockEl instanceof HTMLElement)
+) {
   throw new Error('Structure de page introuvable');
 }
-const viewport = viewportEl;
 const panel = panelEl;
 const app = appEl;
+const view3d = view3dEl;
+const view2d = view2dEl;
+const projectBar = projectBarEl;
+const layersDock = layersDockEl;
+/** Zone 3D = viewport historique (visionneuse + e2e). */
+void view3d;
 
 function tryLocalStorage(): Storage | null {
   try {
@@ -69,10 +124,38 @@ let devMode = resolveDevMode(
   (url) => window.history.replaceState(null, '', url),
 );
 
-const handle = createScene(viewport);
-const flat = mountFlatView(viewport, () => handle.requestRender());
-const compositionEditor = mountCompositionEditor(viewport);
-const viewer = mountViewerBar(viewport, {
+mountSplitters(storage);
+
+const handle = createScene(view3d);
+const sockCanvas =
+  handle.renderer.domElement instanceof HTMLCanvasElement ? handle.renderer.domElement : null;
+const toolbar3d = toolbar3dEl instanceof HTMLElement ? toolbar3dEl : null;
+const flat = mountFlatView(
+  {
+    canvasHost: view2d,
+    toolsHost: toolbar2dEl instanceof HTMLElement ? toolbar2dEl : view2d,
+    shortcutsHost: toolbar3d,
+    sockCanvas,
+    dualPane: true,
+  },
+  () => handle.requestRender(),
+);
+const flatCanvasEl = view2d.querySelector('[data-testid="flat-canvas"]');
+if (!(flatCanvasEl instanceof HTMLCanvasElement)) {
+  throw new Error('Canvas vue 2D introuvable');
+}
+mountFlatGizmos(flat, flatCanvasEl, {
+  getDesign: () => getState().design,
+  getSelectedId: () => getState().selectedLayerId,
+  getStackOwner: () => stackOwner,
+  getImages: () => compositionImages,
+  selectLayer,
+  patchImage: patchImageLayer,
+  patchMotif: patchLayerCoalesced,
+  setMotifBounds,
+});
+const compositionEditor = mountCompositionEditor(view3d);
+const viewer = mountViewerBar(view3d, {
   onView: (view) => {
     frameCamera(view);
     publish();
@@ -82,11 +165,29 @@ const viewer = mountViewerBar(viewport, {
   isFlat: () => flat.isFlat(),
 });
 
+if (toolbar3dEl instanceof HTMLElement) {
+  const label = document.createElement('span');
+  label.className = 'zone-label';
+  label.textContent = 'Vue 3D';
+  toolbar3dEl.prepend(label);
+}
+if (toolbar2dEl instanceof HTMLElement) {
+  const label = document.createElement('span');
+  label.className = 'zone-label';
+  label.textContent = 'Vue à plat';
+  toolbar2dEl.prepend(label);
+}
+
 const shareHint = document.createElement('p');
 shareHint.className = 'share-hint';
 shareHint.dataset.testid = 'share-hint';
 shareHint.hidden = true;
-viewport.appendChild(shareHint);
+view3d.appendChild(shareHint);
+
+mountProjectBar(projectBar, {
+  copyShareLink,
+  openLibrary: () => library.open('collections'),
+});
 
 function showShareHint(message: string | null): void {
   if (!message) {
@@ -99,10 +200,15 @@ function showShareHint(message: string | null): void {
 }
 
 async function copyShareLink(): Promise<void> {
-  const pattern = getState().design.pattern;
-  if (pattern?.kind === 'composition' && !isLinkShareable(pattern.composition)) {
+  const { design, embeddedAssets } = getState();
+  const hasEmbedded = design.layers.some((l) => {
+    if (l.kind !== 'image' || l.asset.kind !== 'embarquee') return false;
+    const id = l.asset.assetId;
+    return embeddedAssets.some((a) => a.id === id);
+  });
+  if (hasEmbedded) {
     showShareHint(
-      'Cette composition contient des images importées : envoyez le fichier projet (.json)',
+      'Ce projet contient des images importées : envoyez le fichier projet (.json)',
     );
     return;
   }
@@ -129,8 +235,29 @@ function applyShellMode(dev: boolean): void {
   devMode = dev;
   app.classList.toggle('viewer-mode', !dev);
   panel.hidden = !dev;
-  viewer.setVisible(!dev);
+  projectBar.hidden = !dev;
+  layersDock.hidden = !dev;
+  // Reparenter la vue à plat AVANT d’afficher la barre visionneuse
+  // (sinon isFlat() est encore true et la case « À plat » reste cochée).
+  if (dev) {
+    flat.setHosts({
+      canvasHost: view2d,
+      toolsHost: toolbar2dEl instanceof HTMLElement ? toolbar2dEl : view2d,
+      shortcutsHost: toolbar3d,
+      sockCanvas,
+      dualPane: true,
+    });
+  } else {
+    flat.setHosts({
+      canvasHost: view3d,
+      toolsHost: view3d,
+      shortcutsHost: toolbar3d,
+      sockCanvas,
+      dualPane: false,
+    });
+  }
   flat.setDevTools(dev);
+  viewer.setVisible(!dev);
   handle.requestRender();
 }
 
@@ -145,19 +272,139 @@ let textureUpdates = 0;
 let surfaceKey = '';
 let sock: SockObject | null = null;
 const warnings: string[] = [];
-/** Images pixelisées pour le mode composition (cache module). */
+/** Images pixelisées pour les calques Image (cache module). */
 let compositionImages = new Map<string, RasterImage>();
 let compositionLoadToken = 0;
 let compositionImagesReadyKey = '';
+const motifRgbCache = createMotifRgbCache();
+/** Owner par maille de la zone motif (sélection 2D). */
+let stackOwner: Int16Array | null = null; // sélection 2D (T56)
+/** Derniers pixels par calque Motif et couleurs de fil : vignettes du dock. */
+let lastMotifRgb = new Map<string, Uint8ClampedArray>();
+let lastKeyColors = new Map<string, readonly string[]>();
 
-function compositionLayersKey(
-  layers: ReadonlyArray<{ asset: { kind: string }; hidden: boolean }>,
-  zoneColors: Record<string, string> | null,
-): string {
-  return JSON.stringify({
-    layers: layers.map((l) => l.asset),
-    zoneColors,
+/** Clé de cache d’une vignette : rien ne change tant que le calque et la jauge sont identiques. */
+function thumbKey(layer: StackLayer, design: SockDesignV2): string {
+  const ready =
+    layer.kind === 'motif'
+      ? lastMotifRgb.has(layer.id)
+      : layer.kind === 'image'
+        ? compositionImages.has(assetKey(layer.asset))
+        : true;
+  const fond = design.layers[0];
+  return JSON.stringify([
+    layer,
+    fond?.kind === 'fond' ? fond.color : '',
+    design.dimensions,
+    design.zones.patternOnFoot,
+    design.zones.cuffEnabled,
+    ready,
+  ]);
+}
+
+/** Vignette d’un calque : rendu réel de ce calque seul, posé sur le Fond. */
+function drawLayerThumb(layerId: string, canvas: HTMLCanvasElement): void {
+  const { design } = getState();
+  const layer = design.layers.find((l) => l.id === layerId);
+  const fond = design.layers[0];
+  if (!layer || !fond) return;
+  const key = thumbKey(layer, design);
+  if (canvas.dataset.thumbKey === key) return;
+  const gauge = stackGauge(design.dimensions, design.zones);
+  if (gauge.needles < 1 || gauge.rows < 1) return;
+  const solo: StackLayer[] = layer.kind === 'fond' ? [fond] : [fond, { ...layer, hidden: false }];
+  const { rgb } = renderStack({
+    layers: solo,
+    gauge,
+    motifRgb: lastMotifRgb,
+    images: compositionImages,
+    keyColors: lastKeyColors,
+    supersample: 1,
   });
+  const source = document.createElement('canvas');
+  source.width = gauge.needles;
+  source.height = gauge.rows;
+  const sourceContext = source.getContext('2d');
+  const context = canvas.getContext('2d');
+  if (!sourceContext || !context) return;
+  const pixels = sourceContext.createImageData(gauge.needles, gauge.rows);
+  for (let i = 0, p = 0; p < pixels.data.length; i += 3, p += 4) {
+    pixels.data[p] = rgb[i] ?? 0;
+    pixels.data[p + 1] = rgb[i + 1] ?? 0;
+    pixels.data[p + 2] = rgb[i + 2] ?? 0;
+    pixels.data[p + 3] = 255;
+  }
+  sourceContext.putImageData(pixels, 0, 0);
+  // Cadrage « couvrant » depuis le haut de la tige, en millimètres réels : pas de motif déformé.
+  const mmPerStitch = 10 / design.dimensions.stitchesPerCm;
+  const mmPerRow = 10 / design.dimensions.rowsPerCm;
+  const boxRatio = canvas.width / Math.max(1, canvas.height);
+  let cropW = gauge.needles;
+  let cropH = gauge.rows;
+  if ((gauge.needles * mmPerStitch) / (gauge.rows * mmPerRow) > boxRatio) {
+    cropW = Math.max(1, Math.round((gauge.rows * mmPerRow * boxRatio) / mmPerStitch));
+  } else {
+    cropH = Math.max(1, Math.round(gauge.needles * mmPerStitch / boxRatio / mmPerRow));
+  }
+  const cropX = Math.max(0, Math.round((gauge.needles - cropW) / 2));
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingEnabled = true;
+  context.drawImage(source, cropX, 0, cropW, cropH, 0, 0, canvas.width, canvas.height);
+  canvas.dataset.thumbKey = key;
+}
+
+/** Couleurs principales d’un calque : pastilles « rendre transparent » du panneau. */
+function layerColorsOf(layerId: string): string[] {
+  const layer = getState().design.layers.find((l) => l.id === layerId);
+  if (!layer) return [];
+  return layerKeyColors(layer, {
+    motifRgb: lastMotifRgb,
+    images: compositionImages,
+    keyColors: lastKeyColors,
+  });
+}
+
+/** Aperçu de l’image d’un calque Image, contenue dans le cadre (proportions gardées). */
+function drawAssetPreview(layerId: string, canvas: HTMLCanvasElement): void {
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  const layer = getState().design.layers.find((l) => l.id === layerId);
+  if (layer?.kind !== 'image') return;
+  const image = compositionImages.get(assetKey(layer.asset));
+  if (!image) return;
+  const source = document.createElement('canvas');
+  source.width = image.width;
+  source.height = image.height;
+  const sourceContext = source.getContext('2d');
+  if (!sourceContext) return;
+  sourceContext.putImageData(
+    new ImageData(new Uint8ClampedArray(image.rgba), image.width, image.height),
+    0,
+    0,
+  );
+  const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  context.imageSmoothingEnabled = true;
+  context.drawImage(source, Math.round((canvas.width - width) / 2), Math.round((canvas.height - height) / 2), width, height);
+}
+
+const optionsTabsEl = document.querySelector('[data-testid="options-tabs"]');
+const optionsTabs = mountOptionsTabs(optionsTabsEl instanceof HTMLElement ? optionsTabsEl : panel);
+const library = mountLibrary(document.body);
+const dock = mountLayersDock(layersDock, {
+  drawLayerThumb,
+  openLayerTab: () => optionsTabs.open('calque'),
+  openLibrary: (tab) => library.open(tab),
+});
+
+function imageLayersKey(design: SockDesignV2): string {
+  return JSON.stringify(
+    design.layers
+      .filter((l): l is Extract<typeof l, { kind: 'image' }> => l.kind === 'image' && !l.hidden)
+      .map((l) => l.asset),
+  );
 }
 
 const decor = createDecorController(
@@ -352,7 +599,13 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 }
 
 function publish(): void {
-  const design = structuredClone(getState().design);
+  const state = getState();
+  const layout = editingLayoutSettings(state.design, state.tiles, state.selectedLayerId);
+  const design = {
+    ...structuredClone(state.design),
+    layout,
+    pattern: { kind: 'carreaux' as const },
+  };
   const hook: SimHook = {
     ready: true,
     computeId,
@@ -363,7 +616,7 @@ function publish(): void {
     patternPalette: [...patternPalette],
     geometryBuilds: sock?.geometryBuilds ?? 0,
     textureUpdates,
-    knitFidelity: getState().knitFidelity,
+    knitFidelity: state.knitFidelity,
     cameraPosition: {
       x: handle.camera.position.x,
       y: handle.camera.position.y,
@@ -374,10 +627,13 @@ function publish(): void {
       y: handle.controls.target.y,
       z: handle.controls.target.z,
     },
+    get cameraAspect() {
+      return handle.camera.aspect;
+    },
     warnings: [...warnings],
-    catalogue: getState().catalogue,
-    catalogueMissing: getState().catalogueMissing,
-    activeCollectionId: getState().activeCollectionId,
+    catalogue: state.catalogue,
+    catalogueMissing: state.catalogueMissing,
+    activeCollectionId: editingCollection(state.design, state.selectedLayerId)?.id ?? null,
     loadFixture,
     setDesign,
     getStitch: readStitch,
@@ -385,70 +641,115 @@ function publish(): void {
     captureView,
     capturePair,
     decorBuildId: decor.getBuildId(),
+    stackOwnerLength: stackOwner?.length ?? 0,
+    motifRowOrigin: rowRanges(state.design.dimensions, state.design.zones).leg.start,
+    gizmoClient(layerId: string) {
+      const layer = state.design.layers.find((l) => l.id === layerId);
+      if (!layer || layer.kind === 'fond' || layer.locked) return null;
+      const g = stackGauge(state.design.dimensions, state.design.zones);
+      if (layer.kind === 'image') {
+        const img = compositionImages.get(assetKey(layer.asset));
+        const gz = imageGizmo(layer, img ?? { width: 1, height: 1 }, g);
+        const rotate = flat.clientAtMotifStitch(gz.rotate[0], gz.rotate[1]);
+        const br = flat.clientAtMotifStitch(gz.corners[2]![0], gz.corners[2]![1]);
+        const cx =
+          gz.corners.reduce((s, c) => s + c[0], 0) / gz.corners.length;
+        const cy =
+          gz.corners.reduce((s, c) => s + c[1], 0) / gz.corners.length;
+        const center = flat.clientAtMotifStitch(cx, cy);
+        return {
+          rotate: rotate ?? undefined,
+          scaleCorner: br ?? undefined,
+          imageCenter: center ?? undefined,
+        };
+      }
+      const gz = motifGizmo(layer, g);
+      const move = flat.clientAtMotifStitch(gz.tile.x + gz.tile.w / 2, gz.tile.y + gz.tile.h / 2);
+      const scale = flat.clientAtMotifStitch(gz.tile.x + gz.tile.w, gz.tile.y + gz.tile.h);
+      const bandTop = flat.clientAtMotifStitch(Math.round(g.needles / 4), gz.band.from);
+      const bandBottom = flat.clientAtMotifStitch(Math.round(g.needles / 4), gz.band.to - 0.01);
+      return {
+        motifMove: move ?? undefined,
+        motifScale: scale ?? undefined,
+        bandTop: bandTop ?? undefined,
+        bandBottom: bandBottom ?? undefined,
+      };
+    },
+    stackLayerAt(col: number, motifRow: number) {
+      if (!stackOwner) return null;
+      const g = stackGauge(state.design.dimensions, state.design.zones);
+      return layerAtStitch(state.design.layers, stackOwner, g.needles, col + 0.5, motifRow + 0.5);
+    },
+    flatMotifCenter: (col, motifRow) => flat.clientAtMotifStitch(col, motifRow),
+    flatRevealMotif: (col, motifRow) => flat.revealMotifStitch(col, motifRow),
+    motifStitchFromLocal: (px, py) => flat.clientToMotifStitch(px, py),
   };
   window.__SIM__ = hook;
 }
 
 function recompute(): void {
   const started = performance.now();
-  const { design, tiles, calepPresets, catalogue, activeCollectionId, zoneColors, embeddedAssets } =
-    getState();
+  const { design, tiles, calepPresets, catalogue, embeddedAssets } = getState();
   let pattern: Uint8Array | null = null;
   patternPalette = [];
   patternCounts = [];
-  const source = normalizePatternSource(design.pattern);
-  const rgb = computePatternRgb({
+  warnings.length = 0;
+
+  // Carreaux par calque Motif : collection → tiles projet (déjà rasterisés), importés → filtre.
+  const keyColors = new Map<string, readonly string[]>();
+  if (catalogue) {
+    const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));
+    for (const layer of design.layers) {
+      if (layer.kind !== 'motif') continue;
+      const src = layer.source;
+      if (src.kind !== 'collection') continue;
+      const collection = catalogue.collections.find((c) => c.id === src.collectionId);
+      if (!collection || isPngCollection(collection)) continue;
+      const yarns = yarnColors(collection, src.colors, nuancier);
+      keyColors.set(
+        layer.id,
+        yarns.map((y) => y.hex),
+      );
+    }
+  }
+
+  const { rgb, owner, motifRgb } = computeStackRgb({
     design,
     tiles,
-    calepPresets,
-    compositionImages: source.kind === 'composition' ? compositionImages : undefined,
+    presets: calepPresets,
+    images: compositionImages,
+    keyColors,
+    cache: motifRgbCache,
   });
+  stackOwner = owner;
+  lastMotifRgb = motifRgb;
+  lastKeyColors = keyColors;
+
   if (rgb) {
-    let quantizeSettings = design.quantize;
-    if (source.kind === 'composition') {
-      const svgYarnHexes = new Map<string, string[]>();
-      if (catalogue && zoneColors) {
-        const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));
-        for (const layer of source.composition.layers) {
-          if (layer.asset.kind !== 'collection') continue;
-          const asset = layer.asset;
-          const key = assetKey(asset);
-          if (svgYarnHexes.has(key)) continue;
-          const coll = catalogue.collections.find((c) => c.id === asset.collectionId);
-          if (!coll || isPngCollection(coll)) continue;
-          const hexMap = zoneHex(zoneColors, nuancier);
-          svgYarnHexes.set(key, Object.values(hexMap));
-        }
-      }
-      const yarns = compositionYarnColors({
-        composition: source.composition,
-        svgYarnHexes,
-        rasterImages: compositionImages,
-        pngMaxColors: design.quantize.maxColors || 4,
-      });
+    let quantizeSettings = { ...design.quantize };
+    const fromLayers = stackPaletteIfEnabled(design, motifRgb, compositionImages, keyColors, rgb);
+    if (fromLayers) {
       quantizeSettings = {
-        ...design.quantize,
-        paletteMode: yarns.paletteMode,
-        palette: yarns.palette,
-        maxColors: yarns.maxColors,
+        ...quantizeSettings,
+        paletteMode: 'manuelle',
+        palette: fromLayers.palette,
+        maxColors: fromLayers.maxColors,
       };
-      if (yarns.overLimit) {
-        warnings.length = 0;
-        warnings.push(
-          `Composition : ${yarns.palette.length} couleurs dépassent la limite machine (${MACHINE_LIMITS.maxColorsTotal}).`,
-        );
-      }
-    } else if (catalogue && activeCollectionId && zoneColors) {
-      const collection = catalogue.collections.find((c) => c.id === activeCollectionId);
-      if (collection && !isPngCollection(collection) && Object.keys(zoneColors).length > 0) {
-        const nuancier = new Map(catalogue.nuancier.map((c) => [c.id, c]));
-        const yarns = yarnColors(collection, zoneColors, nuancier);
-        quantizeSettings = {
-          ...design.quantize,
-          paletteMode: 'manuelle',
-          palette: yarns.map((y) => y.hex),
-          maxColors: Math.max(2, Math.min(8, yarns.length || 2)),
-        };
+    } else {
+      // Collection sur Motif primaire : palette fils (comportement V6).
+      const motif = primaryMotifLayer(design.layers);
+      const motifSrc = motif?.source;
+      if (motifSrc?.kind === 'collection' && catalogue) {
+        const collection = catalogue.collections.find((c) => c.id === motifSrc.collectionId);
+        if (collection && !isPngCollection(collection) && Object.keys(motifSrc.colors).length > 0) {
+          const yarns = yarnColors(collection, motifSrc.colors, nuancierMap(catalogue));
+          quantizeSettings = {
+            ...quantizeSettings,
+            paletteMode: 'manuelle',
+            palette: yarns.map((y) => y.hex),
+            maxColors: Math.max(2, Math.min(8, yarns.length || 2)),
+          };
+        }
       }
     }
     const reduced = quantize(rgb, design.dimensions.needles, quantizeSettings);
@@ -456,59 +757,60 @@ function recompute(): void {
     patternPalette = reduced.palette;
     patternCounts = reduced.counts;
   }
+
   grid = composeGrid(design.dimensions, design.zones, pattern, patternPalette);
   flat.setGrid(grid, stitchAspect(design.dimensions));
-  const report = checkFabrication(
-    grid,
-    design.layout,
-    design.zones,
-    MACHINE_LIMITS,
-    design.quantize.maxFloat,
-  );
+  const layout = editingLayoutSettings(design, tiles);
+  const report = checkFabrication(grid, layout, design.zones, MACHINE_LIMITS, design.quantize.maxFloat);
   flat.setFloatMask(report.floatMask);
-  const detail =
-    source.kind === 'composition' && pattern
-      ? countIsolatedStitches(pattern, design.dimensions.needles, motifRows(design.dimensions, design.zones))
+
+  const floatLayerHint =
+    !report.floatsOk && stackOwner
+      ? firstFloatLayerHint(report.floatMask, grid, design.zones, stackOwner, design.layers)
       : null;
-  renderChecks(
-    report,
-    detail ? { tooFine: detail.tooFine, isolatedCount: detail.isolatedCount } : null,
-  );
+
+  let checkDetail: { tooFine: boolean; isolatedCount: number; layerHint?: string | null } | null = null;
+  if (pattern) {
+    const motifH = motifRows(design.dimensions, design.zones);
+    const isolated = countIsolatedStitches(pattern, design.dimensions.needles, motifH);
+    if (isolated.isolatedCount > 0) {
+      const layerHint = stackOwner
+        ? firstIsolatedLayerHint(pattern, design.dimensions.needles, motifH, stackOwner, design.layers)
+        : null;
+      checkDetail = { tooFine: isolated.tooFine, isolatedCount: isolated.isolatedCount, layerHint };
+    }
+  }
+
+  renderChecks(report, checkDetail, { floatLayerHint });
+
+  if (rgb) {
+    const guard = analyzeStackPaletteGuard(
+      design,
+      { motifRgb, images: compositionImages, keyColors },
+      rgb,
+      MACHINE_LIMITS,
+    );
+    renderStackPaletteGuard(guard, () => {
+      const patch = reduceStackPaletteQuantize(rgb, MACHINE_LIMITS);
+      update({ design: { quantize: { ...getState().design.quantize, ...patch } } });
+    });
+  } else {
+    renderStackPaletteGuard(null, () => undefined);
+  }
+
   syncMesh(grid);
   lastComputeMs = performance.now() - started;
   computeId += 1;
   compositionEditor.sync();
+  // Vignettes du dock et pastilles du panneau : les pixels viennent d’être calculés.
+  dock.sync();
+  panelApi?.sync();
   publish();
-  const tileCount = Math.max(1, tiles.length || design.layout.tileIds.length);
 
-  // Précharge async des images composition (ne bloque pas le 1er rendu fond)
-  if (source.kind === 'composition') {
-    const readyKey = compositionLayersKey(source.composition.layers, zoneColors);
-    if (readyKey !== compositionImagesReadyKey) {
-      const token = ++compositionLoadToken;
-      void loadCompositionImages(source.composition.layers, {
-        zoneColors,
-        catalogue,
-        assets: embeddedAssets,
-      })
-        .then((imgs) => {
-          if (token !== compositionLoadToken) return;
-          compositionImages = imgs;
-          compositionImagesReadyKey = readyKey;
-          compositionEditor.setImages(imgs);
-          recompute();
-        })
-        .catch((err) => {
-          const message = err instanceof Error ? err.message : 'Images de composition illisibles.';
-          update({ error: message }, { skipHistory: true });
-        });
-    }
-  } else {
-    compositionImagesReadyKey = '';
-  }
-  const preset = resolvePreset(design.layout.calepinage, calepPresets);
-  const mismatch = seamMismatch(design.layout, design.dimensions.needles, tileCount, preset);
-  const raccordInfo = layoutRaccord(design.layout, design.dimensions.needles, tileCount, preset);
+  const tileCount = Math.max(1, layout.tileIds.length || tiles.length);
+  const preset = resolvePreset(layout.calepinage, calepPresets);
+  const mismatch = seamMismatch(layout, design.dimensions.needles, tileCount, preset);
+  const raccordInfo = layoutRaccord(layout, design.dimensions.needles, tileCount, preset);
   const SEAM_LABEL: Record<string, string> = {
     dos: 'dos',
     interieur: 'intérieur',
@@ -521,20 +823,70 @@ function recompute(): void {
     patternCounts,
     mismatch,
     raccordMessage: raccordInfo.message,
-    seamLabel: SEAM_LABEL[design.layout.seam] ?? design.layout.seam,
-    showFit: design.layout.tileSizeMode === 'free' && mismatch > 0,
+    seamLabel: SEAM_LABEL[layout.seam] ?? layout.seam,
+    showFit: layout.tileSizeMode === 'free' && mismatch > 0,
   });
+
+  // Précharge async des images des calques Image
+  const imageLayers = design.layers.filter((l) => l.kind === 'image') as Array<{
+    asset: { kind: string; collectionId?: string; variation?: string; assetId?: string };
+    hidden: boolean;
+  }>;
+  if (imageLayers.some((l) => !l.hidden)) {
+    const readyKey = imageLayersKey(design);
+    if (readyKey !== compositionImagesReadyKey) {
+      const token = ++compositionLoadToken;
+      const col = editingCollection();
+      void loadCompositionImages(
+        design.layers
+          .filter((l) => l.kind === 'image')
+          .map((l) => ({
+            id: l.id,
+            asset: l.asset,
+            x: l.x,
+            y: l.y,
+            widthStitches: l.widthStitches,
+            rotation: l.rotation,
+            flipX: l.flipX,
+            flipY: l.flipY,
+            repeatAroundGap: l.repeatAroundGap,
+            hidden: l.hidden,
+            locked: l.locked,
+          })),
+        {
+          zoneColors: col?.colors ?? null,
+          catalogue,
+          assets: embeddedAssets,
+        },
+      )
+        .then((imgs) => {
+          if (token !== compositionLoadToken) return;
+          compositionImages = imgs;
+          compositionImagesReadyKey = readyKey;
+          compositionEditor.setImages(imgs);
+          recompute();
+        })
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : 'Images de calque illisibles.';
+          update({ error: message }, { skipHistory: true });
+        });
+    }
+  } else {
+    compositionImagesReadyKey = '';
+  }
 }
 
+let panelApi: PanelApi | null = null;
 let saveTimer = 0;
 
 function currentCollectionMeta(): ProjectCollectionMeta | null {
-  const { activeCollectionId, zoneColors, paletteOptionId, catalogue } = getState();
-  if (!activeCollectionId || !zoneColors) return null;
+  const col = editingCollection();
+  const { catalogue } = getState();
+  if (!col) return null;
   return {
-    id: activeCollectionId,
-    zoneColors: { ...zoneColors },
-    paletteOptionId,
+    id: col.id,
+    zoneColors: { ...col.colors },
+    paletteOptionId: col.paletteId,
     syncCommit: catalogue?.source.commit ?? null,
   };
 }
@@ -543,6 +895,8 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
   const catalogue = getState().catalogue;
   const meta = project.collection;
   const embeddedAssets = project.assets;
+  const design = project.design;
+
   if (meta && catalogue) {
     const collection = catalogue.collections.find((c) => c.id === meta.id);
     if (collection) {
@@ -550,57 +904,89 @@ async function applyParsedProject(project: ParsedProject): Promise<void> {
         const nuancier = nuancierMap(catalogue);
         const tiles = await tilesFromCollection(collection, meta.zoneColors, nuancier);
         const yarns = yarnColors(collection, meta.zoneColors, nuancier);
+        // Assurer que le Motif primaire pointe sur cette collection.
+        const motif = primaryMotifLayer(design.layers);
+        let layers = design.layers;
+        if (motif) {
+          layers = design.layers.map((l) =>
+            l.id === motif.id && l.kind === 'motif'
+              ? {
+                  ...l,
+                  source: {
+                    kind: 'collection' as const,
+                    collectionId: meta.id,
+                    colors: { ...meta.zoneColors },
+                    paletteId: meta.paletteOptionId,
+                  },
+                }
+              : l,
+          );
+        }
         update({
           design: {
-            ...project.design,
-            layout: { ...project.design.layout, tileIds: tiles.map((t) => t.id) },
+            name: design.name,
+            dimensions: design.dimensions,
+            zones: design.zones,
             quantize: {
-              ...project.design.quantize,
+              ...design.quantize,
               paletteMode: 'manuelle',
               palette: yarns.map((y) => y.hex),
               maxColors: Math.max(2, Math.min(8, yarns.length)),
+              paletteFromLayers: false,
             },
+            decor: design.decor,
+            layers,
           },
           tiles,
           embeddedAssets,
-          activeCollectionId: meta.id,
-          zoneColors: { ...meta.zoneColors },
-          paletteOptionId: meta.paletteOptionId,
+          selectedLayerId: motif?.id ?? design.layers.find((l) => l.kind === 'motif')?.id ?? 'fond',
           error: null,
         });
         return;
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Rechargement collection impossible.';
         update({
-          design: project.design,
+          design: {
+            name: design.name,
+            dimensions: design.dimensions,
+            zones: design.zones,
+            quantize: design.quantize,
+            decor: design.decor,
+            layers: design.layers,
+          },
           tiles: project.tiles,
           embeddedAssets,
-          activeCollectionId: null,
-          zoneColors: null,
-          paletteOptionId: null,
           error: `${message} Carreaux du projet utilisés.`,
         });
         return;
       }
     }
     update({
-      design: project.design,
+      design: {
+        name: design.name,
+        dimensions: design.dimensions,
+        zones: design.zones,
+        quantize: design.quantize,
+        decor: design.decor,
+        layers: design.layers,
+      },
       tiles: project.tiles,
       embeddedAssets,
-      activeCollectionId: null,
-      zoneColors: null,
-      paletteOptionId: null,
       error: `Collection « ${meta.id} » absente après synchronisation : carreaux du projet utilisés.`,
     });
     return;
   }
   update({
-    design: project.design,
+    design: {
+      name: design.name,
+      dimensions: design.dimensions,
+      zones: design.zones,
+      quantize: design.quantize,
+      decor: design.decor,
+      layers: design.layers,
+    },
     tiles: project.tiles,
     embeddedAssets,
-    activeCollectionId: null,
-    zoneColors: null,
-    paletteOptionId: null,
     error: null,
   });
 }
@@ -649,10 +1035,13 @@ let shareTimer: number | undefined;
 function scheduleShareHash(): void {
   window.clearTimeout(shareTimer);
   shareTimer = window.setTimeout(() => {
-    const pattern = getState().design.pattern;
-    if (pattern?.kind === 'composition' && !isLinkShareable(pattern.composition)) {
-      return;
-    }
+    const { design, embeddedAssets } = getState();
+    const hasEmbedded = design.layers.some((l) => {
+      if (l.kind !== 'image' || l.asset.kind !== 'embarquee') return false;
+      const id = l.asset.assetId;
+      return embeddedAssets.some((a) => a.id === id);
+    });
+    if (hasEmbedded) return;
     void buildShareUrl()
       .then((built) => {
         window.history.replaceState(null, '', `${window.location.pathname}${built.hash}`);
@@ -663,60 +1052,114 @@ function scheduleShareHash(): void {
 
 async function applyShare(parsed: ParsedShare): Promise<void> {
   const { catalogue } = getState();
+  let design = parsed.designV2;
+
   if (parsed.activeCollectionId && catalogue) {
     const collection = catalogue.collections.find((c) => c.id === parsed.activeCollectionId);
     if (collection) {
       const colors = parsed.zoneColors ?? collection.couleursParDefaut;
       try {
         const tiles = await tilesFromCollection(collection, colors, nuancierMap(catalogue));
-        update({
-          design: {
-            ...parsed.design,
-            layout: { ...parsed.design.layout, tileIds: tiles.map((t) => t.id) },
+        const motif = primaryMotifLayer(design.layers);
+        if (motif) {
+          design = {
+            ...design,
+            layers: design.layers.map((l) =>
+              l.id === motif.id && l.kind === 'motif'
+                ? {
+                    ...l,
+                    source: {
+                      kind: 'collection' as const,
+                      collectionId: collection.id,
+                      colors: { ...colors },
+                      paletteId: parsed.paletteOptionId,
+                    },
+                  }
+                : l,
+            ),
+          };
+        }
+        update(
+          {
+            design: {
+              name: design.name,
+              dimensions: design.dimensions,
+              zones: design.zones,
+              quantize: { ...design.quantize, paletteFromLayers: false },
+              decor: design.decor,
+              layers: design.layers,
+            },
+            tiles,
+            selectedLayerId: motif?.id ?? 'fond',
+            error: null,
           },
-          tiles,
-          activeCollectionId: collection.id,
-          zoneColors: colors,
-          paletteOptionId: parsed.paletteOptionId,
-          error: null,
-        }, { skipHistory: true });
+          { skipHistory: true },
+        );
         return;
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Collection illisible.';
         update({ error: message }, { skipHistory: true });
       }
     } else {
-      update({
-        error: `Collection « ${parsed.activeCollectionId} » absente : modèle par défaut.`,
-      }, { skipHistory: true });
+      update(
+        {
+          error: `Collection « ${parsed.activeCollectionId} » absente : modèle par défaut.`,
+        },
+        { skipHistory: true },
+      );
     }
   }
   if (parsed.tiles.length > 0) {
-    const tiles = [];
-    for (const t of parsed.tiles) {
-      tiles.push(await loadTileFromSvgText(t.svg, t.name));
+    const tiles: Awaited<ReturnType<typeof loadTileFromSvgText>>[] = [];
+    for (const shared of parsed.tiles) {
+      const tile = await loadTileFromSvgText(shared.svg, shared.name);
+      if (shared.id) tile.id = shared.id;
+      tiles.push(tile);
     }
-    update({
-      design: {
-        ...parsed.design,
-        layout: { ...parsed.design.layout, tileIds: tiles.map((x) => x.id) },
+    const motif = primaryMotifLayer(design.layers);
+    if (motif?.source.kind === 'importes') {
+      design = {
+        ...design,
+        layers: design.layers.map((l) =>
+          l.id === motif.id && l.kind === 'motif'
+            ? { ...l, source: { kind: 'importes' as const, tileIds: tiles.map((x) => x.id) } }
+            : l,
+        ),
+      };
+    }
+    update(
+      {
+        design: {
+          name: design.name,
+          dimensions: design.dimensions,
+          zones: design.zones,
+          quantize: { ...design.quantize, paletteFromLayers: false },
+          decor: design.decor,
+          layers: design.layers,
+        },
+        tiles,
+        selectedLayerId: motif?.id ?? 'fond',
+        error: null,
       },
-      tiles,
-      activeCollectionId: null,
-      zoneColors: null,
-      paletteOptionId: null,
-      error: null,
-    }, { skipHistory: true });
+      { skipHistory: true },
+    );
     return;
   }
-  update({
-    design: parsed.design,
-    tiles: [],
-    activeCollectionId: parsed.activeCollectionId,
-    zoneColors: parsed.zoneColors,
-    paletteOptionId: parsed.paletteOptionId,
-    error: null,
-  }, { skipHistory: true });
+  update(
+    {
+      design: {
+        name: design.name,
+        dimensions: design.dimensions,
+        zones: design.zones,
+        quantize: { ...design.quantize, paletteFromLayers: false },
+        decor: design.decor,
+        layers: design.layers,
+      },
+      tiles: [],
+      error: null,
+    },
+    { skipHistory: true },
+  );
 }
 
 async function boot(): Promise<void> {
@@ -754,7 +1197,10 @@ async function boot(): Promise<void> {
     }
   }
 
-  mountPanel(panel, {
+  panelApi = mountPanel(panel, {
+    tabs: optionsTabs,
+    layerKeyColors: layerColorsOf,
+    drawAssetPreview,
     exportImages: (request) => {
       const { design, footSide } = getState();
       const shape = shapeFromDesign(design.dimensions, design.zones, footSide);
