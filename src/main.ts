@@ -668,6 +668,7 @@ function publish(): void {
           rotate: rotate ?? undefined,
           scaleCorner: br ?? undefined,
           imageCenter: center ?? undefined,
+          motifCorners: gz.corners.map(([c, r]) => [c, r] as [number, number]),
         };
       }
       const gz = motifGizmo(layer, g);

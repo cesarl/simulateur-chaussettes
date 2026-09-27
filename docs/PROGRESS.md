@@ -755,3 +755,16 @@ Contrôle visuel :
 - `visuel-T60-pied-fond.png` : vue 2D (tige Dunes beige/bleu, bord-côte marine) ; le pied uni noir (Fond BK001) est confirmé par `getStitch` (zone Foot) — la capture cadre surtout la tige.
 Décisions : D51.
 Reste / risques : T61 (cadre sous le talon).
+
+## T61 — Cadre image sous le talon — 2026-09-27 09:15
+Statut : terminée
+Fait :
+- `flatView.ts` : `clientAtMotifStitch` / `clientToMotifStitch` / `revealMotifStitch` via `motifYToGridY` / `gridYToMotifY` (talon sauté ; clic sur talon collé au pied).
+- `flatGizmos.ts` : cadre image découpé en deux polygones s'il chevauche le talon (clipping à la hauteur de tige) ; poignées aux coins réels.
+- e2e `gizmo-pied.spec.ts` (souris) ; `gizmoClient.motifCorners` pour le test d'inclusion.
+Vérification : typecheck ✅ ; e2e gizmo-pied ✅.
+Contrôle visuel :
+- `visuel-T61-avant-pied.png` : image damier (4 carrés noirs + disque rouge) sur la **tige** grise, cadre rouge à poignées blanches + poignée de rotation ; bord-côte marine en haut, talon à peine visible en bas.
+- `visuel-T61-apres-pied.png` : même image sur le **pied**, cadre rouge aligné sur le motif (sous le talon rayé rouge/gris) ; libellé « Pied » ; survol maille 126 rang 299.
+Décisions : D52.
+Reste / risques : T62 fluidité.

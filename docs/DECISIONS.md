@@ -305,3 +305,9 @@ Contexte : V7 avait deux comptes de couleurs (bandeau vs réduction) et un régl
 Options : A) faire dépendre `analyzeStackPaletteGuard` de `resolveStackPalette` ; B) nouvelle fonction `planStackPalette` qui produit réglages quantize + garde-fou.
 Choix : B — `planStackPalette` dans `stackPaletteGuard.ts` ; `analyzeStackPaletteGuard` conservé tel quel (référence V7 dans `v8-layers.test.ts`). CSS : `[hidden]` explicite sur `.stack-palette-banner` car `display: flex` annulait le masquage UA.
 Conséquence : bandeau ssi `pal.overLimit` ; pied sans motif = couleur du Fond via `effectiveZones` ; `zones.footColor` reste sérialisé mais n’est plus éditable.
+
+## D52 — Cadre 2D scindé au talon (T61)
+Contexte : V7 ajoutait seulement le bord-côte (`motifOriginRow`) → cadre décalé sous le talon.
+Options : A) offset = cuff+leg+heel à partir d'un seuil ; B) `motifYToGridY` / `gridYToMotifY` déjà dans `layers.ts`.
+Choix : B — conversions continues partout (souris, coins, reveal) ; cadre image clipé en deux polygones à `legH` si chevauchement ; poignées non clipées.
+Conséquence : un glisser qui traverse le talon reste cohérent avec le rendu grille ; le talon n'est plus une zone « morte » pour la souris (collé au 1er rang du pied).

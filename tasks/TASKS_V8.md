@@ -57,14 +57,14 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
   - le curseur « Couleurs du motif » est invisible en mode calques et visible en mode manuel.
 - [x] e2e : décocher « Motif sur le pied », changer la couleur du Fond → le pied de la vue 2D prend cette couleur ; « Couleur du pied » n'existe plus.
 
-### [ ] T61 — Vue 2D : le cadre suit l'image sous le talon
+### [x] T61 — Vue 2D : le cadre suit l'image sous le talon
 
 - Remplacer tous les calculs « rang de motif ↔ rang de la grille » de `flatView.ts` et `flatGizmos.ts` (`motifOriginRow() + …`, `row - motifOriginRow()`) par `motifYToGridY` / `gridYToMotifY` (coordonnées continues : coins, poignées, souris) et `motifRowToGridRow` / `gridRowToMotifRow` (mailles entières).
 - Un cadre d'image qui chevauche le talon se dessine en deux morceaux : le haut au-dessus du talon, le reste sous le talon. C'est ce que fait la grille. Les poignées restent sur les coins réels.
 
 **Critères**
-- [ ] e2e `gizmo-pied.spec.ts`, à la souris : glisser une image sous le talon → toutes les mailles dont `owner` est cette image sont à l'intérieur du cadre dessiné, à 1 maille près ; puis cliquer au centre de l'image → elle est bien sélectionnée.
-- [ ] Capture avant / après (image sur le pied, sélectionnée), décrite.
+- [x] e2e `gizmo-pied.spec.ts`, à la souris : glisser une image sous le talon → toutes les mailles dont `owner` est cette image sont à l'intérieur du cadre dessiné, à 1 maille près ; puis cliquer au centre de l'image → elle est bien sélectionnée.
+- [x] Capture avant / après (image sur le pied, sélectionnée), décrite.
 
 ### [ ] T62 — Vue 2D fluide
 

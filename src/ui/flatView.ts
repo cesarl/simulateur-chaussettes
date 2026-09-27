@@ -2,6 +2,7 @@ import type { SockDimensions, StitchGrid, ZoneSettings } from '../core/types';
 import { Zone } from '../core/types';
 import { seamColumn } from '../core/calepinage';
 import { rowRanges } from '../core/grid';
+import { gridYToMotifY, motifYToGridY } from '../core/layers';
 import { editingLayoutSettings, getState } from '../state';
 
 /**
@@ -114,22 +115,22 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
 
   const context = canvas.getContext('2d');
 
-  function motifOriginRow(): number {
-    return rowRanges(dims, zones).leg.start;
-  }
-
-  function isMotifFullRow(row: number): boolean {
-    if (!grid || row < 0 || row >= grid.height) return false;
-    const z = grid.zone[row * grid.width] ?? Zone.Empty;
-    if (z === Zone.Leg) return true;
-    return z === Zone.Foot && zones.patternOnFoot;
-  }
-
   function cells(): { w: number; h: number } {
     const w = 4 * zoom;
     const ar = aspect > 0 && Number.isFinite(aspect) ? aspect : 0.75;
     const h = Math.max(1, Math.round(4 * ar)) * zoom;
     return { w, h };
+  }
+
+  /** Point écran pour une maille / coordonnée continue (rang de grille, éventuellement fractionnaire). */
+  function pointAt(col: number, row: number): { x: number; y: number } | null {
+    if (!grid || layer.hidden || canvas.width < 2 || canvas.height < 2) return null;
+    if (col < -1 || row < -1 || col > grid.width || row > grid.height) return null;
+    const { w, h } = cells();
+    const x = Math.floor(MARGIN_LEFT + panX + col * w + w / 2);
+    const y = Math.floor(MARGIN_TOP + panY + row * h + h / 2);
+    if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return null;
+    return { x, y };
   }
 
   function resize(): void {
@@ -216,25 +217,29 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   function centerOf(col: number, row: number): { x: number; y: number } | null {
     if (!grid || layer.hidden || canvas.width < 2 || canvas.height < 2) return null;
     if (col < 0 || row < 0 || col >= grid.width || row >= grid.height) return null;
-    const { w, h } = cells();
-    const x = Math.floor(MARGIN_LEFT + panX + col * w + w / 2);
-    const y = Math.floor(MARGIN_TOP + panY + row * h + h / 2);
-    if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return null;
-    return { x, y };
+    return pointAt(col, row);
   }
 
   function clientAtMotifStitch(col: number, motifRow: number): { x: number; y: number } | null {
-    return centerOf(col, motifOriginRow() + motifRow);
+    return pointAt(col, motifYToGridY(dims, zones, motifRow));
   }
 
   function clientToMotifStitch(px: number, py: number): { col: number; row: number } | null {
     if (!grid) return null;
     const { w, h } = cells();
     const col = Math.floor((px - MARGIN_LEFT - panX) / w);
-    const row = Math.floor((py - MARGIN_TOP - panY) / h);
-    if (col < 0 || row < 0 || col >= grid.width || row >= grid.height) return null;
-    if (!isMotifFullRow(row)) return null;
-    return { col, row: row - motifOriginRow() };
+    const gridY = (py - MARGIN_TOP - panY) / h;
+    if (col < 0 || col >= grid.width || gridY < 0 || gridY >= grid.height) return null;
+    const ranges = rowRanges(dims, zones);
+    if (gridY < ranges.leg.start) return null;
+    if (gridY >= ranges.toe.start) return null;
+    if (!zones.patternOnFoot && gridY >= ranges.foot.start) return null;
+    const inLeg = gridY >= ranges.leg.start && gridY < ranges.leg.end;
+    const inHeel = gridY >= ranges.leg.end && gridY < ranges.foot.start;
+    const inFoot = zones.patternOnFoot && gridY >= ranges.foot.start && gridY < ranges.foot.end;
+    if (!inLeg && !inHeel && !inFoot) return null;
+    const motifY = gridYToMotifY(dims, zones, gridY);
+    return { col, row: Math.floor(motifY) };
   }
 
   function stitchAt(px: number, py: number): { col: number; row: number } | null {
@@ -349,7 +354,7 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     revealMotifStitch(col: number, motifRow: number) {
       if (!grid) return;
       const { w, h } = cells();
-      const fullRow = motifOriginRow() + motifRow;
+      const fullRow = motifYToGridY(dims, zones, motifRow);
       const targetX = MARGIN_LEFT + col * w + w / 2;
       const targetY = MARGIN_TOP + fullRow * h + h / 2;
       panX = canvas.width / 2 - targetX;

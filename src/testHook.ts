@@ -65,6 +65,8 @@ export interface SimHook {
     rotate?: { x: number; y: number };
     scaleCorner?: { x: number; y: number };
     imageCenter?: { x: number; y: number };
+    /** Coins du cadre image en coordonnées motif (T61). */
+    motifCorners?: Array<[number, number]>;
     motifMove?: { x: number; y: number };
     motifScale?: { x: number; y: number };
     bandTop?: { x: number; y: number };
