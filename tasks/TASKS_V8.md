@@ -110,7 +110,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
   - le canvas 3D réaffiché a `camera.aspect` juste à 1 % près.
 - [x] Captures des 4 combinaisons, décrites.
 
-### [ ] T65 — Onglet « Global »
+### [x] T65 — Onglet « Global »
 
 - Le pied de panneau (`options-footer`) disparaît. Son contenu va dans un nouvel onglet **« Global »**, le dernier après Calque, Chaussette, Décor, Export :
   - « Tout réinitialiser » ;
@@ -120,7 +120,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - `data-testid` inchangés, pour que les tests existants suivent.
 
 **Critères**
-- [ ] e2e : les 3 boutons sont dans l'onglet Global, et il n'y a plus d'élément `.options-footer`.
+- [x] e2e : les 3 boutons sont dans l'onglet Global, et il n'y a plus d'élément `.options-footer`.
 
 ### [ ] T66 — Bibliothèque d'images intégrée (+ logo fourni par César)
 

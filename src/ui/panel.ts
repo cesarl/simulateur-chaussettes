@@ -170,8 +170,6 @@ interface Panes extends Record<OptionsTab, HTMLElement> {
   /** Bandeau commun en haut du panneau (annuler / rétablir, lien). */
   top: HTMLElement;
   motif: HTMLElement;
-  /** Bas du panneau, visible dans tous les onglets. */
-  footer: HTMLElement;
 }
 
 function makePane(host: HTMLElement, tab: OptionsTab): HTMLElement {
@@ -226,11 +224,10 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): PanelApi 
     chaussette: makePane(host, 'chaussette'),
     decor: makePane(host, 'decor'),
     export: makePane(host, 'export'),
+    global: makePane(host, 'global'),
     motif: document.createElement('div'),
-    footer: document.createElement('div'),
   };
   panes.motif.dataset.testid = 'motif-options';
-  panes.footer.className = 'options-footer';
   actions.tabs.onChange((tab) => {
     for (const name of OPTIONS_TABS) panes[name].hidden = name !== tab;
   });
@@ -352,7 +349,6 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): PanelApi 
   // Étendue du Motif après le calepinage ; transparence et image en fin de volet.
   panes.motif.appendChild(layerOptions.extent);
   panes.calque.append(layerOptions.image, layerOptions.transparency);
-  host.appendChild(panes.footer);
   syncLayerPane();
 
   return { sync: syncLayerPane };
@@ -656,7 +652,6 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   let keepRatio = true;
   let paletteKey = '';
   let resetAllArmed: ReturnType<typeof setTimeout> | undefined;
-  const host = panes.footer;
 
   const history = document.createElement('div');
   history.className = 'row history-bar';
@@ -1634,7 +1629,7 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   panes.chaussette.append(dimensions, zones, pixels, checks);
   panes.decor.appendChild(decorSection);
   panes.export.appendChild(exportsSection);
-  host.append(resetAll, computeMs);
+  panes.global.append(resetAll, computeMs);
 
   const syncManual = (current: SockDesignV2): void => {
     const isManual = current.quantize.paletteMode === 'manuelle' && !current.quantize.paletteFromLayers;
@@ -1754,7 +1749,6 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   leave.className = 'leave-dev';
   leave.textContent = 'Quitter le mode dev';
   leave.addEventListener('click', () => actions.leaveDev());
-  host.appendChild(leave);
 
   const adminLink = document.createElement('a');
   adminLink.href = './admin.html';
@@ -1763,5 +1757,5 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   adminLink.textContent = 'Gérer mes collections';
   adminLink.style.display = 'block';
   adminLink.style.marginTop = '0.5rem';
-  host.appendChild(adminLink);
+  panes.global.append(adminLink, leave);
 }
