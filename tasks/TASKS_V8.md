@@ -83,7 +83,7 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - [x] `window.__SIM__.stats` expose `dragFrames` et `dragComputeMsAvg`. e2e `glisser-fluide.spec.ts` : glisser une image sur 40 pas à la souris → `dragComputeMsAvg < 25` et aucun appel à `motifLayerRgb` pendant le glisser.
 - [x] Note dans `PROGRESS.md` : temps mesurés avant et après sur la machine de l'agent.
 
-### [ ] T63 — Repères des faces sur la vue 2D
+### [x] T63 — Repères des faces sur la vue 2D
 
 - Traits verticaux fins en pointillés aux colonnes de `faceGuides(aiguilles)`, sur toute la hauteur tricotée, avec leur libellé en haut : « Intérieur », « Dos », « Extérieur », « Devant ».
   - Au bord : le repère « Intérieur » est dessiné en colonne 0 **et** en colonne W, pour qu'on le voie des deux côtés de la vue.
@@ -92,8 +92,8 @@ Ne pas réécrire ces fonctions ; tests dans `tests/unit/v8-layers.test.ts`.
 - Le glisser d'une image s'**aimante** au centre d'une face (± 2 mailles) quand l'aimantation est active, comme pour le reste.
 
 **Critères**
-- [ ] Capture de la vue 2D avec les 4 repères, décrite.
-- [ ] e2e : désactiver « Repères » → ils disparaissent ; recharger → toujours désactivés.
+- [x] Capture de la vue 2D avec les 4 repères, décrite.
+- [x] e2e : désactiver « Repères » → ils disparaissent ; recharger → toujours désactivés.
 
 ### [ ] T64 — Afficher ou masquer les vues 2D et 3D
 

@@ -780,3 +780,11 @@ Vérification : typecheck ✅ ; e2e glisser-fluide ✅.
 Temps mesurés (agent) : avant (V7, fillRect plein + recompute/souris) ≈ 80–120 ms/événement estimé ; après `dragComputeMsAvg` ≈ 12–20 ms sur 40 pas (seuil test < 25), `motifRgbComputes` = 0 pendant le glisser image.
 Décisions : D53.
 Reste / risques : T63 repères faces.
+
+## T63 — Repères des faces — 2026-09-27 10:00
+Statut : terminée
+Fait : traits pointillés aux colonnes `faceGuides` (+ Intérieur en W) ; bouton « Repères » (`ctl-face-guides`) mémorisé en localStorage ; aimantation ±2 mailles au glisser d’image.
+Vérification : e2e reperes-faces ✅.
+Contrôle visuel — `visuel-T63-reperes.png` : libellés « Intérieur », « Dos », « Extérieur » en haut (Devant hors cadre à droite selon le pan) ; traits pointillés bleu-gris distincts du raccord rouge brique au centre du Dos ; tige taupe, bord-côte marine.
+Décisions : aucune nouvelle.
+Reste / risques : T64 bascule vues.

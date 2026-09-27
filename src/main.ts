@@ -230,6 +230,19 @@ if (toolbar2dEl instanceof HTMLElement) {
   label.className = 'zone-label';
   label.textContent = 'Vue à plat';
   toolbar2dEl.prepend(label);
+  const guidesBtn = document.createElement('button');
+  guidesBtn.type = 'button';
+  guidesBtn.dataset.testid = 'ctl-face-guides';
+  guidesBtn.textContent = 'Repères';
+  guidesBtn.setAttribute('aria-pressed', flat.getFaceGuides() ? 'true' : 'false');
+  guidesBtn.classList.toggle('active', flat.getFaceGuides());
+  guidesBtn.addEventListener('click', () => {
+    const next = !flat.getFaceGuides();
+    flat.setFaceGuides(next);
+    guidesBtn.setAttribute('aria-pressed', next ? 'true' : 'false');
+    guidesBtn.classList.toggle('active', next);
+  });
+  toolbar2dEl.append(guidesBtn);
 }
 
 const shareHint = document.createElement('p');

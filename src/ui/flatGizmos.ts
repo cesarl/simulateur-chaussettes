@@ -6,6 +6,7 @@ import type { RasterImage } from '../core/composition';
 import {
   dragImage,
   dragMotif,
+  faceGuides,
   imageGizmo,
   layerAtStitch,
   motifGizmo,
@@ -489,9 +490,26 @@ export function mountFlatGizmos(flat: FlatHandle, canvas: HTMLCanvasElement, dep
 
     if (active.kind === 'image') {
       const g = stackGauge(design.dimensions, design.zones);
-      const patch = dragImage(active.start, g, active.handle, active.from, to, {
+      let patch = dragImage(active.start, g, active.handle, active.from, to, {
         snapDeg: event.shiftKey ? 15 : undefined,
       });
+      // Aimantation aux centres de faces (± 2 mailles) si repères actifs.
+      if (active.handle === 'deplacer' && flat.getFaceGuides?.()) {
+        const nextX = patch.x ?? active.start.x;
+        const centers = faceGuides(g.needles).map((f) => f.col);
+        centers.push(g.needles); // Intérieur côté W
+        let best = nextX;
+        let bestDist = Infinity;
+        for (const c of centers) {
+          let d = Math.abs(nextX - c);
+          d = Math.min(d, g.needles - d);
+          if (d < bestDist) {
+            bestDist = d;
+            best = c;
+          }
+        }
+        if (bestDist <= 2) patch = { ...patch, x: ((best % g.needles) + g.needles) % g.needles };
+      }
       const next = { ...active.start, ...patch };
       if (deps.onDragTick) {
         deps.onDragTick('image', active.id, next);

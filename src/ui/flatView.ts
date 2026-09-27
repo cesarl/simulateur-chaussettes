@@ -2,7 +2,7 @@ import type { SockDimensions, StitchGrid, ZoneSettings } from '../core/types';
 import { Zone } from '../core/types';
 import { seamColumn } from '../core/calepinage';
 import { rowRanges } from '../core/grid';
-import { gridYToMotifY, motifYToGridY } from '../core/layers';
+import { gridYToMotifY, motifYToGridY, faceGuides } from '../core/layers';
 import { editingLayoutSettings, getState } from '../state';
 
 /**
@@ -51,6 +51,9 @@ export interface FlatHandle {
   /** Affiche la vue à plat (true) ou la 3D (false). En double panneau, no-op (toujours visible). */
   setFlat: (flat: boolean) => void;
   isFlat: () => boolean;
+  /** Repères des faces (T63). */
+  setFaceGuides: (on: boolean) => void;
+  getFaceGuides: () => boolean;
   /** Reparentage visionneuse ↔ mode technique. */
   setHosts: (hosts: FlatHosts) => void;
 }
@@ -129,6 +132,14 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
   /** Bitmap 1 px = 1 maille (recyclé). */
   let stitchBitmap: ImageData | null = null;
   let stitchCanvas: HTMLCanvasElement | null = null;
+  let showFaceGuides = true;
+  try {
+    const stored = localStorage.getItem('sim-face-guides');
+    if (stored === '0') showFaceGuides = false;
+    if (stored === '1') showFaceGuides = true;
+  } catch {
+    /* ignore */
+  }
 
   const context = canvas.getContext('2d');
   const overlayCtx = overlay.getContext('2d');
@@ -268,7 +279,37 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     }
 
     drawZones(originY, h);
+    drawFaceGuides(originX, originY, w, h);
     drawOverlayOnly();
+  }
+
+  function drawFaceGuides(originX: number, originY: number, cellW: number, cellH: number): void {
+    if (!context || !grid || !showFaceGuides) return;
+    const guides = faceGuides(grid.width);
+    const knitTop = rowRanges(dims, zones).leg.start;
+    // hauteur tricotée = tout sauf empty? « toute la hauteur tricotée » = cuff to toe end
+    const knitBottom = grid.height;
+    context.save();
+    context.setLineDash([4, 4]);
+    context.strokeStyle = 'rgba(40, 70, 110, 0.55)';
+    context.fillStyle = 'rgba(40, 70, 110, 0.85)';
+    context.font = '10px system-ui, sans-serif';
+    context.textAlign = 'center';
+    context.lineWidth = 1;
+    const cols = [...guides.map((g) => g.col), grid.width]; // Intérieur aussi en W
+    const labels = [...guides.map((g) => g.label), 'Intérieur'];
+    for (let i = 0; i < cols.length; i++) {
+      const col = cols[i]!;
+      const x = originX + col * cellW;
+      context.beginPath();
+      context.moveTo(x + 0.5, originY);
+      context.lineTo(x + 0.5, originY + knitBottom * cellH);
+      context.stroke();
+      const label = labels[i]!;
+      context.fillText(label, x, Math.max(10, originY - 4 + (knitTop > 0 ? 0 : 0)));
+      if (originY < 14) context.fillText(label, x, 12);
+    }
+    context.restore();
   }
 
   function drawZones(originY: number, cellH: number): void {
@@ -499,6 +540,18 @@ export function mountFlatView(hosts: FlatHosts, onReturnTo3d: () => void): FlatH
     },
     isFlat() {
       return !layer.hidden;
+    },
+    setFaceGuides(on: boolean) {
+      showFaceGuides = on;
+      try {
+        localStorage.setItem('sim-face-guides', on ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      draw();
+    },
+    getFaceGuides() {
+      return showFaceGuides;
     },
     setHosts(next: FlatHosts) {
       sockCanvas = next.sockCanvas ?? null;
