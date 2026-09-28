@@ -17,6 +17,17 @@ import {
   loadBibliothequeImages,
   type BibliothequeImage,
 } from '../io/bibliothequeImages';
+import {
+  askSharedPassword,
+  deleteSharedImage,
+  FavorisApiError,
+  forgetPassword,
+  listSharedImages,
+  renameSharedImage,
+  sharedImageUrl,
+  uploadSharedImage,
+  type SharedImage,
+} from '../io/imagesClient';
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { calepinageForCollection } from './collectionPicker';
@@ -154,6 +165,34 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   bibList.dataset.testid = 'lib-bib-list';
   bibSection.append(bibTitle, bibFilter, bibList);
 
+  const sharedSection = document.createElement('section');
+  sharedSection.className = 'library-shared';
+  sharedSection.dataset.testid = 'lib-shared-section';
+  const sharedTitle = document.createElement('h3');
+  sharedTitle.className = 'calep-group-title';
+  sharedTitle.textContent = 'Bibliothèque partagée';
+  const sharedFilter = document.createElement('input');
+  sharedFilter.type = 'search';
+  sharedFilter.className = 'library-search';
+  sharedFilter.placeholder = 'Filtrer le partagé…';
+  sharedFilter.dataset.testid = 'lib-shared-filter';
+  const sharedUpload = document.createElement('button');
+  sharedUpload.type = 'button';
+  sharedUpload.dataset.testid = 'lib-shared-upload';
+  sharedUpload.textContent = 'Envoyer une image…';
+  const sharedFile = document.createElement('input');
+  sharedFile.type = 'file';
+  sharedFile.accept = '.png,.svg,image/png,image/svg+xml';
+  sharedFile.dataset.testid = 'lib-shared-file';
+  sharedFile.hidden = true;
+  const sharedStatus = document.createElement('p');
+  sharedStatus.className = 'hint';
+  sharedStatus.dataset.testid = 'lib-shared-status';
+  const sharedList = document.createElement('div');
+  sharedList.className = 'library-grid';
+  sharedList.dataset.testid = 'lib-shared-list';
+  sharedSection.append(sharedTitle, sharedFilter, sharedUpload, sharedFile, sharedStatus, sharedList);
+
   const projectTitle = document.createElement('h3');
   projectTitle.className = 'calep-group-title';
   projectTitle.textContent = 'Images du projet';
@@ -196,7 +235,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   imagesList.className = 'library-grid';
   imagesList.dataset.testid = 'lib-images';
 
-  imagesPane.append(bibSection, projectTitle, imagesTools, imagesDrop, imagesList);
+  imagesPane.append(bibSection, sharedSection, projectTitle, imagesTools, imagesDrop, imagesList);
 
   const variationMenu = document.createElement('div');
   variationMenu.className = 'library-variation-menu';
@@ -289,6 +328,150 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     const added = addImageLayer({ kind: 'bibliotheque', imageId: entry.id }, entry.nom);
     if (added) close();
     else setStatus('16 calques au maximum.');
+  }
+
+  function addSharedLayer(entry: SharedImage): void {
+    if (busy) return;
+    const added = addImageLayer({ kind: 'partagee', imageId: entry.id }, entry.nom);
+    if (added) close();
+    else setStatus('16 calques au maximum.');
+  }
+
+  let sharedCache: SharedImage[] | null = null;
+  let sharedUnavailable = false;
+
+  function renderShared(entries: SharedImage[] | null, unavailable: boolean): void {
+    sharedList.replaceChildren();
+    if (unavailable) {
+      sharedStatus.textContent = 'Bibliothèque partagée indisponible';
+      const empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.textContent = 'Bibliothèque partagée indisponible';
+      empty.dataset.testid = 'lib-shared-unavailable';
+      sharedList.appendChild(empty);
+      return;
+    }
+    sharedStatus.textContent = '';
+    const list = entries ?? [];
+    const q = sharedFilter.value.trim().toLowerCase();
+    const filtered = list.filter((e) => {
+      if (!q) return true;
+      return `${e.nom} ${e.id}`.toLowerCase().includes(q);
+    });
+    if (filtered.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.textContent = list.length === 0 ? 'Aucune image partagée pour l’instant.' : 'Aucun résultat.';
+      sharedList.appendChild(empty);
+      return;
+    }
+    for (const entry of filtered) {
+      const wrap = document.createElement('div');
+      wrap.className = 'library-item-wrap library-shared-item';
+      wrap.dataset.testid = `lib-shared-wrap-${entry.id}`;
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'library-item';
+      button.dataset.testid = `lib-shared-${entry.id}`;
+      const img = document.createElement('img');
+      img.alt = '';
+      img.className = 'coll-thumb';
+      img.src = sharedImageUrl(entry.id);
+      const name = document.createElement('span');
+      name.className = 'coll-name';
+      name.textContent = entry.nom;
+      button.append(img, name);
+      button.addEventListener('click', () => addSharedLayer(entry));
+
+      const actions = document.createElement('div');
+      actions.className = 'library-shared-actions';
+      const renameBtn = document.createElement('button');
+      renameBtn.type = 'button';
+      renameBtn.className = 'library-item-more';
+      renameBtn.dataset.testid = `lib-shared-rename-${entry.id}`;
+      renameBtn.textContent = 'Renommer';
+      renameBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        void renameSharedEntry(entry);
+      });
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'library-item-more';
+      removeBtn.dataset.testid = `lib-shared-remove-${entry.id}`;
+      removeBtn.textContent = 'Retirer';
+      removeBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        void removeSharedEntry(entry);
+      });
+      actions.append(renameBtn, removeBtn);
+      wrap.append(button, actions);
+      sharedList.appendChild(wrap);
+    }
+  }
+
+  async function refreshShared(): Promise<void> {
+    try {
+      sharedCache = await listSharedImages();
+      sharedUnavailable = false;
+      if (activeTab === 'images') renderShared(sharedCache, false);
+    } catch {
+      sharedCache = null;
+      sharedUnavailable = true;
+      if (activeTab === 'images') renderShared(null, true);
+    }
+  }
+
+  async function withSharedPassword(
+    run: (password: string) => Promise<void>,
+    retryError?: string | null,
+  ): Promise<void> {
+    const password = await askSharedPassword(retryError);
+    if (!password) return;
+    try {
+      await run(password);
+    } catch (e) {
+      if (e instanceof FavorisApiError && e.status === 401) {
+        forgetPassword();
+        await withSharedPassword(run, 'Mot de passe incorrect');
+        return;
+      }
+      sharedStatus.textContent = e instanceof Error ? e.message : 'Action impossible.';
+    }
+  }
+
+  async function renameSharedEntry(entry: SharedImage): Promise<void> {
+    const nom = window.prompt('Nouveau nom', entry.nom)?.trim();
+    if (!nom || nom === entry.nom) return;
+    await withSharedPassword(async (password) => {
+      await renameSharedImage(entry.id, nom, password);
+      await refreshShared();
+    });
+  }
+
+  async function removeSharedEntry(entry: SharedImage): Promise<void> {
+    if (!window.confirm(`Retirer « ${entry.nom} » de la bibliothèque partagée ?`)) return;
+    await withSharedPassword(async (password) => {
+      await deleteSharedImage(entry.id, password);
+      await refreshShared();
+    });
+  }
+
+  async function uploadSharedFile(file: File): Promise<void> {
+    if (busy) return;
+    setBusy(true);
+    sharedStatus.textContent = 'Envoi…';
+    try {
+      await withSharedPassword(async (password) => {
+        const created = await uploadSharedImage(file, password);
+        await refreshShared();
+        const added = addImageLayer({ kind: 'partagee', imageId: created.id }, created.nom);
+        if (!added) setStatus('16 calques au maximum.');
+        else close();
+      });
+    } finally {
+      setBusy(false);
+    }
   }
 
   function addImportedMotifLayer(tile: TileAsset, tiles: TileAsset[], name: string): void {
@@ -502,6 +685,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
             : `${embeddedAssets.length} image${embeddedAssets.length > 1 ? 's' : ''} dans le projet · un clic ajoute un calque Image.`,
       );
     });
+    void refreshShared();
     for (const asset of embeddedAssets) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -543,6 +727,15 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     void loadBibliothequeImages().then((entries) => {
       if (activeTab === 'images') renderBibliotheque(entries);
     });
+  });
+  sharedFilter.addEventListener('input', () => {
+    if (activeTab === 'images') renderShared(sharedCache, sharedUnavailable);
+  });
+  sharedUpload.addEventListener('click', () => sharedFile.click());
+  sharedFile.addEventListener('change', () => {
+    const file = sharedFile.files?.[0];
+    sharedFile.value = '';
+    if (file) void uploadSharedFile(file);
   });
   importBtn.addEventListener('click', () => fileInput.click());
   exampleBtn.addEventListener('click', () => void addExample());

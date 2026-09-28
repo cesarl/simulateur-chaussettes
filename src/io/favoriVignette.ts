@@ -39,6 +39,21 @@ export async function encodeFavoriVignette(dataUrl: string): Promise<string> {
   return bytesToBase64(new Uint8Array(buf));
 }
 
+/** Vignette unicolore — repli quand capturePair bloque (SwiftShader + image). */
+export async function encodeSolidFavoriVignette(fill = '#ecebe8'): Promise<string> {
+  const canvas = document.createElement('canvas');
+  canvas.width = VIGNETTE_W;
+  canvas.height = VIGNETTE_H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas 2D indisponible.');
+  ctx.fillStyle = fill;
+  ctx.fillRect(0, 0, VIGNETTE_W, VIGNETTE_H);
+  const blob = await canvasToBlob(canvas, 0.8);
+  if (!blob || blob.size < 32) throw new Error('Encodage WebP de la vignette a échoué.');
+  const buf = await blob.arrayBuffer();
+  return bytesToBase64(new Uint8Array(buf));
+}
+
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();

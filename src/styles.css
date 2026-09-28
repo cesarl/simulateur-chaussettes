@@ -947,6 +947,22 @@ dialog.library.busy { cursor: progress; }
   line-height: 1.4;
 }
 .library-item-more:hover { border-color: var(--accent); }
+.library-shared-item .library-shared-actions {
+  display: none;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: flex-end;
+  margin: -2px 4px 2px 0;
+}
+.library-shared-item:hover .library-shared-actions,
+.library-shared-item:focus-within .library-shared-actions {
+  display: flex;
+}
+.library-shared {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
 .library-drop {
   border: 1px dashed var(--line);
   border-radius: 8px;

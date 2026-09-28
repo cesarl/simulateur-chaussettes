@@ -240,6 +240,8 @@ export interface StatePatch {
 export interface UpdateOptions {
   coalesce?: boolean;
   skipHistory?: boolean;
+  /** N’appelle pas les abonnés (ex. applyShare pendant le boot). */
+  silent?: boolean;
 }
 
 type Listener = (state: AppState) => void;
@@ -515,7 +517,7 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
     selectedLayerId: sel,
     embeddedAssets: patch.embeddedAssets ?? state.embeddedAssets,
   };
-  notify();
+  if (!options.silent) notify();
 }
 
 export function undo(): boolean {

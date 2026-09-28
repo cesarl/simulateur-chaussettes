@@ -318,6 +318,9 @@ function readAssetRef(value: unknown): AssetRef {
   if (value.kind === 'bibliotheque') {
     return { kind: 'bibliotheque', imageId: needString(value, 'imageId') };
   }
+  if (value.kind === 'partagee') {
+    return { kind: 'partagee', imageId: needString(value, 'imageId') };
+  }
   throw new ProjectError('référence d’image inconnue.');
 }
 

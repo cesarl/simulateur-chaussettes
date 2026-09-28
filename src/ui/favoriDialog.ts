@@ -2,7 +2,7 @@
  * Dialogues favoris : mot de passe, nom, mise à jour / nouveau.
  */
 
-export type FavoriSaveChoice = 'update' | 'new';
+export type FavoriSaveChoice = 'update' | 'new' | 'upload-and-save';
 
 export type FavoriDialogResult =
   | { kind: 'cancel' }
@@ -13,6 +13,8 @@ export function openFavoriDialog(opts: {
   existingName: string | null;
   storedPassword: string | null;
   errorMessage?: string | null;
+  /** Nombre d'images embarquées à envoyer (T86). */
+  embeddedCount?: number;
 }): Promise<FavoriDialogResult> {
   return new Promise((resolve) => {
     const dialog = document.createElement('dialog');
@@ -57,7 +59,9 @@ export function openFavoriDialog(opts: {
     const finish = (result: FavoriDialogResult): void => {
       dialog.close();
       dialog.remove();
-      resolve(result);
+      // Laisser le clic Playwright se terminer avant la capture 3D (sinon le
+      // fil principal reste bloqué dans l’action et le test n’avance plus).
+      window.setTimeout(() => resolve(result), 0);
     };
 
     cancel.addEventListener('click', () => finish({ kind: 'cancel' }));
@@ -98,6 +102,27 @@ export function openFavoriDialog(opts: {
         finish({ kind: 'save', nom, password, choice: 'new' });
       });
       actions.append(cancel, updateBtn, newBtn);
+    } else if (opts.embeddedCount && opts.embeddedCount > 0) {
+      const upload = document.createElement('button');
+      upload.type = 'button';
+      upload.dataset.testid = 'favori-upload-save';
+      upload.textContent = `Envoyer ${opts.embeddedCount} image(s) dans la bibliothèque partagée et enregistrer`;
+      upload.addEventListener('click', () => {
+        const nom = nameInput.value.trim();
+        const password = pwdInput.value;
+        if (!nom) {
+          err.hidden = false;
+          err.textContent = 'Indiquez un nom.';
+          return;
+        }
+        if (!password) {
+          err.hidden = false;
+          err.textContent = 'Mot de passe requis.';
+          return;
+        }
+        finish({ kind: 'save', nom, password, choice: 'upload-and-save' });
+      });
+      actions.append(cancel, upload);
     } else {
       const save = document.createElement('button');
       save.type = 'button';

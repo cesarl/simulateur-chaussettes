@@ -42,15 +42,15 @@ import {
   createFavori,
   forgetPassword,
   FavorisApiError,
-  IMPORTED_IMAGES_MESSAGE,
   patchFavori,
   readStoredPassword,
   storePassword,
 } from './io/favorisClient';
 import { fetchFavorisJson } from './io/favorisApi';
-import { encodeFavoriVignette } from './io/favoriVignette';
+import { encodeFavoriVignette, encodeSolidFavoriVignette } from './io/favoriVignette';
 import { openFavoriDialog } from './ui/favoriDialog';
 import { shareableManualTiles } from './io/shareState';
+import type { EmbeddedAsset } from './core/composition';
 import { buildShareUrl, decodeShareHash, type ParsedShare } from './io/shareState';
 import { fixtureUrl, loadTileFromUrl, loadTileFromSvgText } from './io/tiles';
 import { createScene } from './render/scene';
@@ -390,9 +390,17 @@ function showShareHint(message: string | null): void {
   if (!message) {
     shareHint.hidden = true;
     shareHint.textContent = '';
+    delete shareHint.dataset.phase;
     return;
   }
   shareHint.hidden = false;
+  shareHint.dataset.phase = 'error';
+  shareHint.textContent = message;
+}
+
+function showSaveProgress(phase: string, message: string): void {
+  shareHint.hidden = false;
+  shareHint.dataset.phase = phase;
   shareHint.textContent = message;
 }
 
@@ -484,22 +492,86 @@ function setOpenFavori(id: string | null, name: string | null): void {
   window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
 }
 
-function projectBlocksFavori(): boolean {
+function embeddedImageAssets(): EmbeddedAsset[] {
   const state = getState();
-  const hasEmbedded = state.design.layers.some((l) => {
-    if (l.kind !== 'image' || l.asset.kind !== 'embarquee') return false;
-    const assetId = l.asset.assetId;
-    return state.embeddedAssets.some((a) => a.id === assetId);
+  const ids = new Set<string>();
+  for (const l of state.design.layers) {
+    if (l.kind === 'image' && l.asset.kind === 'embarquee') ids.add(l.asset.assetId);
+  }
+  return state.embeddedAssets.filter((a) => ids.has(a.id));
+}
+
+function projectBlocksFavori(): boolean {
+  // Carreaux PNG / SVG manuels omis du lien : toujours refusés en V10.
+  return shareableManualTiles(getState()).omitted;
+}
+
+async function uploadEmbeddedAsPartagee(password: string): Promise<Map<string, string>> {
+  const assets = embeddedImageAssets();
+  const idMap = new Map<string, string>();
+  if (assets.length === 0) return idMap;
+  for (const asset of assets) {
+    let bytes: Uint8Array;
+    if (asset.mime === 'image/png') {
+      const b64 = asset.data.includes('base64,') ? (asset.data.split('base64,')[1] ?? '') : asset.data;
+      const bin = atob(b64);
+      bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    } else {
+      bytes = new TextEncoder().encode(asset.data);
+    }
+    const payload = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(payload).set(bytes);
+    const res = await fetch('/api/images', {
+      method: 'POST',
+      headers: {
+        'Content-Type': asset.mime,
+        'X-Nom': asset.name,
+        'X-Mot-De-Passe': password,
+      },
+      body: payload,
+    });
+    const text = await res.text();
+    let parsed: unknown = null;
+    if (text) {
+      try {
+        parsed = JSON.parse(text) as unknown;
+      } catch {
+        parsed = null;
+      }
+    }
+    if (!res.ok) {
+      const msg =
+        parsed && typeof parsed === 'object' && parsed !== null && 'erreur' in parsed
+          ? String((parsed as { erreur: unknown }).erreur)
+          : `Envoi image échoué (${res.status})`;
+      throw new FavorisApiError(msg, res.status);
+    }
+    const created = parsed as { id?: string } | null;
+    if (!created?.id) throw new FavorisApiError('Réponse image invalide.');
+    idMap.set(asset.id, created.id);
+  }
+  return idMap;
+}
+
+function layersWithPartagee(idMap: Map<string, string>) {
+  const { design } = getState();
+  return design.layers.map((l) => {
+    if (l.kind !== 'image' || l.asset.kind !== 'embarquee') return l;
+    const imageId = idMap.get(l.asset.assetId);
+    if (!imageId) return l;
+    return { ...l, asset: { kind: 'partagee' as const, imageId } };
   });
-  if (hasEmbedded) return true;
-  return shareableManualTiles(state).omitted;
 }
 
 async function saveAsFavori(retryError: string | null = null): Promise<void> {
   if (projectBlocksFavori()) {
-    showShareHint(IMPORTED_IMAGES_MESSAGE);
+    showShareHint(
+      'Ce projet contient des carreaux importés (PNG) qui ne peuvent pas encore être enregistrés en ligne. Utilisez une collection, ou envoyez le fichier .json.',
+    );
     return;
   }
+  const embedded = embeddedImageAssets();
   const { design } = getState();
   const motif = design.layers.find((l) => l.kind === 'motif');
   const defaultName = openFavoriName ?? motif?.name ?? design.name ?? 'Favori';
@@ -508,20 +580,55 @@ async function saveAsFavori(retryError: string | null = null): Promise<void> {
     existingName: openFavoriId ? (openFavoriName ?? defaultName) : null,
     storedPassword: readStoredPassword(),
     errorMessage: retryError,
+    embeddedCount: embedded.length,
   });
   if (result.kind === 'cancel') return;
 
   storePassword(result.password);
 
+  // Vignette : avec images embarquées, capturePair peut figer SwiftShader —
+  // carton unicolore. Sinon capture paire habituelle.
+  showSaveProgress('vignette', 'Préparation de la vignette…');
   let vignette: string;
+  try {
+    if (result.choice === 'upload-and-save' && embedded.length > 0) {
+      vignette = await encodeSolidFavoriVignette();
+    } else {
+      const capture = await capturePair(600, '#ecebe8');
+      vignette = await encodeFavoriVignette(capture);
+    }
+  } catch (e) {
+    showShareHint(e instanceof Error ? e.message : 'Échec de la vignette.');
+    return;
+  }
+
+  let idMap = new Map<string, string>();
+  try {
+    if (result.choice === 'upload-and-save') {
+      showSaveProgress('upload', 'Envoi des images…');
+      idMap = await uploadEmbeddedAsPartagee(result.password);
+    }
+  } catch (e) {
+    if (e instanceof FavorisApiError && e.status === 401) {
+      forgetPassword();
+      await saveAsFavori('Mot de passe incorrect');
+      return;
+    }
+    showShareHint(e instanceof Error ? e.message : 'Envoi des images impossible.');
+    return;
+  }
+
+  if (idMap.size > 0) {
+    // Une seule étape d'historique : toutes les images embarquées passent en partagées.
+    update({ design: { layers: layersWithPartagee(idMap) } });
+  }
+  showSaveProgress('lien', 'Enregistrement du favori…');
   let lien: string;
   try {
-    const capture = await capturePair(600, '#ecebe8');
-    vignette = await encodeFavoriVignette(capture);
     const built = await buildShareUrl();
     lien = built.hash.replace(/^#/, '');
   } catch (e) {
-    showShareHint(e instanceof Error ? e.message : 'Échec de la vignette.');
+    showShareHint(e instanceof Error ? e.message : 'Échec du lien de partage.');
     return;
   }
 
@@ -561,10 +668,16 @@ function showFavoriSaved(id: string): void {
   link.dataset.testid = 'favori-gallery-link';
   shareHint.replaceChildren(hint, link);
   shareHint.hidden = false;
+  shareHint.dataset.phase = 'done';
   shareHint.dataset.favoriId = id;
+  const btn = document.querySelector('[data-testid="project-favori"]');
+  if (btn instanceof HTMLElement) {
+    btn.dataset.lastFavoriId = id;
+    btn.dataset.lastFavoriSaved = '1';
+  }
   window.setTimeout(() => {
     if (shareHint.dataset.favoriId === id) showShareHint(null);
-  }, 5000);
+  }, 15_000);
 }
 
 function applyShellMode(dev: boolean): void {
@@ -1365,13 +1478,18 @@ function recompute(): void {
         },
       )
         .then((imgs) => {
-          if (token !== compositionLoadToken) return;
-          compositionImages = imgs;
-          compositionImagesReadyKey = readyKey;
-          compositionEditor.setImages(imgs);
-          recompute();
+          window.setTimeout(() => {
+            if (token !== compositionLoadToken) return;
+            compositionImages = imgs;
+            compositionImagesReadyKey = readyKey;
+            compositionEditor.setImages(imgs);
+            recompute();
+          }, 0);
         })
         .catch((err) => {
+          if (token !== compositionLoadToken) return;
+          // Sans ça, un échec relance recompute → rechargement → échec, et la page se fige.
+          compositionImagesReadyKey = readyKey;
           const message = err instanceof Error ? err.message : 'Images de calque illisibles.';
           update({ error: message }, { skipHistory: true });
         });
@@ -1604,19 +1722,19 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
             selectedLayerId: motif?.id ?? 'fond',
             error: null,
           },
-          { skipHistory: true },
+          { skipHistory: true, silent: true },
         );
         return;
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Collection illisible.';
-        update({ error: message }, { skipHistory: true });
+        update({ error: message }, { skipHistory: true, silent: true });
       }
     } else {
       update(
         {
           error: `Collection « ${parsed.activeCollectionId} » absente : modèle par défaut.`,
         },
-        { skipHistory: true },
+        { skipHistory: true, silent: true },
       );
     }
   }
@@ -1652,7 +1770,7 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
         selectedLayerId: motif?.id ?? 'fond',
         error: null,
       },
-      { skipHistory: true },
+      { skipHistory: true, silent: true },
     );
     return;
   }
@@ -1669,7 +1787,7 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
       tiles: [],
       error: null,
     },
-    { skipHistory: true },
+    { skipHistory: true, silent: true },
   );
 }
 
@@ -1689,25 +1807,8 @@ async function boot(): Promise<void> {
     update(patch, { skipHistory: true });
   }
 
-  const hashResult = await decodeShareHash(window.location.hash);
-  if (hashResult.ok) {
-    await applyShare(hashResult.parsed);
-  } else {
-    if (hashResult.reason === 'illisible' || hashResult.reason === 'version') {
-      showShareHint(
-        hashResult.reason === 'version'
-          ? 'Lien d’une version plus récente : modèle par défaut.'
-          : 'Lien illisible : modèle par défaut.',
-      );
-    }
-    try {
-      const saved = await loadLastProject();
-      if (saved) await applyParsedProject(saved);
-    } catch {
-      // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
-    }
-  }
-
+  // Différé : le lien #p= est appliqué APRÈS le premier recompute (plus bas),
+  // pour que __SIM__.ready soit vrai même si un calque partagee fige ensuite.
   panelApi = mountPanel(panel, {
     tabs: optionsTabs,
     layerKeyColors: layerColorsOf,
@@ -1790,6 +1891,28 @@ async function boot(): Promise<void> {
   recompute();
   scheduleShareHash();
   decor.sync();
+
+  const hashResult = await decodeShareHash(window.location.hash);
+  if (hashResult.ok) {
+    await applyShare(hashResult.parsed);
+    publish(); // rafraîchir __SIM__ sans attendre le recompute éventuellement lourd
+    // Recompute hors du tick de boot : un calque partagee peut figer SwiftShader.
+    window.setTimeout(() => recompute(), 0);
+  } else {
+    if (hashResult.reason === 'illisible' || hashResult.reason === 'version') {
+      showShareHint(
+        hashResult.reason === 'version'
+          ? 'Lien d’une version plus récente : modèle par défaut.'
+          : 'Lien illisible : modèle par défaut.',
+      );
+    }
+    try {
+      const saved = await loadLastProject();
+      if (saved) await applyParsedProject(saved);
+    } catch {
+      // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
+    }
+  }
 
   if (openFavoriId) {
     void fetchFavorisJson<{ nom: string }>(`/api/favoris/${encodeURIComponent(openFavoriId)}`)

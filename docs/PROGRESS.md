@@ -1036,3 +1036,11 @@ Fait : migration `0002_images.sql`, `worker/api/images.ts`, R2 binding, AssetRef
 Vérification : typecheck ✅ ; 9 tests Worker ✅ ; assetKey partagee ✅.
 Décisions : aucune nouvelle.
 Reste / risques : T86 branchement UI.
+
+## T86 — Favoris avec images et bibliothèque partagée — 2026-09-28 14:52
+Statut : terminée
+Fait : ★ Favori envoie les images embarquées (POST) puis passe les calques en `partagee` en une étape d'historique. Section « Bibliothèque partagée » (vignettes, filtre, envoi, renommer, retirer). Les carreaux PNG d'un Motif restent refusés. Chargement `/api/images/:id` sans extension (type MIME), sinon le recalcul bouclait et figeait la page.
+Vérification : typecheck ✅ ; e2e:api `images-partagees.spec.ts` ✅ (1 test, 21 s).
+Contrôle visuel : après enregistrement, message « Enregistré dans les favoris — voir la galerie », chaussette 3D avec damier noir/blanc et cercle rouge, panneau « Image : » suivi de l'identifiant partagé. Bibliothèque › Images : titre « Bibliothèque partagée », filtre, bouton « Envoyer une image… », vignette damier nommée « carreau-test-damier… ». La vue à plat reste unie (le motif est sur le devant 3D).
+Décisions : aucune.
+Reste / risques : T87 bilan, README, `npm run verify`.

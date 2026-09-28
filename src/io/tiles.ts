@@ -117,10 +117,16 @@ export async function loadTileFromFile(file: File): Promise<TileAsset> {
   }
 }
 
-/** Charge un carreau déjà servi par l'application (fixture ou URL locale). */
-export async function loadTileFromUrl(url: string): Promise<TileAsset> {
+/**
+ * Charge un carreau déjà servi par l'application (fixture ou URL locale).
+ * `sourceHint` sert quand l'URL n'a pas d'extension (images `/api/images/:id`).
+ */
+export async function loadTileFromUrl(
+  url: string,
+  sourceHint?: TileAsset['source'],
+): Promise<TileAsset> {
   const name = decodeURIComponent(url.split('/').pop() || 'carreau');
-  const source = detectSource(name, '');
+  const source = sourceHint ?? detectSource(name, '');
   if (!source) throw unsupported(name);
   return rasterize(url, name, source);
 }

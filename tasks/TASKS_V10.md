@@ -205,7 +205,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
   - 401 sans mot de passe ;
   - en-têtes de sécurité présents.
 
-### [ ] T86 — Brancher : favoris avec images, et bibliothèque qui s'enrichit
+### [x] T86 — Brancher : favoris avec images, et bibliothèque qui s'enrichit
 
 - **« ★ Favori » sur un projet avec des images importées** : la fenêtre propose « Envoyer N image(s) dans la bibliothèque partagée et enregistrer ».
   - Chaque image embarquée est envoyée (POST) ; ses calques passent de `embarquee` à `partagee` (une seule étape d'historique), puis le favori est enregistré.
@@ -217,7 +217,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
 - Hors ligne ou API indisponible : la section affiche « Bibliothèque partagée indisponible » ; le reste marche.
 
 **Critères**
-- [ ] e2e `images-partagees.spec.ts`, à la souris :
+- [x] e2e `images-partagees.spec.ts`, à la souris :
   - importer un PNG → ★ Favori → « Envoyer et enregistrer » → le favori s'ouvre dans un navigateur neuf (sans localStorage) avec l'image visible ;
   - l'image apparaît dans « Bibliothèque partagée ».
 

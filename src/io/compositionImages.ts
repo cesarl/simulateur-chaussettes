@@ -36,6 +36,35 @@ export function compositionCacheKey(req: CompositionImageRequest): string {
   return `${key}|${colorsKey(req.zoneColors)}|${side}`;
 }
 
+const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+function isPngBytes(bytes: Uint8Array): boolean {
+  return PNG_SIG.every((b, i) => bytes[i] === b);
+}
+
+/**
+ * Image `/api/images/:id` : l'URL n'a pas d'extension, on se fie au type renvoyé.
+ */
+async function loadPartageeRaster(imageId: string): Promise<RasterImage> {
+  const res = await fetch(`/api/images/${encodeURIComponent(imageId)}`);
+  if (!res.ok) throw new Error(`Image partagée introuvable : ${imageId}`);
+  const mime = (res.headers.get('Content-Type') ?? '').split(';')[0]!.trim().toLowerCase();
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const svg = mime === 'image/svg+xml' || (!isPngBytes(bytes) && bytes[0] === 0x3c);
+  if (svg) {
+    const tile = await loadTileFromSvgText(new TextDecoder().decode(bytes), imageId);
+    return { width: tile.width, height: tile.height, rgba: tile.rgba };
+  }
+  const blob = new Blob([bytes], { type: 'image/png' });
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const tile = await loadTileFromUrl(objectUrl, 'png');
+    return { width: tile.width, height: tile.height, rgba: tile.rgba };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 const cache = new Map<string, RasterImage>();
 
 export function clearCompositionImageCache(): void {
@@ -72,8 +101,7 @@ export async function loadCompositionImage(req: CompositionImageRequest): Promis
     const tile = await loadTileFromUrl(bibliothequeImageUrl(fichier));
     img = { width: tile.width, height: tile.height, rgba: tile.rgba };
   } else if (req.ref.kind === 'partagee') {
-    const tile = await loadTileFromUrl(`/api/images/${encodeURIComponent(req.ref.imageId)}`);
-    img = { width: tile.width, height: tile.height, rgba: tile.rgba };
+    img = await loadPartageeRaster(req.ref.imageId);
   } else {
     const ref = req.ref;
     const cat = req.catalogue;
