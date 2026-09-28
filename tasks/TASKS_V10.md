@@ -126,7 +126,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
   - modifier la chaussette → ★ → « Mettre à jour » → le lien enregistré a changé ;
   - un mauvais mot de passe affiche l'erreur et n'enregistre rien.
 
-### [ ] T83 — Page « Favoris » (galerie)
+### [x] T83 — Page « Favoris » (galerie)
 
 - Nouvelle page `favoris.html` : entrée Vite `favoris`, servie en `/favoris.html`.
 - Lien « Favoris » dans la barre du projet (mode dev) et discret dans la visionneuse.
@@ -147,8 +147,8 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
   - API indisponible : message clair.
 
 **Critères**
-- [ ] e2e `favoris-galerie.spec.ts`, à la souris : 3 favoris créés par l'API → 3 cartes ; filtrer ; renommer ; supprimer puis Annuler ; supprimer, corbeille, restaurer ; cliquer une carte → la chaussette s'ouvre avec la même empreinte de grille (visionneuse, et éditeur si dev).
-- [ ] Captures de la galerie sur ordinateur et sur téléphone (390 px), décrites.
+- [x] e2e `favoris-galerie.spec.ts`, à la souris : 3 favoris créés par l'API → 3 cartes ; filtrer ; renommer ; supprimer puis Annuler ; supprimer, corbeille, restaurer ; cliquer une carte → la chaussette s'ouvre avec la même empreinte de grille (visionneuse, et éditeur si dev).
+- [x] Captures de la galerie sur ordinateur et sur téléphone (390 px), décrites.
 
 ### [ ] T84 — Bilan de l'étape A et mise en ligne
 

@@ -158,7 +158,7 @@ test.describe('★ Favori T82', () => {
     // Modifier la chaussette (décor) → ★ → Mettre à jour
     const hashBefore = await page.evaluate(() => window.location.hash);
     await page.evaluate(() => {
-      window.__SIM__!.setDesign({ decor: { mode: 'plein' } });
+      window.__SIM__!.setDesign({ decor: { mode: 'sol' } });
     });
     await page.waitForFunction((prev) => window.location.hash !== prev && window.location.hash.startsWith('#p='), hashBefore, {
       timeout: 10_000,

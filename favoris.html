@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Favoris — Chaussettes solidaires</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="favoris-page">
+    <header class="favoris-header">
+      <p><a href="./" data-testid="favoris-back">← Simulateur</a></p>
+      <h1 data-testid="favoris-title">Chaussettes solidaires — favoris</h1>
+      <div class="favoris-toolbar">
+        <label class="favoris-filter">
+          Filtrer
+          <input type="search" data-testid="favoris-filter" placeholder="Nom…" />
+        </label>
+        <button type="button" data-testid="favoris-corbeille">Corbeille</button>
+      </div>
+    </header>
+    <p class="favoris-status" data-testid="favoris-status" hidden></p>
+    <div class="favoris-grid" data-testid="favoris-grid"></div>
+    <script type="module" src="/src/favorisPage.ts"></script>
+  </body>
+</html>

@@ -979,3 +979,11 @@ Vérification : typecheck ✅ ; unitaires ✅ ; e2e:api favori ✅.
 Contrôle visuel `visuel-t82-favori-enregistre.png` : barre avec ★ Favori ; vue 2D Jardin (bleu/blanc) + 3D sur décor carreaux ; bandeau « Enregistré dans les favoris — voir la galerie » sous la 3D ; dock Motif + Fond.
 Décisions : aucune nouvelle (D70 inchangé).
 Reste / risques : page galerie T83.
+
+## T83 — Page Favoris (galerie) — 2026-09-28 10:15
+Statut : terminée
+Fait : `favoris.html` + `favorisPage.ts` (grille, filtre, renommer sur place, supprimer + Annuler 5 s, corbeille/restaurer, liens sans ?dev). Liens Favoris barre projet + visionneuse. e2e `favoris-galerie.spec.ts`.
+Vérification : typecheck ✅ ; e2e:api galerie ✅.
+Contrôle visuel desktop : titre « Chaussettes solidaires — favoris », filtre Nom, bouton Corbeille, 3 cartes (Gamma/Beta/Alpha) avec date « modifié le 28 sept. 2026 », menu ⋯ ; vignettes absentes (création API sans vignette — icône image cassée). Mobile 390 px : même contenu, cartes empilées/étroites, lisible.
+Décisions : aucune.
+Reste / risques : T84 bilans + verify complet.

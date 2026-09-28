@@ -74,7 +74,13 @@ export function mountProjectBar(
     libBtn.disabled = true;
   }
 
-  body.append(title, undoBtn, redoBtn, copy, favoriBtn, openBtn, saveBtn, libBtn);
+  const favorisLink = document.createElement('a');
+  favorisLink.href = './favoris.html';
+  favorisLink.dataset.testid = 'project-favoris-link';
+  favorisLink.textContent = 'Favoris';
+  favorisLink.className = 'project-bar-link';
+
+  body.append(title, undoBtn, redoBtn, copy, favoriBtn, openBtn, saveBtn, libBtn, favorisLink);
   host.appendChild(body);
 
   // T64 — bascules 2D / 3D (mode ?dev seulement ; la barre est déjà hidden hors dev).

@@ -14,6 +14,7 @@ export default defineConfig({
         main: resolve(root, 'index.html'),
         sockDemo: resolve(root, 'sock-demo.html'),
         admin: resolve(root, 'admin.html'),
+        favoris: resolve(root, 'favoris.html'),
       },
     },
   },

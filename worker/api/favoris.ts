@@ -107,7 +107,7 @@ async function getVignette(env: Env, id: string, url: URL): Promise<Response> {
   const bytes = toUint8(row.vignette);
   if (!bytes || bytes.byteLength === 0) return jsonErreur('Vignette introuvable.', 404);
   void url;
-  return new Response(bytes, {
+  return new Response(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer, {
     status: 200,
     headers: {
       'Content-Type': 'image/webp',

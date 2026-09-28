@@ -96,7 +96,13 @@ export function mountViewerBar(
     void options.onCopyLink();
   });
 
-  bar.append(title, views, decorLabel, flatLabel, copy);
+  const favoris = document.createElement('a');
+  favoris.href = './favoris.html';
+  favoris.className = 'viewer-favoris-link';
+  favoris.dataset.testid = 'viewer-favoris-link';
+  favoris.textContent = 'Favoris';
+
+  bar.append(title, views, decorLabel, flatLabel, copy, favoris);
   viewport.appendChild(bar);
 
   function refresh(): void {
