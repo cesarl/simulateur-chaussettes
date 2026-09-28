@@ -475,3 +475,16 @@ Contexte : après V11, la modale Bibliothèque restait médiocre — hover qui d
 Options : A) Popover API pour remonter le menu dans la top-layer ; B) rattacher le menu au `<dialog open>` ; C) refonte navigation colonne gauche (T94).
 Choix : B (A peignait le menu mais Playwright/hit-test restait sur le dialog) + polish cartes (overlay `pointer-events: none` sauf boutons, grille `minmax(164px)`, sections Images) ; Partagée via ⋯ kit (testids `lib-shared-rename-*` / `lib-shared-remove-*` conservés sur les items). Pas de C (hors scope métier).
 Conséquence : menus au-dessus de la modale ; e2e bibliothèque/kit verts sans changer les testids principaux ; `lib-shared-menu-*` et `lib-bib-add-*` / `lib-bib-count` / `lib-shared-count` / `lib-project-count` ajoutés (stables).
+
+## D80 — Défauts zones / fond / crayon = nuancier public (post-V11)
+Contexte : bord-côte `#1f3a5f`, talon `#b5462f`, pointe `#1d1d1b`, pied `#f4f1ea`, fond `#f1e9dc`, joint `#d9d3c7` et crayon dessin hors du nuancier Validé (`catalogue.json`).
+Options : A) laisser les hex historiques ; B) les remplacer partout y compris `v1ShareDefaults` / golden ; C) nouveaux défauts UI = nuancier, figés share/golden intacts.
+Choix : C — module `src/core/nuancierDefaults.ts` :
+- bord-côte : BL016 `#303446`
+- talon : RD060 `#ab4236`
+- pointe / crayon : BK001 `#1a1a1a`
+- pied : YL010 `#fff8eb`
+- fond (nouveau projet) : YL008 `#fbeed5`
+- joint : BK010 `#cfcec9`
+Intouchables : `v1ShareDefaults.json`, `DEFAULT_FOND_COLOR` (`#f1e9dc` pour gabarits/liens), `PATTERN_BACKGROUND` / `EMPTY_STITCH_COLOR` / repli calepinage `#f4f1ea`/`#d9d4cc` (empreintes golden T41), chrome UI V11 (`--bg`/`--ink`/`--accent`).
+Conséquence : `defaultDesign()` diverge volontairement des défauts de fusion `#p=` (déjà autorisé depuis D47/commentaire layers) ; e2e dessin Achille attend BK001.

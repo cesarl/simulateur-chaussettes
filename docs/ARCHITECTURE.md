@@ -51,6 +51,7 @@ src/
     layout.ts            calepinage et échantillonnage maille par maille
     calepinage.ts        moteur multi-motifs (réf. reference/calepinage/)
     collections.ts       catalogue, recolorSvg, palettes (réf. reference/collections/)
+    nuancierDefaults.ts  défauts zones/fond/crayon = hex du nuancier public (D80)
     quantize.ts          réduction de couleurs, nettoyage
     checks.ts            contrôles de fabrication
     color.ts             utilitaires couleur (hex ↔ rgb, distance)

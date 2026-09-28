@@ -123,10 +123,10 @@ test.describe('T72 dessin tendon d’Achille', () => {
     });
     expect(painted).not.toBeNull();
     for (const c of painted!.checks) {
-      expect(c.c42.toLowerCase()).toBe('#1d1d1b');
-      expect(c.c43.toLowerCase()).toBe('#1d1d1b');
-      expect(c.c41.toLowerCase()).not.toBe('#1d1d1b');
-      expect(c.c44.toLowerCase()).not.toBe('#1d1d1b');
+      expect(c.c42.toLowerCase()).toBe('#1a1a1a');
+      expect(c.c43.toLowerCase()).toBe('#1a1a1a');
+      expect(c.c41.toLowerCase()).not.toBe('#1a1a1a');
+      expect(c.c44.toLowerCase()).not.toBe('#1a1a1a');
     }
     // Rang 180 = 1er rang pied : pas de trait (ou hors tige motif selon patternOnFoot)
     // Le critère : rien au rang 180 du motif peint comme trait vertical — owner dessin absent.
@@ -146,7 +146,7 @@ test.describe('T72 dessin tendon d’Achille', () => {
       const gridRow = (sim?.motifRowOrigin ?? 0) + 90;
       return sim?.getStitch(42, gridRow)?.color.toLowerCase() ?? '';
     });
-    expect(afterUndo).not.toBe('#1d1d1b');
+    expect(afterUndo).not.toBe('#1a1a1a');
 
     const beforeRedo = await computeId(page);
     await page.getByTestId('project-redo').click();
@@ -156,7 +156,7 @@ test.describe('T72 dessin tendon d’Achille', () => {
       const gridRow = (sim?.motifRowOrigin ?? 0) + 90;
       return sim?.getStitch(42, gridRow)?.color.toLowerCase() ?? '';
     });
-    expect(afterRedo).toBe('#1d1d1b');
+    expect(afterRedo).toBe('#1a1a1a');
 
     // Lien de partage (hash auto) → rouvrir → même trait
     await page.waitForFunction(() => window.location.hash.startsWith('#p=2.'), null, { timeout: 10_000 });
@@ -175,8 +175,8 @@ test.describe('T72 dessin tendon d’Achille', () => {
       };
     });
     expect(restored.hasDessin).toBe(true);
-    expect(restored.c42).toBe('#1d1d1b');
-    expect(restored.c43).toBe('#1d1d1b');
+    expect(restored.c42).toBe('#1a1a1a');
+    expect(restored.c43).toBe('#1a1a1a');
 
     // Captures 2D / 3D dos (recharger en ?dev pour toolbars)
     await page.goto(`/?dev${hash}`);
@@ -231,14 +231,14 @@ test.describe('T72 dessin tendon d’Achille', () => {
         b: sim?.getStitch(53, origin + 50)?.color.toLowerCase() ?? '',
       };
     });
-    expect(mirror.a).toBe('#1d1d1b');
-    expect(mirror.b).toBe('#1d1d1b');
+    expect(mirror.a).toBe('#1a1a1a');
+    expect(mirror.b).toBe('#1a1a1a');
 
     // Pipette
     await page.getByTestId('dessin-tool-pipette').click();
     await page.mouse.click(box!.x + pt.x, box!.y + pt.y);
     const bg = await page.getByTestId('dessin-color').evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(bg.replace(/\s/g, '')).toMatch(/rgb\(29,29,27\)/i);
+    expect(bg.replace(/\s/g, '')).toMatch(/rgb\(26,26,26\)/i);
 
     expect(errors).toEqual([]);
   });
