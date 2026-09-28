@@ -3,20 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Favoris — Chaussettes solidaires</title>
+    <title>Favoris — César Bazaar</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body class="favoris-page">
-    <header class="favoris-header">
-      <p><a href="./" data-testid="favoris-back">← Simulateur</a></p>
-      <h1 data-testid="favoris-title">Chaussettes solidaires — favoris</h1>
+    <header class="favoris-header" data-testid="favoris-header">
+      <div class="favoris-header-row">
+        <h1 data-testid="favoris-title">Favoris <span class="favoris-count" data-testid="favoris-count"></span></h1>
+        <a class="kit-btn kit-btn--ghost kit-btn--compact" href="./" data-testid="favoris-back">Ouvrir le simulateur</a>
+      </div>
       <div class="favoris-toolbar">
         <label class="favoris-filter">
-          Filtrer
-          <input type="search" data-testid="favoris-filter" placeholder="Nom…" />
+          <span class="favoris-filter-icon" aria-hidden="true"></span>
+          <input type="search" data-testid="favoris-filter" placeholder="Rechercher…" aria-label="Rechercher dans les favoris" />
         </label>
-        <button type="button" data-testid="favoris-corbeille">Corbeille</button>
+        <label class="favoris-sort">
+          Tri
+          <select data-testid="favoris-sort">
+            <option value="recent">Récents</option>
+            <option value="nom">Nom</option>
+          </select>
+        </label>
+        <button type="button" class="kit-btn kit-btn--ghost kit-btn--compact" data-testid="favoris-corbeille">Corbeille</button>
       </div>
     </header>
     <p class="favoris-status" data-testid="favoris-status" hidden></p>

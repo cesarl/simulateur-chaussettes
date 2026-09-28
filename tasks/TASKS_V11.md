@@ -133,7 +133,7 @@ Hauteur 44 px, un seul rang, groupes séparés par un fin trait vertical :
 - [x] e2e existants verts (options, dock, dessin).
 - [x] Captures avant / après : onglet Calque (Motif, Image, Dessin), Chaussette, dock.
 
-### [ ] T93 — Galerie des favoris
+### [x] T93 — Galerie des favoris
 
 - **En-tête collant** :
   - titre « Favoris » avec leur nombre ;
@@ -160,12 +160,12 @@ Hauteur 44 px, un seul rang, groupes séparés par un fin trait vertical :
 - **Vignettes existantes** : si certaines anciennes vignettes ne sont pas en 4:5, elles sont recadrées au centre par `object-fit`. Si elles ont été **déformées à l'enregistrement**, corriger l'encodage de la vignette (T82 de V10 : garder le rapport 4:5, 480 × 600) et le noter.
 
 **Critères**
-- [ ] e2e `favoris-galerie.spec.ts` mis à jour, à la souris :
+- [x] e2e `favoris-galerie.spec.ts` mis à jour, à la souris :
   - le rapport largeur/hauteur de chaque vignette est 0,8 ± 1 % ;
   - aucun menu n'est visible au chargement ;
   - « ⋯ » → Renommer, et Supprimer → Annuler par le toast ;
   - Échap ferme le menu.
-- [ ] Captures avant / après sur ordinateur (1440) et téléphone (390), décrites.
+- [x] Captures avant / après sur ordinateur (1440) et téléphone (390), décrites.
 
 ### [ ] T94 — Bibliothèque
 

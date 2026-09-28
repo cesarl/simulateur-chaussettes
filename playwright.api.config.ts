@@ -24,7 +24,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run build && npm run db:migrate:local && wrangler dev --port 4173',
     url: 'http://localhost:4173/api/sante',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },
 });

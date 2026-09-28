@@ -1111,3 +1111,11 @@ Contrôle visuel :
 - **Après dock** : Motif sélectionné fond accent-soft + bordure ; « + Calque ▾ » à droite.
 Reste imparfait : bandeau Annuler/Rétablir/Copier encore textuel ; « Réinitialiser ce calque » encore texte ; pastilles collections toujours carrées (pas la galerie favoris) ; Global réduit en icône settings seule sur la capture (libellé masqué par largeur).
 Décisions : D75
+
+## T93 — Galerie des favoris — 2026-09-28 15:50
+Statut : terminée
+Fait : en-tête sticky (titre+nombre, recherche loupe, tri, Corbeille, lien simulateur) ; cartes 4:5 object-fit cover + zoom 1,03 ; ⋯ au survol ; menus kit ; toast Annuler ; dialogs renommer/mdp.
+Vérification : e2e-api favoris-galerie ✅ (ratio 0,8±1 %, menus fermés, Échap).
+Contrôle visuel : avant = page erreur/API ou ancienne grille étroite ; après 1440/390 = cartes portrait 4:5, en-tête compact.
+Reste imparfait : sans vignette les cartes restent vides (placeholder) ; police serif Fraunces retirée au profit du kit système.
+Décisions : D76

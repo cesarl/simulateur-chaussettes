@@ -1,5 +1,5 @@
 /**
- * Galerie des favoris en ligne (T83).
+ * Galerie des favoris en ligne (T83 → T93 finitions).
  */
 import { FAVORIS_VITE_MESSAGE, FavorisApiError, fetchFavorisJson } from './io/favorisApi';
 import {
@@ -8,6 +8,11 @@ import {
   readStoredPassword,
   storePassword,
 } from './io/favorisClient';
+import { icon } from './ui/kit/icons';
+import { openMenu, closeOpenMenu, type MenuEntry } from './ui/kit/menu';
+import { openDialog } from './ui/kit/dialog';
+import { showToast } from './ui/kit/toast';
+import { kitButton } from './ui/kit/button';
 
 type FavoriItem = {
   id: string;
@@ -25,97 +30,106 @@ const grid = document.querySelector('[data-testid="favoris-grid"]') as HTMLEleme
 const statusEl = document.querySelector('[data-testid="favoris-status"]') as HTMLElement;
 const filterInput = document.querySelector('[data-testid="favoris-filter"]') as HTMLInputElement;
 const trashBtn = document.querySelector('[data-testid="favoris-corbeille"]') as HTMLButtonElement;
+const countEl = document.querySelector('[data-testid="favoris-count"]') as HTMLElement | null;
+const sortSelect = document.querySelector('[data-testid="favoris-sort"]') as HTMLSelectElement | null;
+const filterIconHost = document.querySelector('.favoris-filter-icon');
+
+if (filterIconHost) filterIconHost.appendChild(icon('search', { size: 16 }));
 
 let showingTrash = false;
 let items: FavoriItem[] = [];
 let undoTimer: number | undefined;
 let lastDeletedId: string | null = null;
 
-function setStatus(message: string | null, undo?: { id: string }): void {
+function setStatus(message: string | null): void {
   if (!message) {
     statusEl.hidden = true;
     statusEl.replaceChildren();
     return;
   }
   statusEl.hidden = false;
-  statusEl.replaceChildren(document.createTextNode(message));
-  if (undo) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.dataset.testid = 'favoris-undo-delete';
-    btn.textContent = 'Annuler';
-    btn.addEventListener('click', () => {
-      void restoreFavori(undo.id);
-    });
-    statusEl.append(' ', btn);
-  }
+  statusEl.textContent = message;
 }
 
-function formatDate(ms: number): string {
+function relativeDate(ms: number): string {
+  const diff = Date.now() - ms;
+  const min = Math.round(diff / 60_000);
+  if (min < 1) return 'à l’instant';
+  if (min < 60) return `il y a ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24);
+  if (d < 30) return `il y a ${d} jour${d > 1 ? 's' : ''}`;
   try {
-    return new Intl.DateTimeFormat('fr-FR', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date(ms));
+    return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(ms));
   } catch {
-    return new Date(ms).toLocaleString('fr-FR');
+    return new Date(ms).toLocaleDateString('fr-FR');
   }
 }
 
 function askPassword(errorMessage?: string | null): Promise<string | null> {
   return new Promise((resolve) => {
-    const dialog = document.createElement('dialog');
-    dialog.className = 'favori-dialog';
-    dialog.dataset.testid = 'favoris-password-dialog';
-    const title = document.createElement('h2');
-    title.textContent = 'Mot de passe';
-    const err = document.createElement('p');
-    err.className = 'favori-dialog-error';
-    err.dataset.testid = 'favoris-password-error';
-    err.hidden = !errorMessage;
-    err.textContent = errorMessage ?? '';
+    const body = document.createElement('div');
+    if (errorMessage) {
+      const err = document.createElement('p');
+      err.className = 'favori-dialog-error';
+      err.dataset.testid = 'favoris-password-error';
+      err.textContent = errorMessage;
+      body.appendChild(err);
+    }
     const label = document.createElement('label');
     label.textContent = 'Mot de passe';
+    label.style.display = 'flex';
+    label.style.flexDirection = 'column';
+    label.style.gap = '6px';
     const input = document.createElement('input');
     input.type = 'password';
     input.dataset.testid = 'favoris-password';
+    input.style.font = 'inherit';
+    input.style.padding = '8px';
+    input.style.border = '1px solid var(--line)';
+    input.style.borderRadius = '6px';
     const stored = readStoredPassword();
     if (stored) input.value = stored;
     label.appendChild(input);
-    const actions = document.createElement('div');
-    actions.className = 'favori-dialog-actions';
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.dataset.testid = 'favoris-password-cancel';
-    cancel.textContent = 'Annuler';
-    const ok = document.createElement('button');
-    ok.type = 'button';
-    ok.dataset.testid = 'favoris-password-ok';
-    ok.textContent = 'OK';
+    body.appendChild(label);
+
+    let settled = false;
     const finish = (v: string | null): void => {
-      dialog.close();
-      dialog.remove();
+      if (settled) return;
+      settled = true;
       resolve(v);
     };
-    cancel.addEventListener('click', () => finish(null));
-    ok.addEventListener('click', () => {
-      if (!input.value) {
-        err.hidden = false;
-        err.textContent = 'Mot de passe requis.';
-        return;
-      }
-      storePassword(input.value);
-      finish(input.value);
+
+    openDialog({
+      title: 'Mot de passe',
+      body,
+      testId: 'favoris-password-dialog',
+      actions: [
+        {
+          label: 'Annuler',
+          variant: 'ghost',
+          testId: 'favoris-password-cancel',
+          onClick: () => finish(null),
+        },
+        {
+          label: 'OK',
+          variant: 'primary',
+          testId: 'favoris-password-ok',
+          onClick: () => {
+            if (!input.value) {
+              finish(null);
+              return false;
+            }
+            storePassword(input.value);
+            finish(input.value);
+            return true;
+          },
+        },
+      ],
+      onClose: () => finish(null),
     });
-    actions.append(cancel, ok);
-    dialog.append(title, err, label, actions);
-    dialog.addEventListener('cancel', (e) => {
-      e.preventDefault();
-      finish(null);
-    });
-    document.body.appendChild(dialog);
-    dialog.showModal();
-    input.focus();
+    window.setTimeout(() => input.focus(), 0);
   });
 }
 
@@ -166,15 +180,32 @@ async function loadList(): Promise<void> {
     setStatus(
       /vite|indisponibles/i.test(msg) ? FAVORIS_VITE_MESSAGE : `API indisponible : ${msg}`,
     );
+    if (countEl) countEl.textContent = '';
+    const retry = kitButton({
+      variant: 'ghost',
+      label: 'Réessayer',
+      testId: 'favoris-retry',
+      onClick: () => {
+        void loadList();
+      },
+    });
+    statusEl.append(' ', retry);
+    statusEl.hidden = false;
     return;
   }
   render();
 }
 
-function filtered(): FavoriItem[] {
+function sortedFiltered(): FavoriItem[] {
   const q = filterInput.value.trim().toLowerCase();
-  if (!q) return items;
-  return items.filter((f) => f.nom.toLowerCase().includes(q));
+  let list = q ? items.filter((f) => f.nom.toLowerCase().includes(q)) : [...items];
+  const sort = sortSelect?.value ?? 'recent';
+  if (sort === 'nom') {
+    list.sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  } else {
+    list.sort((a, b) => b.modifie_le - a.modifie_le);
+  }
+  return list;
 }
 
 function cardHref(f: FavoriItem): string {
@@ -182,25 +213,93 @@ function cardHref(f: FavoriItem): string {
   return `./?favori=${encodeURIComponent(f.id)}${hash}`;
 }
 
+function updateCount(n: number): void {
+  if (!countEl) return;
+  if (showingTrash) {
+    countEl.textContent = n ? `(${n})` : '';
+    trashBtn.textContent = n ? `Corbeille (${n})` : 'Corbeille';
+  } else {
+    countEl.textContent = n ? `(${n})` : '';
+    const trashCount = items.filter((i) => i.supprime_le).length;
+    // count of trash unknown from main list — keep label, refresh on toggle
+    trashBtn.textContent = 'Corbeille';
+    void trashCount;
+  }
+}
+
 function render(): void {
   grid.replaceChildren();
-  const list = filtered();
+  closeOpenMenu();
+  const list = sortedFiltered();
+  updateCount(list.length);
   if (list.length === 0) {
-    setStatus(
-      showingTrash
-        ? 'Corbeille vide.'
-        : 'Aucun favori pour l’instant — ouvrez le simulateur et cliquez sur ★ Favori',
-    );
+    const empty = document.createElement('div');
+    empty.className = 'favoris-empty';
+    empty.dataset.testid = 'favoris-empty';
+    empty.appendChild(icon('star', { size: 24 }));
+    const p = document.createElement('p');
+    p.textContent = showingTrash
+      ? 'Corbeille vide.'
+      : 'Aucun favori pour l’instant — ouvrez le simulateur et cliquez sur ★ Favori';
+    empty.appendChild(p);
+    grid.appendChild(empty);
+    setStatus(null);
     return;
   }
   setStatus(null);
   for (const f of list) grid.appendChild(makeCard(f));
 }
 
+function openRenameDialog(f: FavoriItem): void {
+  const body = document.createElement('div');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.maxLength = 80;
+  input.value = f.nom;
+  input.dataset.testid = `favoris-rename-input-${f.id}`;
+  input.className = 'favoris-rename-input';
+  input.style.width = '100%';
+  input.style.font = 'inherit';
+  input.style.padding = '8px';
+  input.style.border = '1px solid var(--line)';
+  input.style.borderRadius = '6px';
+  body.appendChild(input);
+
+  openDialog({
+    title: 'Renommer',
+    body,
+    testId: `favoris-rename-dialog-${f.id}`,
+    actions: [
+      { label: 'Annuler', variant: 'ghost', testId: `favoris-rename-cancel-${f.id}` },
+      {
+        label: 'Enregistrer',
+        variant: 'primary',
+        testId: `favoris-rename-ok-${f.id}`,
+        onClick: () => {
+          const nom = input.value.trim();
+          if (!nom || nom === f.nom) return;
+          void withPassword(async (password) => {
+            await patchFavori(f.id, { nom }, password);
+            await loadList();
+          });
+        },
+      },
+    ],
+  });
+  window.setTimeout(() => {
+    input.focus();
+    input.select();
+  }, 0);
+}
+
 function makeCard(f: FavoriItem): HTMLElement {
   const card = document.createElement('article');
   card.className = 'favoris-card';
+  if (showingTrash) card.classList.add('favoris-card--trash');
   card.dataset.testid = `favoris-card-${f.id}`;
+
+  const media = document.createElement('div');
+  media.className = 'favoris-card-media';
 
   const link = document.createElement('a');
   link.className = 'favoris-card-main';
@@ -217,117 +316,139 @@ function makeCard(f: FavoriItem): HTMLElement {
   } else {
     img.classList.add('favoris-card-placeholder');
   }
+  media.appendChild(img);
 
+  const meta = document.createElement('div');
+  meta.className = 'favoris-card-meta';
   const name = document.createElement('h2');
   name.dataset.testid = `favoris-name-${f.id}`;
   name.textContent = f.nom;
   const date = document.createElement('p');
   date.className = 'favoris-card-date';
-  date.textContent = `modifié le ${formatDate(f.modifie_le)}`;
-  link.append(img, name, date);
+  date.textContent = relativeDate(f.modifie_le);
+  meta.append(name, date);
+  link.append(media, meta);
 
-  const menu = document.createElement('div');
-  menu.className = 'favoris-card-menu';
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.dataset.testid = `favoris-menu-${f.id}`;
-  toggle.textContent = '⋯';
-  toggle.setAttribute('aria-label', 'Actions');
-  const actions = document.createElement('div');
-  actions.className = 'favoris-card-actions';
-  actions.hidden = true;
+  const menuBtn = document.createElement('button');
+  menuBtn.type = 'button';
+  menuBtn.className = 'favoris-card-more kit-btn kit-btn--icon';
+  menuBtn.dataset.testid = `favoris-menu-${f.id}`;
+  menuBtn.setAttribute('aria-label', 'Actions');
+  menuBtn.setAttribute('aria-haspopup', 'menu');
+  menuBtn.setAttribute('aria-expanded', 'false');
+  menuBtn.appendChild(icon('more', { size: 16 }));
 
-  if (showingTrash) {
-    const restore = document.createElement('button');
-    restore.type = 'button';
-    restore.dataset.testid = `favoris-restore-${f.id}`;
-    restore.textContent = 'Restaurer';
-    restore.addEventListener('click', () => {
-      void restoreFavori(f.id);
+  menuBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const items: MenuEntry[] = showingTrash
+      ? [
+          {
+            id: 'restore',
+            label: 'Restaurer',
+            icon: 'rotateCcw',
+            testId: `favoris-restore-${f.id}`,
+            onSelect: () => {
+              void restoreFavori(f.id);
+            },
+          },
+        ]
+      : [
+          {
+            id: 'open',
+            label: 'Ouvrir',
+            icon: 'folderOpen',
+            testId: `favoris-menu-open-${f.id}`,
+            onSelect: () => {
+              window.location.href = cardHref(f);
+            },
+          },
+          {
+            id: 'viewer',
+            label: 'Ouvrir en visionneuse',
+            icon: 'eye',
+            testId: `favoris-menu-viewer-${f.id}`,
+            onSelect: () => {
+              try {
+                localStorage.removeItem('simulateur-chaussettes:dev');
+              } catch {
+                /* ignore */
+              }
+              window.location.href = cardHref(f);
+            },
+          },
+          {
+            id: 'copy',
+            label: 'Copier le lien',
+            icon: 'link',
+            testId: `favoris-copy-${f.id}`,
+            onSelect: () => {
+              void (async () => {
+                const url = new URL(cardHref(f), window.location.href).href;
+                try {
+                  await navigator.clipboard.writeText(url);
+                  showToast({ message: 'Lien copié' });
+                } catch {
+                  setStatus(url);
+                }
+              })();
+            },
+          },
+          {
+            id: 'rename',
+            label: 'Renommer',
+            icon: 'pencil',
+            testId: `favoris-rename-${f.id}`,
+            onSelect: () => openRenameDialog(f),
+          },
+          { separator: true },
+          {
+            id: 'delete',
+            label: 'Supprimer',
+            icon: 'trash',
+            danger: true,
+            testId: `favoris-delete-${f.id}`,
+            onSelect: () => {
+              void withPassword(async (password) => {
+                await apiWrite(
+                  `/api/favoris/${encodeURIComponent(f.id)}`,
+                  { method: 'DELETE' },
+                  password,
+                );
+                lastDeletedId = f.id;
+                window.clearTimeout(undoTimer);
+                await loadList();
+                showToast({
+                  message: `« ${f.nom} » mis à la corbeille`,
+                  durationMs: 5000,
+                  testId: 'favoris-delete-toast',
+                  action: {
+                    label: 'Annuler',
+                    testId: 'favoris-undo-delete',
+                    onClick: () => {
+                      void restoreFavori(f.id);
+                    },
+                  },
+                });
+                undoTimer = window.setTimeout(() => {
+                  if (lastDeletedId === f.id) {
+                    lastDeletedId = null;
+                  }
+                }, 5000);
+              });
+            },
+          },
+        ];
+    openMenu({
+      anchor: menuBtn,
+      trigger: menuBtn,
+      items,
+      testId: `favoris-menu-popup-${f.id}`,
     });
-    actions.append(restore);
-  } else {
-    const rename = document.createElement('button');
-    rename.type = 'button';
-    rename.dataset.testid = `favoris-rename-${f.id}`;
-    rename.textContent = 'Renommer';
-    rename.addEventListener('click', () => startInlineRename(f, name, link));
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.dataset.testid = `favoris-delete-${f.id}`;
-    del.textContent = 'Supprimer';
-    del.addEventListener('click', () => {
-      void withPassword(async (password) => {
-        await apiWrite(`/api/favoris/${encodeURIComponent(f.id)}`, { method: 'DELETE' }, password);
-        lastDeletedId = f.id;
-        window.clearTimeout(undoTimer);
-        await loadList();
-        setStatus('Favori mis à la corbeille.', { id: f.id });
-        undoTimer = window.setTimeout(() => {
-          if (lastDeletedId === f.id) setStatus(null);
-        }, 5000);
-      });
-    });
-    const copy = document.createElement('button');
-    copy.type = 'button';
-    copy.dataset.testid = `favoris-copy-${f.id}`;
-    copy.textContent = 'Copier le lien';
-    copy.addEventListener('click', async () => {
-      const url = new URL(cardHref(f), window.location.href).href;
-      try {
-        await navigator.clipboard.writeText(url);
-        setStatus('Lien copié.');
-      } catch {
-        setStatus(url);
-      }
-    });
-    actions.append(rename, del, copy);
-  }
-
-  toggle.addEventListener('click', () => {
-    actions.hidden = !actions.hidden;
   });
-  menu.append(toggle, actions);
-  card.append(link, menu);
+
+  card.append(link, menuBtn);
   return card;
-}
-
-function startInlineRename(f: FavoriItem, nameEl: HTMLElement, link: HTMLAnchorElement): void {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.maxLength = 80;
-  input.value = f.nom;
-  input.dataset.testid = `favoris-rename-input-${f.id}`;
-  input.className = 'favoris-rename-input';
-  nameEl.replaceWith(input);
-  input.focus();
-  input.select();
-  let done = false;
-  const commit = (): void => {
-    if (done) return;
-    done = true;
-    const nom = input.value.trim();
-    if (!nom || nom === f.nom) {
-      input.replaceWith(nameEl);
-      return;
-    }
-    void withPassword(async (password) => {
-      await patchFavori(f.id, { nom }, password);
-      await loadList();
-    });
-  };
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      commit();
-    }
-    if (e.key === 'Escape') {
-      done = true;
-      input.replaceWith(nameEl);
-    }
-  });
-  input.addEventListener('blur', () => commit());
-  link.addEventListener('click', (e) => e.preventDefault(), { once: true });
 }
 
 async function restoreFavori(id: string): Promise<void> {
@@ -342,15 +463,16 @@ async function restoreFavori(id: string): Promise<void> {
     showingTrash = false;
     trashBtn.textContent = 'Corbeille';
     await loadList();
-    setStatus('Favori restauré.');
+    showToast({ message: 'Favori restauré' });
   });
 }
 
 filterInput.addEventListener('input', () => render());
+sortSelect?.addEventListener('change', () => render());
+
 trashBtn.addEventListener('click', () => {
   showingTrash = !showingTrash;
-  trashBtn.textContent = showingTrash ? 'Favoris' : 'Corbeille';
-  trashBtn.setAttribute('aria-pressed', showingTrash ? 'true' : 'false');
+  trashBtn.textContent = showingTrash ? '← Favoris' : 'Corbeille';
   void loadList();
 });
 

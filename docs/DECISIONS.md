@@ -448,3 +448,8 @@ Contexte : regrouper + Motif/+ Image/+ Dessin et unifier les menus ⋯ ; confirm
 Options : A) garder 3 boutons ; B) un menu + Calque avec les mêmes testids d’items.
 Choix : B — helper e2e `dockAdd` ; menus calque via `openMenu` (`dock-menu`) ; onglets soulignés 36 px avec icônes Lucide ; reset section = icône rotate ; reset-all → `confirmDialog` (history.spec mis à jour).
 Conséquence : les e2e cliquent `dock-add-calque` puis l’item ; le panneau garde encore Annuler/Rétablir texte en tête (T95).
+
+## D76 — Galerie favoris : menus kit, dialogs, toast Annuler (T93)
+Contexte : polir la galerie (cartes 4:5, ⋯ au survol, renommer/supprimer).
+Choix : grille `minmax(220px, 1fr)` / 2 colonnes téléphone ; menu kit ; renommer et mot de passe via `openDialog` ; suppression → toast avec Annuler ; restauration `POST …/restaurer` inchangée. `playwright.api.config` : `reuseExistingServer: !CI`.
+Conséquence : e2e-api mis à jour (mdp en localStorage pour les écritures).
