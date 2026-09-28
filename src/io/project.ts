@@ -8,6 +8,7 @@ import {
   type Rot,
 } from '../core/calepinage';
 import type { ZoneColors } from '../core/collections';
+import { NUANCIER_DEFAULTS } from '../core/nuancierDefaults';
 import { isLegacyLayoutKind, migrateLegacyKind } from '../core/presets';
 import type { SockDesign, TileAsset, SeamPosition, TileSizeMode, DecorMode, DecorSettings, PatternSource } from '../core/types';
 import { EMPTY_COMPOSITION, type Composition, type Layer, type AssetRef, type EmbeddedAsset } from '../core/composition';
@@ -506,7 +507,7 @@ export async function parseProject(text: string): Promise<ParsedProject> {
         tileRows: 37,
         gapStitches: 0,
         gapRows: 0,
-        gapColor: '#d9d3c7',
+        gapColor: NUANCIER_DEFAULTS.gap,
         offsetStitches: 0,
         offsetRows: 0,
         seam: 'dos',

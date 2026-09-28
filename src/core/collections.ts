@@ -9,6 +9,8 @@
  * celle des zones (pas de réduction de couleurs approximative, pas de couleur parasite).
  */
 
+import { emptyYarnZoneFallback } from './nuancierDefaults';
+
 export interface NuancierColor {
   id: string; // ex. « OR008 »
   nom: string;
@@ -132,7 +134,7 @@ export function zoneHex(colors: ZoneColors, nuancier: Map<string, NuancierColor>
  * bord-côte, la plus saturée (hors fond) pour talon et pointe. Simple suggestion, modifiable ensuite.
  */
 export function suggestZoneColors(yarns: NuancierColor[]): { cuff: string; heel: string; toe: string } {
-  if (!yarns.length) return { cuff: '#1d1d1b', heel: '#b5462f', toe: '#b5462f' };
+  if (!yarns.length) return emptyYarnZoneFallback();
   const lum = (h: string) => {
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
     return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;

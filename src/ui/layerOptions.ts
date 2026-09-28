@@ -14,6 +14,7 @@
 import { motifRows } from '../core/layout';
 import { decodeDessinCells, setMotifBand, type DessinLayer, type StackLayer } from '../core/layers';
 import type { Hex } from '../core/types';
+import { NUANCIER_DEFAULTS } from '../core/nuancierDefaults';
 import { loadTileFromFile } from '../io/tiles';
 import {
   clearDessinLayer,
@@ -133,7 +134,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
   fondHint.className = 'hint';
   fondHint.textContent =
     'Le Fond est toujours en bas de la pile : c’est la couleur visible partout où aucun calque ne couvre.';
-  const fondColor = makeColor('Couleur libre', 'ctl-fond-color', '#f1e9dc', (value) => {
+  const fondColor = makeColor('Couleur libre', 'ctl-fond-color', NUANCIER_DEFAULTS.fond, (value) => {
     setFondColor(value.toLowerCase() as Hex, true);
   });
   const yarnSearch = document.createElement('input');

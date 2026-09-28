@@ -7,6 +7,7 @@ import type { Preset } from './core/calepinage';
 import type { CalepinageSpec } from './core/calepinage';
 import { tileRowsFor, tileWidthForCount } from './core/calepinage';
 import type { Catalogue, ZoneColors } from './core/collections';
+import { NUANCIER_DEFAULTS, NUANCIER_DEFAULT_ZONE_COLORS } from './core/nuancierDefaults';
 import {
   addStackLayer,
   dessinFromRender,
@@ -116,7 +117,7 @@ export function defaultMotifLayout(): MotifLayout {
     tileRows: sized.tileRows,
     gapStitches: 0,
     gapRows: 0,
-    gapColor: '#d9d3c7',
+    gapColor: NUANCIER_DEFAULTS.gap,
     offsetStitches: 0,
     offsetRows: 0,
     seam: 'dos',
@@ -135,11 +136,8 @@ export function defaultDesign(): SockDesignV2 {
     dimensions,
     zones: {
       cuffEnabled: true,
-      cuffColor: '#1f3a5f',
-      heelColor: '#b5462f',
-      toeColor: '#1d1d1b',
+      ...NUANCIER_DEFAULT_ZONE_COLORS,
       patternOnFoot: true,
-      footColor: '#f4f1ea',
       heelHeightMm: 55,
       heelDepthMm: 72,
       heelSpread: 100,
@@ -154,7 +152,7 @@ export function defaultDesign(): SockDesignV2 {
       paletteFromLayers: true,
     },
     decor: defaultDecor(),
-    layers: normalizeStack([newFondLayer(), motif]),
+    layers: normalizeStack([newFondLayer(NUANCIER_DEFAULTS.fond), motif]),
   };
 }
 

@@ -469,3 +469,16 @@ Contexte : le commit `f73e1ee` (collections boobs/bleuet/cailloux) a resynchroni
 Options : A) laisser le catalogue cassé ; B) resync depuis le configurateur (indisponible ici) ; C) réinjecter les `etat` depuis le dernier catalogue sain (`88b5961`).
 Choix : C — 181 teintes rétrocopient Validé/Test (144 public) ; 12 teintes nouvelles restent `Test`. Critère e2e galerie : 89 vignettes (78 + 11 rapides) au lieu de 86.
 Conséquence : `npm run sync:carreaux` depuis une source sans Etat re-cassera le nuancier ; préférer une source avec Etat=Validé.
+
+## D80 — Défauts zones / fond / crayon = nuancier public (post-V11)
+Contexte : bord-côte `#1f3a5f`, talon `#b5462f`, pointe `#1d1d1b`, pied `#f4f1ea`, fond `#f1e9dc`, joint `#d9d3c7` et crayon dessin hors du nuancier Validé (`catalogue.json`).
+Options : A) laisser les hex historiques ; B) les remplacer partout y compris `v1ShareDefaults` / golden ; C) nouveaux défauts UI = nuancier, figés share/golden intacts.
+Choix : C — module `src/core/nuancierDefaults.ts` :
+- bord-côte : BL016 `#303446`
+- talon : RD060 `#ab4236`
+- pointe / crayon : BK001 `#1a1a1a`
+- pied : YL010 `#fff8eb`
+- fond (nouveau projet) : YL008 `#fbeed5`
+- joint : BK010 `#cfcec9`
+Intouchables : `v1ShareDefaults.json`, `DEFAULT_FOND_COLOR` (`#f1e9dc` pour gabarits/liens), `PATTERN_BACKGROUND` / `EMPTY_STITCH_COLOR` / repli calepinage `#f4f1ea`/`#d9d4cc` (empreintes golden T41), chrome UI V11 (`--bg`/`--ink`/`--accent`).
+Conséquence : `defaultDesign()` diverge volontairement des défauts de fusion `#p=` (déjà autorisé depuis D47/commentaire layers) ; e2e dessin Achille attend BK001.

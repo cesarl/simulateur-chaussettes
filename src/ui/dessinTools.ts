@@ -18,6 +18,7 @@ import {
   type StackLayer,
 } from '../core/layers';
 import type { Hex } from '../core/types';
+import { NUANCIER_DEFAULTS } from '../core/nuancierDefaults';
 import { getState } from '../state';
 import { yarnLegendLabels } from './palettePanel';
 import type { FlatHandle } from './flatView';
@@ -89,7 +90,7 @@ export interface DessinToolsDeps {
 }
 
 const STORAGE_KEY = 'sim-dessin-tools';
-const DEFAULT_COLOR = '#1d1d1b' as Hex;
+const DEFAULT_COLOR = NUANCIER_DEFAULTS.dessin;
 
 function loadState(): DessinToolsState {
   const base: DessinToolsState = {

@@ -12,6 +12,8 @@
  * pour qu'une image tournée ou carrée ne soit pas déformée par des mailles plus larges que hautes.
  */
 
+import { NUANCIER_DEFAULTS } from './nuancierDefaults';
+
 export type Hex = string;
 
 /** Référence d'image : collection, embarquée, bibliothèque publique, ou partagée (API). */
@@ -56,7 +58,7 @@ export interface Composition {
   layers: Layer[];
 }
 
-export const EMPTY_COMPOSITION: Composition = { background: '#f1e9dc', layers: [] };
+export const EMPTY_COMPOSITION: Composition = { background: NUANCIER_DEFAULTS.fond, layers: [] };
 
 export function assetKey(ref: AssetRef): string {
   if (ref.kind === 'collection') return `c:${ref.collectionId}/${ref.variation}`;

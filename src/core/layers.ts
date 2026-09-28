@@ -132,6 +132,9 @@ export interface SockDesignV2 {
   layers: StackLayer[];
 }
 
+/** Couleur du calque Fond par défaut dans les gabarits / liens `#p=` / migrations.
+ * Figée hors nuancier (`#f1e9dc`) pour ne pas déplacer les empreintes de partage.
+ * Un nouveau projet utilise `NUANCIER_DEFAULTS.fond` via `defaultDesign()`. */
 export const DEFAULT_FOND_COLOR: Hex = '#f1e9dc';
 
 // =================================================================== fabrique

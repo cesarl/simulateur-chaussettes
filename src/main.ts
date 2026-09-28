@@ -23,6 +23,7 @@ import {
   type StackLayer,
 } from './core/layers';
 import { yarnColors, isPngCollection } from './core/collections';
+import { previewFallbackPalette } from './core/nuancierDefaults';
 import { runExports, renderPair } from './io/exportPng';
 import { loadCatalogue } from './io/catalogue';
 import { tilesFromCollection, nuancierMap } from './io/collectionTiles';
@@ -356,7 +357,7 @@ dessinToolsApi = mountDessinTools(
             ? patternPalette
             : design.quantize.palette.length > 0
               ? design.quantize.palette
-              : ['#f4f1ea', '#1d1d1b'];
+              : previewFallbackPalette('dessin');
         const reduced = quantize(stackResult.rgb, design.dimensions.needles, {
           ...design.quantize,
           paletteMode: 'manuelle',
@@ -863,7 +864,7 @@ function runDragCompute(): void {
         ? patternPalette
         : design.quantize.palette.length > 0
           ? design.quantize.palette
-          : ['#f4f1ea', '#1f3a5f'];
+          : previewFallbackPalette('drag');
     const reduced = quantize(stackResult.rgb, design.dimensions.needles, {
       ...design.quantize,
       paletteMode: 'manuelle',

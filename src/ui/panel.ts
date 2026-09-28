@@ -31,6 +31,7 @@ import {
 } from '../state';
 import type { Hex, LayoutSettings, QuantizeSettings, SizeId, TileAsset } from '../core/types';
 import { visibleCollections } from '../core/collections';
+import { manualSeedPalette } from '../core/nuancierDefaults';
 import { tileCmFromFormat } from '../render/decorController';
 import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
@@ -356,7 +357,7 @@ export function mountPanel(panel: HTMLElement, actions: PanelActions): PanelApi 
   return { sync: syncLayerPane };
 }
 
-const MANUAL_SEED: Hex[] = ['#1f3a5f', '#b5462f', '#f4f1ea', '#1d1d1b'];
+const MANUAL_SEED: Hex[] = manualSeedPalette();
 
 let legWarned = false;
 let computeMs: HTMLElement | null = null;
