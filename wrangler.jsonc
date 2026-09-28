@@ -1,9 +1,21 @@
 {
-    "$schema": "./node_modules/wrangler/config-schema.json",
-    "name": "simulateur-chaussettes",
-    "compatibility_date": "2026-09-24",
-    "assets": {
-      "directory": "./dist",
-      "not_found_handling": "404-page"
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "simulateur-chaussettes",
+  "compatibility_date": "2026-09-24",
+  "main": "worker/index.ts",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "simulateur-chaussettes",
+      // Remplacer par l'id réel après `npx wrangler d1 create simulateur-chaussettes` (voir README).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
     }
+  ]
 }

@@ -80,7 +80,15 @@ tests/
   e2e/                   Playwright
 public/fixtures/         carreaux d'exemple (dessins de test originaux)
 public/carreaux/         copie sync du simulateur de carreaux (npm run sync:carreaux)
+worker/                  Cloudflare Worker (API `/api/*`, D1, secrets)
+migrations/              SQL D1 (favoris, …)
 ```
+
+## Worker Cloudflare (favoris)
+
+- `wrangler.jsonc` : `main` = `worker/index.ts`, assets = `dist/` avec `binding: ASSETS` et `run_worker_first: ["/api/*"]`. Les pages et les liens `#p=` restent des fichiers statiques.
+- D1 `DB` + secret `MOT_DE_PASSE` (en-tête `X-Mot-De-Passe`, comparaison à temps constant). Local : `.dev.vars` (gitignoré).
+- `npm run dev` = Vite seul ; `npm run dev:api` = build + wrangler (assets + API + D1 local).
 
 ## Points de conception importants
 

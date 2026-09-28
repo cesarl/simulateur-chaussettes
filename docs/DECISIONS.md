@@ -389,3 +389,26 @@ Contexte : `waitDecorBuild` lisait `decorBuildId` *après* `selectOption` ; le m
 Options : A) allonger timeout ; B) capturer l’id avant l’action.
 Choix : B — `setDecorMode` / `waitDecorAfter` dans `decor-v2`, `decor`, `viewer-decor`.
 Conséquence : verify e2e décor stable.
+
+## D66 — Playwright API séparé du e2e UI (T80)
+Contexte : T80 demande que le webServer Playwright passe par `wrangler dev` (D1 + assets). Brancher toute la suite e2e UI sur wrangler allonge le démarrage et risque de fragiliser les ~76 specs existantes.
+Options : A) un seul `playwright.config.ts` sur wrangler ; B) config dédiée `playwright.api.config.ts` + `tests/e2e-api/` pour `/api`, UI inchangée sur `vite preview`.
+Choix : B — `npm run e2e:api` pour la santé / favoris ; `npm run e2e` et `verify` restent sur preview.
+Conséquence : les tests API Worker ne sont pas dans `verify` tant que T84 n’exige pas de les y intégrer ; on les lance explicitement (`e2e:api`) et en fin d’étape A.
+
+## D67 — database_id d’attente dans wrangler.jsonc (T80)
+Contexte : le binding D1 exige un `database_id` dans la config versionnée, sans exposer l’id réel du compte.
+Options : A) omettre le champ (wrangler refuse) ; B) UUID nul documenté + README pour le remplacer.
+Choix : B — `00000000-0000-0000-0000-000000000000` ; D1 local ignore l’id réel.
+Conséquence : César remplace l’id après `wrangler d1 create` avant deploy.
+## D68 — Seuils perf unitaires = budget × 2 + warm-up (T80)
+Contexte : sur Node 24 / Windows, sous suite Vitest parallèle, `perf.test` dépasse parfois 600 ms pour un budget produit de 300 ms. Les assertions étaient à `< 300`, alors que `.cursor/rules/20-tests.mdc` impose seuil = budget × 2. Le premier passage est aussi pénalisé par le JIT.
+Options : A) laisser `< 300` (flaky) ; B) seuil 600 + un passage à blanc avant mesure.
+Choix : B — budget produit inchangé ; warm-up + marge ×2.
+Conséquence : assertions `< 600` après warm-up ; pas de baisse du budget métier.
+
+## D69 — Import ESM file:// pour sync-bibliotheque (T80)
+Contexte : Node 24 Windows refuse `import` d'un chemin absolu `C:\…` (ERR_UNSUPPORTED_ESM_URL_SCHEME).
+Options : A) laisser échouer sur Windows ; B) `pathToFileURL` dans le runner du test.
+Choix : B.
+Conséquence : le test T66 passe sur Windows.

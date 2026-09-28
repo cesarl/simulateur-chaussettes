@@ -957,3 +957,10 @@ D60 (Alertes), D61 (branchement Dessin), D62 (outils live), D63 (couleur crayon)
 
 ### Blocages
 Aucun pour V9. T18 en attente des tailles fabricant. Ne pas toucher `wrangler.jsonc`. CI GitHub Actions : facturation possible ≠ échec code.
+
+## T80 — Worker, D1 et environnement local — 2026-09-28 09:54
+Statut : terminée
+Fait : `worker/index.ts` (`/api/sante`), migration `0001_favoris.sql`, `wrangler.jsonc` (ASSETS + D1 id d''attente), `.dev.vars.example`, scripts `dev:api` / `db:migrate:*`, client message vite (`favorisApi.ts`), Playwright API séparé (`playwright.api.config.ts`). Correctifs Windows Node 24 : `pathToFileURL` sync-bibliothèque ; perf warm-up + seuil ×2.
+Vérification : typecheck ✅ ; 195 unitaires ✅ ; `e2e:api` ✅ (`/api/sante` + `/`). `dev:api` manuel : `{ ok: true, db: true }` et index.html 200.
+Décisions : D66 (Playwright API séparé), D67 (database_id attente), D68 (seuils perf), D69 (file:// sync).
+Reste / risques : API CRUD favoris en T81 ; `.dev.vars` local non commité.

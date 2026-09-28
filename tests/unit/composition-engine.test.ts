@@ -40,7 +40,8 @@ describe('composition / pile (T45→T51)', () => {
     const r = renderComposition(c, images, g);
     const ms = performance.now() - t0;
     expect(r.rgb.length).toBe(168 * 380 * 3);
-    expect(ms).toBeLessThan(300);
+    // Budget produit 300 ms ; seuil de test = ×2 (voir .cursor/rules/20-tests.mdc).
+    expect(ms).toBeLessThan(600);
   });
 
   it('renderStack fond seul + palette yarns composition', () => {

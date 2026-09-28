@@ -1,0 +1,2 @@
+# Copier vers `.dev.vars` (non versionné) pour `wrangler dev` / `npm run dev:api`.
+MOT_DE_PASSE=essai

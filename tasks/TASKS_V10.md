@@ -39,7 +39,7 @@ Quelques points qui restent vrais tout au long de la série :
 
 ## Étape A — Favoris
 
-### [ ] T80 — Worker, D1 et environnement local
+### [x] T80 — Worker, D1 et environnement local
 
 - `wrangler.jsonc` :
   - `"main": "worker/index.ts"` ;
@@ -70,8 +70,8 @@ Quelques points qui restent vrais tout au long de la série :
 - Tests e2e : le `webServer` de Playwright passe sur `wrangler dev --port 4173` (build puis migrations locales), avec `.dev.vars` de test. Si c'est trop lent ou fragile, créer un second fichier de configuration Playwright pour les seuls tests `/api`, et le noter dans `DECISIONS.md`.
 
 **Critères**
-- [ ] `npm run dev:api` → `/` répond comme avant ; `/api/sante` renvoie `{ ok: true, db: true }`.
-- [ ] Les tests existants restent verts.
+- [x] `npm run dev:api` → `/` répond comme avant ; `/api/sante` renvoie `{ ok: true, db: true }`.
+- [x] Les tests existants restent verts.
 
 ### [ ] T81 — API des favoris
 

@@ -29,8 +29,25 @@ Par défaut : **visionneuse 3D plein écran** (barre discrète : vues + copier l
 | `npm run test:watch` | tests unitaires en continu |
 | `npm run sync:carreaux` | copie collections / SVG / calepinages depuis le simulateur de carreaux (`public/carreaux/`) |
 | `npm run sync:local` | met à jour seulement les collections locales (`collections-locales/`) dans le catalogue |
+| `npm run dev:api` | build + Worker local (D1) sur le port 4173 : assets + `/api/*` |
+| `npm run db:migrate:local` | applique les migrations D1 en local |
+| `npm run db:migrate:remote` | applique les migrations D1 distantes (après création de la base) |
 
 Premier lancement des tests navigateur : `npx playwright install chromium`.
+
+### Favoris en ligne (Worker + D1)
+
+En local avec l’API : copier [`.dev.vars.example`](.dev.vars.example) vers `.dev.vars` (mot de passe d’essai), puis `npm run dev:api`.
+
+`wrangler.jsonc` contient un `database_id` d’attente (`00000000-0000-0000-0000-000000000000`). Pour la production, César remplace cet id après :
+
+```bash
+npx wrangler d1 create simulateur-chaussettes
+```
+
+puis copie la valeur `database_id` affichée dans `wrangler.jsonc`. Ne jamais committer de secret ni de vrai id dans un autre fichier (`.dev.vars` est gitignoré).
+
+`npm run dev` (Vite seul) reste utilisable : les appels `/api` échouent avec le message « Favoris indisponibles en mode vite : lancer npm run dev:api ».
 
 ## Modifier les tailles
 

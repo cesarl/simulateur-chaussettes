@@ -6,10 +6,11 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
 const scriptsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../scripts');
+const syncModuleUrl = pathToFileURL(path.join(scriptsDir, 'syncBibliothequeImages.mjs')).href;
 
 let tmp: string | null = null;
 
@@ -40,7 +41,7 @@ describe('T66 syncBibliothequeImages', () => {
 
     const runner = `
 import { writeFileSync } from 'node:fs';
-import { syncBibliothequeImages } from ${JSON.stringify(path.join(scriptsDir, 'syncBibliothequeImages.mjs'))};
+import { syncBibliothequeImages } from ${JSON.stringify(syncModuleUrl)};
 const warnings = [];
 const result = syncBibliothequeImages({
   sourceDir: ${JSON.stringify(sourceDir)},
