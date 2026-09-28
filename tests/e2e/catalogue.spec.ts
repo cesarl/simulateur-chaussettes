@@ -15,6 +15,15 @@ test('sans public/carreaux/, message discret et pas d’erreur console', async (
       body: '{}',
     });
   });
+  // V12 : sans catalogue local, des collections partagées seules lèvent `missing`.
+  // Répondre 200 avec liste vide (pas 503) pour éviter un console.error navigateur.
+  await page.route('**/api/collections**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ collections: [] }),
+    });
+  });
 
   await page.goto('/?dev');
   await page.waitForFunction(() => window.__SIM__?.ready === true);

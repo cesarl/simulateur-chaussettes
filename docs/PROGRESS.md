@@ -1296,3 +1296,34 @@ Puis redéployer le Worker. Sans cette commande, `/api/collections` échouera en
 ### Blocages
 - aucun côté code ; CI GitHub Actions peut rester rouge pour facturation ≠ juge local (`npm run verify` vert).
 - Aperçu 3D de l’atelier encore simplifié (pas le pavage complet comme le simulateur).
+
+## Fix V12 — sauvegarde + preview PNG — 2026-09-28 20:20
+Statut : terminée
+Fait :
+- Cause preview vide : `rebuildPreviewTiles` faisait `continue` sur `image/png` → plus de carreaux 2D/3D. Corrigé via `loadTileFromUrl(dataUrl, 'png')`.
+- Cause « Réponse API illisible » : `parseJson` sur HTML (Vite sans Worker / erreur Cloudflare si table D1 absente). Messages actionnables + Worker 503 JSON si `no such table: collections`.
+- Tests : unit client erreurs ; unit motif PNG ; Worker table absente ; e2e-api PNG preview + save.
+Vérification : `npm run verify` ✅ (typecheck, unit+worker, build, **85 e2e**) ; e2e-api motif PNG + save ✅.
+Décisions : D86
+Reste / risques : **César doit encore** `npm run db:migrate:remote` + redéployer le Worker en prod si ce n’est pas fait — le front affiche désormais l’instruction au lieu de « illisible ».
+
+## Point pour César — hotfix V12 (save + PNG)
+
+### Ce qui marche (après ce correctif)
+1. Déposer un PNG dans Créer un motif → vignette variation + preview 2D/3D remplies.
+2. Enregistrer en ligne → toast / statut avec l’id `p-…` (plus « Réponse API illisible » si l’API répond en JSON).
+3. Si la table D1 manque : message explicite demandant `npm run db:migrate:remote` puis redéploiement.
+
+### Tester en 3 étapes
+1. `npm run db:migrate:local && npm run dev:api` → http://localhost:4173/motif.html
+2. Déposer `public/fixtures/carreau-test-damier.png` → vérifier la preview 2D colorée → Enregistrer (mdp `essai`)
+3. Retour simulateur → Bibliothèque › Collections partagées → le motif apparaît
+
+### Prod (obligatoire si pas encore fait)
+```bash
+npm run db:migrate:remote
+npm run build && npx wrangler deploy
+```
+
+### Décision à relire
+- D86

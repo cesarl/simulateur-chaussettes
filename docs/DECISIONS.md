@@ -518,3 +518,9 @@ Contexte : finitions galerie partagée (vignette chaussette, infos, corbeille) s
 Options : A) page `motifs.html` dédiée ; B) enrichir la section Bibliothèque existante.
 Choix : B — bouton Corbeille dans l’en-tête de section ; vignette multipart `vignette` (WebP via `encodeFavoriVignette` depuis le canvas 3D de l’atelier) ; `Collection.vignetteUrl` / `modifieLe` depuis l’API ; bonus `admin-publish`.
 Conséquence : cartes sans vignette gardent le thumb SVG recoloré ; César voit la corbeille sans quitter la Bibliothèque.
+
+## D86 — Fix V12 : preview PNG + erreurs API collections lisibles
+Contexte : après merge V12, « Réponse API illisible » à l’enregistrement et preview vide pour les PNG.
+Options : A) documenter seulement la migration remote ; B) corriger le client (PNG ignorés dans `rebuildPreviewTiles`) + messages JSON actionnables + catch D1 « no such table » côté Worker.
+Choix : B — `loadTileFromUrl(dataUrl, 'png')` dans l’atelier ; `messageForNonJsonBody` remplace « illisible » ; Worker renvoie 503 JSON si table `collections` absente.
+Conséquence : PNG visibles en preview 2D/3D ; si migration/Worker manquent, César lit quoi faire (`db:migrate:remote` / `dev:api`) au lieu d’un parse opaque. e2e `catalogue.spec` mocke aussi `/api/collections` vide (V12 peut lever `missing` via les partagées seules).

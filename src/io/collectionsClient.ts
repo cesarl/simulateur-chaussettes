@@ -22,6 +22,10 @@ export type SharedCollectionApi = {
   vignette_url?: string | null;
 };
 
+/** Message quand la réponse n’est pas du JSON (HTML Vite/Cloudflare, table absente, Worker non redéployé). */
+export const COLLECTIONS_API_UNAVAILABLE =
+  'API collections indisponible : en local lancer « npm run dev:api » ; en prod « npm run db:migrate:remote » puis redéployer le Worker.';
+
 export async function listSharedCollections(corbeille = false): Promise<SharedCollectionApi[]> {
   const q = corbeille ? '?corbeille=1' : '';
   const res = await fetch(`/api/collections${q}`);
@@ -31,13 +35,41 @@ export async function listSharedCollections(corbeille = false): Promise<SharedCo
   return Array.isArray(list) ? list : [];
 }
 
+/**
+ * Interprète le corps ; si ce n’est pas du JSON, message actionnable (plus « illisible »).
+ * Exporté pour les tests unitaires.
+ */
+export function messageForNonJsonBody(status: number, text: string, contentType: string | null): string {
+  const ct = (contentType ?? '').toLowerCase();
+  const trimmed = text.trim();
+  const looksHtml = ct.includes('text/html') || /^<!doctype|^<html|^<body/i.test(trimmed);
+  if (looksHtml || status === 502 || status === 503 || status === 520) {
+    return COLLECTIONS_API_UNAVAILABLE;
+  }
+  if (!trimmed) {
+    return `Réponse API vide (${status}). ${COLLECTIONS_API_UNAVAILABLE}`;
+  }
+  if (status === 404) {
+    return `Route collections introuvable (${status}) : Worker à redéployer après V12 ?`;
+  }
+  return `Réponse API non JSON (${status}). Vérifier migration D1 (collections) et déploiement Worker.`;
+}
+
 async function parseJson(res: Response): Promise<unknown> {
   const text = await res.text();
-  if (!text) return null;
+  if (!text) {
+    if (!res.ok) {
+      throw new FavorisApiError(messageForNonJsonBody(res.status, text, res.headers.get('Content-Type')), res.status);
+    }
+    return null;
+  }
   try {
     return JSON.parse(text) as unknown;
   } catch {
-    throw new FavorisApiError('Réponse API illisible', res.status);
+    throw new FavorisApiError(
+      messageForNonJsonBody(res.status, text, res.headers.get('Content-Type')),
+      res.status,
+    );
   }
 }
 
@@ -61,7 +93,7 @@ export async function createSharedCollection(
       body: form,
     });
   } catch {
-    throw new FavorisApiError('API collections indisponible');
+    throw new FavorisApiError(COLLECTIONS_API_UNAVAILABLE);
   }
   const body = await parseJson(res);
   if (!res.ok) throw new FavorisApiError(erreurOf(body, res.status), res.status);
@@ -81,7 +113,7 @@ export async function patchSharedCollection(
       body: form,
     });
   } catch {
-    throw new FavorisApiError('API collections indisponible');
+    throw new FavorisApiError(COLLECTIONS_API_UNAVAILABLE);
   }
   const body = await parseJson(res);
   if (!res.ok) throw new FavorisApiError(erreurOf(body, res.status), res.status);

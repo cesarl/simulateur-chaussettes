@@ -297,4 +297,34 @@ describe('API collections (D1 + R2)', () => {
     expect(idB).toBe('p-vagues-2');
     expect(idA).not.toBe(idB);
   });
+
+  it('table collections absente → 503 JSON lisible', async () => {
+    await platform.env.DB.prepare('DROP TABLE IF EXISTS collections').run();
+    try {
+      const res = await call('/api/collections');
+      expect(res.status).toBe(503);
+      const ct = res.headers.get('Content-Type') ?? '';
+      expect(ct).toMatch(/json/i);
+      const body = (await res.json()) as { erreur: string };
+      expect(body.erreur).toMatch(/migrate|collections/i);
+      expect(body.erreur.toLowerCase()).not.toContain('illisible');
+    } finally {
+      await platform.env.DB.prepare(
+        `CREATE TABLE IF NOT EXISTS collections (
+          id TEXT PRIMARY KEY,
+          nom TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          format TEXT NOT NULL,
+          donnees TEXT NOT NULL,
+          vignette BLOB,
+          cree_le INTEGER NOT NULL,
+          modifie_le INTEGER NOT NULL,
+          supprime_le INTEGER
+        )`,
+      ).run();
+      await platform.env.DB.prepare(
+        `CREATE INDEX IF NOT EXISTS collections_modifie ON collections(modifie_le DESC)`,
+      ).run();
+    }
+  });
 });

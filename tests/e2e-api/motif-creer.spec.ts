@@ -148,4 +148,68 @@ test.describe('T102 créer un motif', () => {
     await expect(page.getByTestId('motif-var-2')).toBeVisible();
     await expect(page.getByTestId('motif-nom')).toHaveValue('Brouillon');
   });
+
+  test('PNG en preview 2D puis enregistrement', async ({ page, request }) => {
+    test.setTimeout(180_000);
+
+    const listed = await request.get('/api/collections');
+    const before = (await listed.json()) as { collections: Array<{ id: string }> };
+    for (const c of before.collections) {
+      await request.delete(`/api/collections/${c.id}`, { headers: { 'X-Mot-De-Passe': PASSWORD } });
+    }
+
+    const pngPath = path.join(process.cwd(), 'public/fixtures/carreau-test-damier.png');
+    expect(fs.existsSync(pngPath)).toBe(true);
+
+    await page.goto('/motif.html');
+    await page.getByTestId('motif-nom').fill('Png Preview');
+    await page.getByTestId('motif-file-input').setInputFiles([pngPath]);
+    await expect(page.getByTestId('motif-var-0')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId('motif-var-0').locator('img')).toHaveAttribute('src', /data:image\/png/);
+
+    const canvas = page.getByTestId('motif-preview-2d');
+    await expect(canvas).toBeVisible();
+    // Fond vide = #e8e4dc ; un PNG remplit le canvas → pixel ≠ fond uni beige
+    await expect
+      .poll(
+        async () =>
+          canvas.evaluate((el) => {
+            const c = el as HTMLCanvasElement;
+            const ctx = c.getContext('2d')!;
+            const d = ctx.getImageData(120, 120, 1, 1).data;
+            return `${d[0]},${d[1]},${d[2]}`;
+          }),
+        { timeout: 20_000 },
+      )
+      .not.toBe('232,228,220');
+
+    await page.screenshot({
+      path: 'test-results/visuel-fix-v12-png-preview.png',
+      fullPage: true,
+    });
+
+    await page.getByTestId('motif-calep-damier').click();
+    await page.getByTestId('motif-save').click();
+    await expect(page.getByTestId('lib-shared-password-dialog')).toBeVisible();
+    await page.getByTestId('lib-shared-password').fill(PASSWORD);
+    await page.getByTestId('lib-shared-password-ok').click();
+
+    await expect
+      .poll(
+        async () => {
+          const r = (await (await request.get('/api/collections')).json()) as {
+            collections: Array<{ id: string; nom: string }>;
+          };
+          return r.collections.find((c) => c.nom === 'Png Preview')?.id ?? null;
+        },
+        { timeout: 60_000 },
+      )
+      .not.toBeNull();
+
+    await expect(page.getByTestId('motif-status')).toContainText(/enregistré|p-png-preview/i);
+    await page.screenshot({
+      path: 'test-results/visuel-fix-v12-png-save-ok.png',
+      fullPage: true,
+    });
+  });
 });

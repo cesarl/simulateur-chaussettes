@@ -16,7 +16,7 @@ import {
 } from './core/motifDraft';
 import { recolorPreview, type NuancierEntry } from './core/svgZones';
 import { recolorSvg } from './core/collections';
-import { loadTileFromSvgText } from './io/tiles';
+import { loadTileFromSvgText, loadTileFromUrl } from './io/tiles';
 import { createSharedCollection, patchSharedCollection, countFavorisUsingCollection } from './io/collectionsClient';
 import { encodeFavoriVignette, encodeSolidFavoriVignette } from './io/favoriVignette';
 import { fetchSharedCollectionById } from './io/catalogue';
@@ -113,6 +113,24 @@ function clearDraftStorage(): void {
   }
 }
 
+/** true si le PNG data-URL n’est pas carré (tolérance 5 %). */
+function pngDataUrlNotSquare(dataUrl: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const a = img.naturalWidth;
+      const b = img.naturalHeight;
+      if (a < 1 || b < 1) {
+        resolve(false);
+        return;
+      }
+      resolve(Math.abs(a - b) / Math.max(a, b) > 0.05);
+    };
+    img.onerror = () => resolve(false);
+    img.src = dataUrl;
+  });
+}
+
 async function ingestFiles(fileList: FileList | File[]): Promise<void> {
   const files = [...fileList].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   const svgTexts: string[] = [];
@@ -133,6 +151,11 @@ async function ingestFiles(fileList: FileList | File[]): Promise<void> {
   }
   const zoned = zoneSvgBatch(svgTexts, nuancier);
   const added = variationsFromZoned(zoned, pngUrls);
+  for (const v of added) {
+    if (v.mime === 'image/png') {
+      v.notSquare = await pngDataUrlNotSquare(v.original);
+    }
+  }
   const start = draft.variations.length;
   for (let i = 0; i < added.length; i++) {
     const v = added[i]!;
@@ -157,7 +180,14 @@ async function rebuildPreviewTiles(): Promise<void> {
   const hexMap = hexById();
   const tiles: TileAsset[] = [];
   for (const v of draft.variations) {
-    if (v.mime === 'image/png') continue;
+    const tileName = `${draft.nom || 'motif'}-${v.name}`;
+    if (v.mime === 'image/png') {
+      // Data-URL : forcer le hint png (pas d’extension dans l’URL).
+      const tile = await loadTileFromUrl(v.original, 'png');
+      tile.name = tileName;
+      tiles.push(tile);
+      continue;
+    }
     const hexByZone: Record<string, string> = {};
     for (const z of v.zones) {
       const id = colors[z.id] ?? z.suggestedColorId;
@@ -165,7 +195,7 @@ async function rebuildPreviewTiles(): Promise<void> {
       if (hex) hexByZone[z.id] = hex;
     }
     const svg = Object.keys(hexByZone).length ? recolorSvg(v.zoned, hexByZone) : v.zoned;
-    tiles.push(await loadTileFromSvgText(svg, `${draft.nom || 'motif'}-${v.name}`));
+    tiles.push(await loadTileFromSvgText(svg, tileName));
   }
   previewTiles = tiles;
 }

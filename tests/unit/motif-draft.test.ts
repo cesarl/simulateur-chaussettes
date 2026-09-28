@@ -44,4 +44,15 @@ describe('motifDraft', () => {
     expect(donnees.variations).toHaveLength(2);
     expect(donnees.calepinageParDefaut).toBe('damier');
   });
+
+  it('variationsFromZoned accepte des PNG (data-URL) sans zones', () => {
+    const png = 'data:image/png;base64,iVBORw0KGgo=';
+    const vars = variationsFromZoned([], [png, png]);
+    expect(vars).toHaveLength(2);
+    expect(vars[0]!.mime).toBe('image/png');
+    expect(vars[0]!.zones).toEqual([]);
+    expect(vars[0]!.original).toBe(png);
+    expect(vars[1]!.name).toBe('VAR2');
+    expect(unionZones(vars)).toEqual([]);
+  });
 });

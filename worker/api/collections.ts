@@ -29,6 +29,26 @@ import {
   type StoredVariation,
 } from './collectionsHelpers';
 
+/** Erreur D1 lisible (table absente après merge V12 sans migrate remote). */
+function mapCollectionsDbError(err: unknown): Response {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (/no such table/i.test(msg) && /collections/i.test(msg)) {
+    return jsonErreur(
+      'Table « collections » absente : lancer « npm run db:migrate:remote » puis redéployer le Worker.',
+      503,
+    );
+  }
+  return jsonErreur('Erreur base de données collections.', 500);
+}
+
+async function withCollectionsDb<T extends Response>(fn: () => Promise<T>): Promise<T | Response> {
+  try {
+    return await fn();
+  } catch (err) {
+    return mapCollectionsDbError(err);
+  }
+}
+
 export async function handleCollections(request: Request, env: Env, path: string): Promise<Response> {
   const url = new URL(request.url);
   const parts = path.replace(/\/+$/, '').split('/').filter(Boolean);
@@ -38,31 +58,33 @@ export async function handleCollections(request: Request, env: Env, path: string
   // api/collections/:id/fichiers/:nom
 
   if (parts.length === 2 && parts[0] === 'api' && parts[1] === 'collections') {
-    if (request.method === 'GET') return listCollections(env, url);
-    if (request.method === 'POST') return createCollection(request, env);
+    if (request.method === 'GET') return withCollectionsDb(() => listCollections(env, url));
+    if (request.method === 'POST') return withCollectionsDb(() => createCollection(request, env));
     return jsonErreur('Méthode non autorisée.', 405);
   }
 
   if (parts.length === 3 && parts[0] === 'api' && parts[1] === 'collections') {
     const id = decodeURIComponent(parts[2]!);
-    if (request.method === 'GET') return getCollection(env, id);
-    if (request.method === 'PATCH') return patchCollection(request, env, id);
-    if (request.method === 'DELETE') return softDeleteCollection(request, env, id);
+    if (request.method === 'GET') return withCollectionsDb(() => getCollection(env, id));
+    if (request.method === 'PATCH') return withCollectionsDb(() => patchCollection(request, env, id));
+    if (request.method === 'DELETE') return withCollectionsDb(() => softDeleteCollection(request, env, id));
     return jsonErreur('Méthode non autorisée.', 405);
   }
 
   if (parts.length === 4 && parts[0] === 'api' && parts[1] === 'collections') {
     const id = decodeURIComponent(parts[2]!);
     const action = parts[3]!;
-    if (action === 'vignette' && request.method === 'GET') return getVignette(env, id);
-    if (action === 'restaurer' && request.method === 'POST') return restoreCollection(request, env, id);
+    if (action === 'vignette' && request.method === 'GET') return withCollectionsDb(() => getVignette(env, id));
+    if (action === 'restaurer' && request.method === 'POST') {
+      return withCollectionsDb(() => restoreCollection(request, env, id));
+    }
     return jsonErreur('Route API inconnue.', 404);
   }
 
   if (parts.length === 5 && parts[0] === 'api' && parts[1] === 'collections' && parts[3] === 'fichiers') {
     const id = decodeURIComponent(parts[2]!);
     const nom = decodeURIComponent(parts[4]!);
-    if (request.method === 'GET') return getFichier(env, id, nom);
+    if (request.method === 'GET') return withCollectionsDb(() => getFichier(env, id, nom));
     return jsonErreur('Méthode non autorisée.', 405);
   }
 
