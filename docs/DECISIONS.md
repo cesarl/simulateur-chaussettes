@@ -453,3 +453,8 @@ Conséquence : les e2e cliquent `dock-add-calque` puis l’item ; le panneau gar
 Contexte : polir la galerie (cartes 4:5, ⋯ au survol, renommer/supprimer).
 Choix : grille `minmax(220px, 1fr)` / 2 colonnes téléphone ; menu kit ; renommer et mot de passe via `openDialog` ; suppression → toast avec Annuler ; restauration `POST …/restaurer` inchangée. `playwright.api.config` : `reuseExistingServer: !CI`.
 Conséquence : e2e-api mis à jour (mdp en localStorage pour les écritures).
+
+## D77 — Bibliothèque : cartes enrichies + menu kit (T94)
+Contexte : fenêtre ~1000×680, cartes avec Ajouter / ⋯ / infos.
+Choix : dialogue agrandi ; cartes carrées avec hover « Ajouter » + menu kit (motif / variation image) ; disclosure Infos (format, variations, pastilles nuancier). Les sections Images intégrée/partagée/projet restent dans l’onglet Images existant (pas de colonne gauche dédiée — trop invasif pour une série sans changement de comportement).
+Conséquence : e2e bibliothèque inchangé sur les testids principaux.

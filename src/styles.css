@@ -1097,14 +1097,16 @@ details.section > :not(summary) { padding-left: var(--space-1); }
 
 /* Bibliothèque (dialogue modal) */
 dialog.library {
-  width: min(880px, 92vw);
-  max-height: 80vh;
+  width: min(1000px, 96vw);
+  height: min(680px, 90vh);
+  max-height: 90vh;
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
+  border-radius: var(--radius-md);
+  background: var(--surface);
   color: var(--ink);
   overflow: hidden;
+  box-shadow: var(--shadow-pop);
 }
 dialog.library::backdrop { background: rgba(29, 29, 27, 0.45); }
 dialog.library.busy { cursor: progress; }
@@ -1134,34 +1136,97 @@ dialog.library.busy { cursor: progress; }
 .library-collections .library-grid,
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 8px;
-}
-.library-collections .calep-group-title {
-  margin: 10px 0 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
 }
 .library-item-wrap {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
-.library-item-wrap .library-item { flex: 1 1 auto; }
-.library-item-more {
-  align-self: flex-end;
-  margin: -4px 4px 0 0;
-  padding: 0 6px;
+.library-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  text-align: left;
+  padding: 8px;
   border: 1px solid var(--line);
-  border-radius: 4px;
-  background: #fff;
-  font-size: 10px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
   cursor: pointer;
+  box-shadow: var(--shadow-1);
+}
+.library-item:hover { border-color: var(--accent); background: var(--accent-soft); }
+.library-item .coll-thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: #f4f1ec;
+}
+.library-item .coll-name {
+  font-size: var(--text-ui);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library-item .coll-meta {
+  font-size: var(--text-secondary);
+  color: var(--muted);
+}
+.library-item-hover {
+  display: none;
+  gap: 4px;
+  margin-top: 4px;
+}
+.library-item-wrap:hover .library-item-hover,
+.library-item-wrap:focus-within .library-item-hover {
+  display: flex;
+}
+.library-item-more {
+  flex: 0 0 auto;
+}
+.library-info-panel {
+  font-size: var(--text-secondary);
+  color: var(--muted);
   line-height: 1.4;
 }
-.library-item-more:hover { border-color: var(--accent); }
+.library-info-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.library-info-swatches i {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--line);
+  display: inline-block;
+}
+.library-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.library-category-pill {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.library-category-pill.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .library-shared-item .library-shared-actions {
   display: none;
   flex-wrap: wrap;
@@ -1219,21 +1284,6 @@ dialog.library { position: relative; }
   cursor: pointer;
 }
 .library-variation-item:hover { background: #f4f1ec; }
-.library-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: stretch;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  font-size: 11px;
-  text-align: left;
-}
-.library-item:hover { border-color: var(--accent); }
-.library-item .coll-thumb { width: 100%; height: 72px; object-fit: cover; border-radius: 4px; background: #f4f1ec; }
 dialog.library .hint { margin: 8px 12px 0; font-size: 11px; color: var(--muted); }
 
 /* ------------------------------------------------ Options du calque (T55) */

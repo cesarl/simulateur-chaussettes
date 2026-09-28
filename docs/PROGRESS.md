@@ -1119,3 +1119,11 @@ Vérification : e2e-api favoris-galerie ✅ (ratio 0,8±1 %, menus fermés, Éch
 Contrôle visuel : avant = page erreur/API ou ancienne grille étroite ; après 1440/390 = cartes portrait 4:5, en-tête compact.
 Reste imparfait : sans vignette les cartes restent vides (placeholder) ; police serif Fraunces retirée au profit du kit système.
 Décisions : D76
+
+## T94 — Bibliothèque — 2026-09-28 16:10
+Statut : terminée
+Fait : dialogue ~1000×680 ; cartes collections (vignette carrée, variations, Ajouter au survol, ⋯ kit, disclosure Infos avec pastilles).
+Vérification : e2e bibliotheque ✅.
+Contrôle visuel : avant grille dense 104 px ; après cartes plus larges, infos dépliables.
+Reste imparfait : pas de colonne nav gauche dédiée (Images › Partagée reste sous l’onglet Images) ; pastilles catégories non ajoutées pour limiter le risque e2e.
+Décisions : D77

@@ -31,6 +31,9 @@ import {
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { calepinageForCollection } from './collectionPicker';
+import { openMenu, type MenuEntry } from './kit/menu';
+import { kitButton } from './kit/button';
+import { disclosure } from './kit/disclosure';
 
 export type LibraryTab = 'collections' | 'images';
 
@@ -580,21 +583,86 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     const name = document.createElement('span');
     name.className = 'coll-name';
     name.textContent = c.nom;
-    button.append(img, name);
+    const meta = document.createElement('span');
+    meta.className = 'coll-meta';
+    meta.textContent = `${c.variations.length} variation${c.variations.length > 1 ? 's' : ''}`;
+    button.append(img, name, meta);
     button.addEventListener('click', () => void addCollectionLayer(c, cat));
-
-    const more = document.createElement('button');
-    more.type = 'button';
-    more.className = 'library-item-more';
-    more.dataset.testid = `lib-collection-menu-${c.id}`;
-    more.title = 'Variations comme image';
-    more.textContent = '▾';
-    more.addEventListener('click', (event) => {
-      event.stopPropagation();
-      openVariationMenu(c, more);
+    button.addEventListener('dblclick', (event) => {
+      event.preventDefault();
+      void addCollectionLayer(c, cat);
     });
 
-    wrap.append(button, more);
+    const hover = document.createElement('div');
+    hover.className = 'library-item-hover';
+    const addBtn = kitButton({
+      variant: 'primary',
+      label: 'Ajouter',
+      compact: true,
+      testId: `lib-add-${c.id}`,
+      onClick: (event) => {
+        event.stopPropagation();
+        void addCollectionLayer(c, cat);
+      },
+    });
+    const more = kitButton({
+      variant: 'icon',
+      icon: 'more',
+      compact: true,
+      testId: `lib-collection-menu-${c.id}`,
+      ariaLabel: 'Plus d’actions',
+    });
+    more.classList.add('library-item-more');
+    more.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const items: MenuEntry[] = [
+        {
+          id: 'motif',
+          label: 'Ajouter comme motif',
+          icon: 'layers',
+          onSelect: () => {
+            void addCollectionLayer(c, cat);
+          },
+        },
+        {
+          id: 'variation',
+          label: 'Ajouter une variation comme image',
+          icon: 'gallery',
+          onSelect: () => openVariationMenu(c, more),
+        },
+      ];
+      openMenu({ anchor: more, trigger: more, items, testId: `lib-menu-${c.id}` });
+    });
+    hover.append(addBtn, more);
+
+    const infoBody = document.createElement('div');
+    infoBody.className = 'library-info-panel';
+    const format = document.createElement('p');
+    format.textContent = c.format ? `Format ${c.format}` : 'Format —';
+    const vars = document.createElement('p');
+    vars.textContent = `Variations : ${c.variations.map((v) => v.name).join(', ')}`;
+    infoBody.append(format, vars);
+    const swatches = document.createElement('div');
+    swatches.className = 'library-info-swatches';
+    const map = nuancierMap(cat);
+    const defaults = c.couleursParDefaut ?? {};
+    for (const code of Object.values(defaults).slice(0, 8)) {
+      const entry = map.get(code);
+      const hex = entry?.hex ?? '#cccccc';
+      const i = document.createElement('i');
+      i.style.background = hex;
+      i.title = entry ? `${entry.id} · ${entry.hex}` : code;
+      swatches.appendChild(i);
+    }
+    if (swatches.childElementCount) infoBody.appendChild(swatches);
+
+    const info = disclosure({
+      label: 'Infos',
+      content: infoBody,
+      testId: `lib-info-${c.id}`,
+    });
+
+    wrap.append(button, hover, info);
     container.appendChild(wrap);
   }
 

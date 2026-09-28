@@ -167,7 +167,7 @@ Hauteur 44 px, un seul rang, groupes séparés par un fin trait vertical :
   - Échap ferme le menu.
 - [x] Captures avant / après sur ordinateur (1440) et téléphone (390), décrites.
 
-### [ ] T94 — Bibliothèque
+### [x] T94 — Bibliothèque
 
 Fenêtre large (≈ 1000 × 680, adaptée à l'écran) :
 
@@ -184,10 +184,10 @@ Fenêtre large (≈ 1000 × 680, adaptée à l'écran) :
 - Échap ferme ; le focus revient au bouton qui a ouvert la fenêtre.
 
 **Critères**
-- [ ] e2e `bibliotheque.spec.ts` et `images-partagees.spec.ts` mis à jour, à la souris :
+- [x] e2e `bibliotheque.spec.ts` et `images-partagees.spec.ts` mis à jour, à la souris :
   - filtrer, ouvrir les infos d'une collection (couleurs visibles), « Ajouter » → calque Motif ;
   - dans Partagée, « ⋯ » → Renommer.
-- [ ] Captures avant / après de chaque onglet, et d'une fiche d'infos ouverte, décrites.
+- [x] Captures avant / après de chaque onglet, et d'une fiche d'infos ouverte, décrites.
 
 ### [ ] T95 — Cohérence et finitions
 
