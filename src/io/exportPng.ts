@@ -3,7 +3,7 @@ import { hexToRgb } from '../core/color';
 import type { StitchGrid } from '../core/types';
 import { Zone } from '../core/types';
 import { viewById, type ViewId } from '../render/views';
-import { capturePng } from '../render/sock3d/studio';
+import { capturePng, type ViewAngleDeg } from '../render/sock3d/studio';
 import { createSockObject } from '../render/sock3d/sockObject';
 import type { SockShapeInput } from '../render/sock3d/sockShape';
 import type { ZoneColorsLike } from '../render/sock3d/sockAtlas';
@@ -121,6 +121,19 @@ export function exactFlatPixels(grid: StitchGrid): Uint8ClampedArray {
   return pixels;
 }
 
+/**
+ * Pose de la paire (export « Paire ») : la chaussette gauche de face, pointe vers l'objectif ; la
+ * droite en retrait à droite, de profil (côté extérieur visible), pointe vers la droite du cadre.
+ * Environ 80° entre les deux pieds. Repère : devant (pointe) = +Z, la caméra est du côté +Z ;
+ * rotation.y positive = pointe qui tourne vers la droite de l'image. Unités : mètres.
+ */
+export const PAIR_POSE = {
+  front: { position: [-0.07, 0, 0.06] as [number, number, number], rotationDeg: -8 },
+  profile: { position: [0.035, 0, -0.1] as [number, number, number], rotationDeg: 72 },
+  camera: { az: -6, el: 13 } as ViewAngleDeg,
+  fill: 0.71,
+};
+
 export async function renderPair(
   source: ExportSource,
   size: number,
@@ -129,10 +142,11 @@ export async function renderPair(
 ): Promise<Blob> {
   const right = createSockObject({ ...source.pairShape, side: 'droite' }, source.grid, source.pairZones);
   const left = createSockObject({ ...source.pairShape, side: 'gauche' }, source.grid, source.pairZones);
-  // Gauche légèrement en retrait et tournée de 15° ; écart pour deux silhouettes séparées.
-  right.mesh.position.set(0.12, 0, 0.02);
-  left.mesh.position.set(-0.12, 0, -0.05);
-  left.mesh.rotation.y = THREE.MathUtils.degToRad(15);
+  // Mise en scène « une de face, une de profil » (≈ 80° entre les deux pieds), voir PAIR_POSE.
+  left.mesh.position.set(...PAIR_POSE.front.position);
+  left.mesh.rotation.y = THREE.MathUtils.degToRad(PAIR_POSE.front.rotationDeg);
+  right.mesh.position.set(...PAIR_POSE.profile.position);
+  right.mesh.rotation.y = THREE.MathUtils.degToRad(PAIR_POSE.profile.rotationDeg);
   const group = new THREE.Group();
   group.add(right.mesh, left.mesh);
   const wasVisible = source.mesh?.visible ?? true;
@@ -152,11 +166,13 @@ export async function renderPair(
       source.renderer,
       source.scene,
       group,
-      'trois-quarts',
+      PAIR_POSE.camera,
       size,
       transparent ? null : background,
       false,
       source.beforeRender,
+      undefined,
+      PAIR_POSE.fill,
     );
   } finally {
     source.scene.remove(group);
@@ -176,6 +192,7 @@ async function renderView(
   size: number,
   background: string,
   transparent: boolean,
+  aspect?: number,
 ): Promise<Blob> {
   if (!source.mesh) throw new Error('La chaussette n’est pas prête.');
   try {
@@ -188,6 +205,7 @@ async function renderView(
       transparent ? null : background,
       source.mirrorView,
       source.beforeRender,
+      aspect,
     );
   } finally {
     source.redraw();
@@ -343,7 +361,7 @@ async function renderViewPixels(
   size: number,
   background: string,
 ): Promise<Uint8ClampedArray> {
-  const blob = await renderView(source, viewId, size, background, false);
+  const blob = await renderView(source, viewId, size, background, false, 1); // planche : vignettes carrées
   return blobToRgba(blob, size);
 }
 

@@ -86,11 +86,27 @@ const VIEWS: Record<ViewName, { az: number; el: number }> = {
   dessous: { az: -70, el: -55 }, // contrôle de la semelle
 };
 
+/** Angle de caméra libre (degrés), pour les mises en scène comme la paire. */
+export interface ViewAngleDeg {
+  az: number;
+  el: number;
+}
+
+/**
+ * Format des images exportées : 4:5 portrait (largeur / hauteur), le format des publications
+ * Instagram. `size` = hauteur en pixels ; la largeur en découle (2048 → 1638 × 2048).
+ */
+export const EXPORT_ASPECT = 4 / 5;
+
+export function exportFrameSize(size: number, aspect = EXPORT_ASPECT): { width: number; height: number } {
+  return { width: Math.max(1, Math.round(size * aspect)), height: Math.max(1, Math.round(size)) };
+}
+
 /** Place la caméra pour que l'objet remplisse ~85 % du cadre. Pour une chaussette gauche, inverser az. */
-export function frameView(camera: THREE.PerspectiveCamera, object: THREE.Object3D, view: ViewName, fill = 0.85, mirror = false) {
+export function frameView(camera: THREE.PerspectiveCamera, object: THREE.Object3D, view: ViewName | ViewAngleDeg, fill = 0.85, mirror = false) {
   const box = new THREE.Box3().setFromObject(object);
   const sphere = box.getBoundingSphere(new THREE.Sphere());
-  const { az, el } = VIEWS[view];
+  const { az, el } = typeof view === 'string' ? VIEWS[view] : view;
   const a = THREE.MathUtils.degToRad(mirror ? -az : az);
   const e = THREE.MathUtils.degToRad(el);
   // chaussette droite : l'extérieur est du côté −X ; devant = +Z
@@ -106,7 +122,7 @@ export function frameView(camera: THREE.PerspectiveCamera, object: THREE.Object3
 }
 
 /**
- * Capture PNG à la taille demandée. On redimensionne temporairement le rendu (même canvas, même
+ * Capture PNG à la taille demandée (hauteur `size`, largeur selon `aspect`, 4:5 par défaut). On redimensionne temporairement le rendu (même canvas, même
  * tonemapping et espace couleur que l'écran), puis on restaure la vue de l'utilisateur.
  * Nécessite `preserveDrawingBuffer: true` sur le WebGLRenderer.
  */
@@ -114,14 +130,17 @@ export async function capturePng(
   renderer: THREE.WebGLRenderer,
   scene: THREE.Scene,
   object: THREE.Object3D,
-  view: ViewName,
+  view: ViewName | ViewAngleDeg,
   size = 2048,
   background: string | null = '#ecebe8',
   mirror = false,
   beforeRender?: (camera: THREE.PerspectiveCamera, target: THREE.Vector3) => void,
+  aspect = EXPORT_ASPECT,
+  fill = 0.92,
 ): Promise<Blob> {
-  const cam = new THREE.PerspectiveCamera(30, 1, 0.01, 10);
-  const target = frameView(cam, object, view, 0.92, mirror);
+  const { width, height } = exportFrameSize(size, aspect);
+  const cam = new THREE.PerspectiveCamera(30, width / height, 0.01, 10);
+  const target = frameView(cam, object, view, fill, mirror);
   beforeRender?.(cam, target);
   const prevBg = scene.background;
   const prevSize = renderer.getSize(new THREE.Vector2());
@@ -129,7 +148,7 @@ export async function capturePng(
   const prevAlpha = renderer.getClearAlpha();
   scene.background = background ? new THREE.Color(background) : null;
   renderer.setPixelRatio(1);
-  renderer.setSize(size, size, false);
+  renderer.setSize(width, height, false);
   renderer.setClearAlpha(background ? 1 : 0);
   renderer.render(scene, cam);
   const blob = await new Promise<Blob>((res, rej) =>

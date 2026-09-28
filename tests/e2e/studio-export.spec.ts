@@ -40,7 +40,7 @@ test('export studio : trois-quarts 2048, transparent, vue inchangée', async ({ 
   expect(tq.suggestedFilename()).toBe('modele_homme_trois-quarts.png');
   await tq.saveAs('test-results/visuel-t20-trois-quarts.png');
   const tqBytes = readFileSync('test-results/visuel-t20-trois-quarts.png');
-  expect(pngSize(tqBytes)).toEqual({ width: 2048, height: 2048 });
+  expect(pngSize(tqBytes)).toEqual({ width: 1638, height: 2048 });
 
   await page.getByTestId('export-transparent').check();
   const trEvent = page.waitForEvent('download');
@@ -48,7 +48,7 @@ test('export studio : trois-quarts 2048, transparent, vue inchangée', async ({ 
   const tr = await trEvent;
   await tr.saveAs('test-results/visuel-t20-transparent.png');
   const trBytes = readFileSync('test-results/visuel-t20-transparent.png');
-  expect(pngSize(trBytes)).toEqual({ width: 2048, height: 2048 });
+  expect(pngSize(trBytes)).toEqual({ width: 1638, height: 2048 });
 
   const cornerAlpha = await page.evaluate(async (base64) => {
     const image = new Image();

@@ -10,7 +10,7 @@ function trackErrors(page: Page): string[] {
   return errors;
 }
 
-test('export paire 2048 : deux silhouettes distinctes', async ({ page }) => {
+test('export paire 2048 (4:5) : une de face, une de profil', async ({ page }) => {
   test.setTimeout(90_000);
   const errors = trackErrors(page);
   await page.goto('/?dev');
@@ -39,40 +39,29 @@ test('export paire 2048 : deux silhouettes distinctes', async ({ page }) => {
       const db = Math.abs((data[p + 2] ?? 0) - bg[2]);
       mask[i] = dr > tol || dg > tol || db > tol ? 1 : 0;
     }
-    const seen = new Uint8Array(mask.length);
-    const queue = new Int32Array(mask.length);
-    let count = 0;
-    const minArea = Math.floor(width * height * 0.005);
-    for (let start = 0; start < mask.length; start++) {
-      if (!mask[start] || seen[start]) continue;
-      let head = 0;
-      let tail = 0;
-      queue[tail++] = start;
-      seen[start] = 1;
-      let area = 0;
-      while (head < tail) {
-        const i = queue[head++]!;
-        area += 1;
-        const x = i % width;
-        const y = Math.floor(i / width);
-        for (const n of [i - 1, i + 1, i - width, i + width]) {
-          if (n < 0 || n >= mask.length) continue;
-          const nx = n % width;
-          const ny = Math.floor(n / width);
-          if (Math.abs(nx - x) + Math.abs(ny - y) !== 1) continue;
-          if (!mask[n] || seen[n]) continue;
-          seen[n] = 1;
-          queue[tail++] = n;
-        }
-      }
-      if (area >= minArea) count += 1;
+    // Silhouette de la paire : boîte englobante, et où tombent la pointe de face (la plus basse)
+    // et la pointe de profil (la plus à droite).
+    let minX = width, maxX = -1, minY = height, maxY = -1, lowX = 0, rightY = 0;
+    for (let i = 0; i < mask.length; i++) {
+      if (!mask[i]) continue;
+      const x = i % width;
+      const y = Math.floor(i / width);
+      if (x < minX) minX = x;
+      if (x > maxX) { maxX = x; rightY = y; }
+      if (y < minY) minY = y;
+      if (y > maxY) { maxY = y; lowX = x; }
     }
-    return { count, width, height, dataUrl };
+    return { width, height, minX, maxX, minY, maxY, lowX, rightY, dataUrl };
   });
 
-  expect(result.width).toBe(2048);
+  expect(result.width).toBe(1638); // 4:5
   expect(result.height).toBe(2048);
-  expect(result.count).toBeGreaterThanOrEqual(2);
+  // Pose V10 : une chaussette de face (pointe vers l'objectif, en bas à gauche), l'autre de profil
+  // (pointe vers la droite), environ 80° entre les deux pieds.
+  expect(result.maxX - result.minX).toBeGreaterThan(result.width * 0.55);
+  expect(result.maxY - result.minY).toBeGreaterThan(result.height * 0.5);
+  expect(result.lowX).toBeLessThan(result.width / 2); // pointe de face à gauche, au premier plan
+  expect(result.rightY).toBeLessThan(result.maxY); // pointe de profil plus haut (en retrait)
 
   mkdirSync('test-results', { recursive: true });
   writeFileSync(`test-results/visuel-T22-paire.png`, Buffer.from(result.dataUrl.split(',')[1] ?? '', 'base64'));

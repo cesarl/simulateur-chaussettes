@@ -28,7 +28,7 @@ test('les exports face et plat exact ont la bonne taille et les bonnes couleurs'
   await face.saveAs('test-results/visuel-t10-face.png');
   const faceBytes = readFileSync('test-results/visuel-t10-face.png');
   expect([...faceBytes.subarray(0, 4)]).toEqual([137, 80, 78, 71]);
-  expect(pngSize(faceBytes)).toEqual({ width: 1024, height: 1024 });
+  expect(pngSize(faceBytes)).toEqual({ width: 819, height: 1024 });
 
   await page.getByTestId('export-face').uncheck();
   await page.getByTestId('export-plat-exact').check();

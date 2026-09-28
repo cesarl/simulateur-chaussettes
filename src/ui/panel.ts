@@ -543,9 +543,9 @@ function mountExportControls(section: HTMLElement, actions: PanelActions): void 
     'Taille des vues 3D',
     'export-size',
     [
-      { value: '1024', label: '1024 px' },
-      { value: '2048', label: '2048 px' },
-      { value: '4096', label: '4096 px' },
+      { value: '1024', label: '819 × 1024 px (4:5)' },
+      { value: '2048', label: '1638 × 2048 px (4:5)' },
+      { value: '4096', label: '3277 × 4096 px (4:5)' },
     ],
     '2048',
     () => {},
