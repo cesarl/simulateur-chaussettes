@@ -20,6 +20,7 @@ export default defineConfig({
     },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  workers: 1,
   webServer: {
     command: 'npm run build && npm run db:migrate:local && wrangler dev --port 4173',
     url: 'http://localhost:4173/api/sante',

@@ -18,6 +18,8 @@ export default defineConfig({
     },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // Moins de parallélisme WebGL : 8 workers saturent la machine et font tomber vite preview.
+  workers: process.env.CI ? 2 : 2,
   webServer: {
     command: 'npm run preview',
     url: 'http://localhost:4173',

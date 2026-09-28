@@ -987,3 +987,45 @@ Vérification : typecheck ✅ ; e2e:api galerie ✅.
 Contrôle visuel desktop : titre « Chaussettes solidaires — favoris », filtre Nom, bouton Corbeille, 3 cartes (Gamma/Beta/Alpha) avec date « modifié le 28 sept. 2026 », menu ⋯ ; vignettes absentes (création API sans vignette — icône image cassée). Mobile 390 px : même contenu, cartes empilées/étroites, lisible.
 Décisions : aucune.
 Reste / risques : T84 bilans + verify complet.
+
+## T84 — Bilan étape A — 2026-09-28 11:45
+Statut : terminée
+Fait : README Favoris (fonctionnement, mdp, corbeille, Time Travel) + commandes de mise en ligne. Playwright workers=2 ; captureView aspect=1 pour silhouette ; seuil glisser SwiftShader (D71–D72).
+Vérification : `npm run verify` ✅ (typecheck, 195+4 unit/Worker, build, **82 e2e**). `npm run e2e:api` ✅ (4 tests).
+Décisions : D71, D72.
+Reste / risques : étape B (R2) facultative.
+
+## Commandes de mise en ligne (César)
+
+Placeholders uniquement — aucun secret dans le dépôt.
+
+```bash
+npx wrangler d1 create simulateur-chaussettes
+# → coller database_id dans wrangler.jsonc (remplacer 00000000-0000-0000-0000-000000000000)
+
+npm run db:migrate:remote
+npx wrangler secret put MOT_DE_PASSE
+# → saisir le mot de passe commun
+
+npm run build && npx wrangler deploy
+```
+
+Local : copier `.dev.vars.example` → `.dev.vars`, puis `npm run dev:api`.
+
+## Point pour César — V10 étape A (favoris) — 2026-09-28
+
+### Ce qui marche
+- Worker `/api/sante` + CRUD favoris (D1), mot de passe vérifié côté Worker.
+- ★ Favori (éditeur) : vignette WebP 480×600, `?favori=`, mise à jour / nouveau.
+- Galerie `favoris.html` : filtre, renommer, corbeille, restauration, ouverture visionneuse/édition.
+
+### Tester en 3 étapes
+1. Copier `.dev.vars.example` → `.dev.vars` ; `npm run dev:api` → http://localhost:4173/?dev
+2. Ouvrir un modèle → ★ Favori → mot de passe `essai` → voir la confirmation et `/favoris.html`
+3. Dans la galerie : renommer / supprimer / Corbeille / restaurer ; cliquer une carte
+
+### Décisions à relire
+D66–D72 (Playwright API séparé, database_id attente, getPlatformProxy, perf, workers, glisser SwiftShader).
+
+### Blocages
+Aucun pour l’étape A. Étape B (images R2) non commencée ici — A est verte.

@@ -1025,7 +1025,12 @@ function setDesign(partial: DesignPatch): void {
   update({ design: partial });
 }
 
-async function captureView(view: ViewName, size: number, background: string | null = '#ecebe8'): Promise<string> {
+async function captureView(
+  view: ViewName,
+  size: number,
+  background: string | null = '#ecebe8',
+  aspect?: number,
+): Promise<string> {
   if (!sock) throw new Error('La chaussette n’est pas prête.');
   const mirror = getState().footSide === 'gauche';
   const blob = await capturePng(
@@ -1037,6 +1042,7 @@ async function captureView(view: ViewName, size: number, background: string | nu
     background,
     mirror,
     (cam, target) => decor.faceCamera(cam, target),
+    aspect,
   );
   handle.requestRender();
   return blobToDataUrl(blob);

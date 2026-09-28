@@ -69,7 +69,8 @@ test('silhouette ≥ 0,90 vs captures homme-etoile de référence', async ({ pag
       async ({ viewName, size, background }) => {
         const capture = window.__SIM__?.captureView;
         if (!capture) throw new Error('captureView absent');
-        return capture(viewName, size, background);
+        // Empreintes de référence historiques en carré (avant EXPORT_ASPECT 4:5).
+        return capture(viewName, size, background, 1);
       },
       { viewName: view, size: SIZE, background: BG },
     );

@@ -150,7 +150,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
 - [x] e2e `favoris-galerie.spec.ts`, à la souris : 3 favoris créés par l'API → 3 cartes ; filtrer ; renommer ; supprimer puis Annuler ; supprimer, corbeille, restaurer ; cliquer une carte → la chaussette s'ouvre avec la même empreinte de grille (visionneuse, et éditeur si dev).
 - [x] Captures de la galerie sur ordinateur et sur téléphone (390 px), décrites.
 
-### [ ] T84 — Bilan de l'étape A et mise en ligne
+### [x] T84 — Bilan de l'étape A et mise en ligne
 
 - README, section « Favoris en ligne » :
   - fonctionnement ;

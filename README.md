@@ -37,17 +37,43 @@ Premier lancement des tests navigateur : `npx playwright install chromium`.
 
 ### Favoris en ligne (Worker + D1)
 
-En local avec l’API : copier [`.dev.vars.example`](.dev.vars.example) vers `.dev.vars` (mot de passe d’essai), puis `npm run dev:api`.
+Les chaussettes réussies peuvent être enregistrées en ligne (**★ Favori** en mode dev) et consultées dans la galerie [`favoris.html`](favoris.html).
 
-`wrangler.jsonc` contient un `database_id` d’attente (`00000000-0000-0000-0000-000000000000`). Pour la production, César remplace cet id après :
+**Fonctionnement**
+- Un favori = un lien `#p=…` (sans `#` en base) + vignette WebP 480×600 + nom.
+- Lecture publique (`GET /api/favoris`) ; écriture (créer, renommer, mettre à jour, supprimer, restaurer) protégée par le mot de passe commun, vérifié **par le Worker** (en-tête `X-Mot-De-Passe`), jamais seulement en JavaScript dans la page.
+- Galerie : grille de cartes, filtre texte, ouverture en visionneuse ou en édition selon le mode dev mémorisé (`simulateur-chaussettes:dev`) — les liens de la galerie n’incluent jamais `?dev`.
+
+**Mot de passe**
+- Secret Wrangler `MOT_DE_PASSE`. En local : copier [`.dev.vars.example`](.dev.vars.example) vers `.dev.vars` (ex. `MOT_DE_PASSE=essai`).
+- Mémorisé dans le navigateur (`simulateur-chaussettes:mdp`) ; « Oublier le mot de passe » dans l’onglet Global.
+
+**Corbeille**
+- Supprimer met une date dans `supprime_le` (pas d’effacement réel). Bouton Corbeille + Restaurer. Annuler pendant 5 s après une suppression.
+
+**Restauration D1 (Time Travel)**
+- Cloudflare D1 conserve ~30 jours d’historique. En cas de besoin, César peut restaurer un point dans le temps via le tableau de bord Cloudflare / `wrangler d1 time-travel` (documentation Cloudflare).
+
+En local avec l’API : `.dev.vars` puis `npm run dev:api` (port 4173). Tests API : `npm run e2e:api`.
+
+`wrangler.jsonc` contient un `database_id` d’attente (`00000000-0000-0000-0000-000000000000`). Pour la production, César remplace cet id après `npx wrangler d1 create simulateur-chaussettes`. Ne jamais committer de secret (`.dev.vars` est gitignoré).
+
+`npm run dev` (Vite seul) reste utilisable : les appels `/api` échouent avec « Favoris indisponibles en mode vite : lancer npm run dev:api ».
+
+#### Commandes de mise en ligne (César)
+
+À lancer **une seule fois** sur le compte Cloudflare (placeholders — aucun secret dans le dépôt) :
 
 ```bash
 npx wrangler d1 create simulateur-chaussettes
+# → copier database_id dans wrangler.jsonc
+
+npm run db:migrate:remote
+npx wrangler secret put MOT_DE_PASSE
+# → saisir le mot de passe commun quand demandé
+
+npm run build && npx wrangler deploy
 ```
-
-puis copie la valeur `database_id` affichée dans `wrangler.jsonc`. Ne jamais committer de secret ni de vrai id dans un autre fichier (`.dev.vars` est gitignoré).
-
-`npm run dev` (Vite seul) reste utilisable : les appels `/api` échouent avec le message « Favoris indisponibles en mode vite : lancer npm run dev:api ».
 
 ## Modifier les tailles
 
@@ -139,18 +165,15 @@ Détails : [`docs/DONNEES_CARREAUX.md`](docs/DONNEES_CARREAUX.md). Après sync :
 
 Dans l’UI : section **Collection** (recherche, catégories Signature / Classiques / Nouveautés) ; choisir une collection charge ses VAR1…N et son calepinage. **Couleurs** propose les palettes d’origine et les suggestions de l’artiste ; le nuancier change une zone (et recolore les SVG). Un projet enregistré conserve l’id de collection, les codes de zones et le commit de sync ; à la réouverture, les SVG sont rechargés depuis le catalogue courant (si la collection a disparu, les carreaux du fichier projet sont utilisés avec un message).
 
-## Publication du dossier `dist/`
+## Publication
 
-L’application est entièrement statique (pas de serveur ni d’API). Après `npm run build`, déployer le contenu de `dist/` :
+Après `npm run build`, le dossier `dist/` contient les pages statiques. Le déploiement Cloudflare Workers (Assets + Worker `/api/*` + D1) se fait avec `npx wrangler deploy` **après** création de la base et du secret (voir « Commandes de mise en ligne » ci-dessus).
 
-### Cloudflare Pages
-1. Créer un projet Pages lié au dépôt (ou importer `dist/` en direct upload).
-2. Réglages de build : commande `npm run build`, dossier de sortie `dist`, Node 22.
-3. L’outil fonctionne hors ligne une fois chargé ; aucun binding ni variable d’environnement n’est requis.
+Sans Worker (Pages statique seul), l’outil fonctionne hors ligne pour l’édition et les liens `#p=` ; les favoris en ligne ne seront pas disponibles.
 
 ### GitHub Pages
 1. Dans les réglages du dépôt → Pages → source « GitHub Actions » (ou branche `gh-pages`).
 2. Servir le contenu de `dist/` à la racine du site (ou sous un sous-chemin en adaptant `base` dans `vite.config` si besoin).
-3. Ne pas activer de backend : seuls des fichiers HTML/CSS/JS et les fixtures sont nécessaires.
+3. Pas d’API favoris sur GitHub Pages (Worker Cloudflare requis).
 
 La CI (`.github/workflows/ci.yml`) exécute déjà `npm ci`, installe Chromium Playwright avec dépendances système, puis `npm run verify` à chaque push et pull request.

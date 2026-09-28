@@ -50,8 +50,8 @@ export interface SimHook {
   getStitch: (col: number, row: number) => StitchRead | null;
   /** Centre bitmap d'une maille dans la vue à plat, ou null si elle est hors cadre. */
   flatCenter: (col: number, row: number) => { x: number; y: number } | null;
-  /** Capture PNG studio (data URL), pour les contrôles visuels. */
-  captureView: (view: ViewName, size: number, background?: string | null) => Promise<string>;
+  /** Capture PNG studio (data URL), pour les contrôles visuels. `aspect` optionnel (1 = carré pour empreintes historiques). */
+  captureView: (view: ViewName, size: number, background?: string | null, aspect?: number) => Promise<string>;
   /** Export paire (data URL). */
   capturePair: (size: number, background?: string | null) => Promise<string>;
   /** Incrémenté à chaque fin de (re)génération du décor (tests e2e). */
