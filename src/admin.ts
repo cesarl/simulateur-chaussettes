@@ -3,14 +3,13 @@
  * File System Access API si disponible, sinon téléchargement .zip.
  */
 import {
-  autoZoneSvg,
   collectionIdFromName,
-  lockColorsAcrossVariations,
   recolorPreview,
   setZoneColorId,
   type NuancierEntry,
   type SvgZonesResult,
 } from './core/svgZones';
+import { zoneSvgBatch } from './core/motifDraft';
 import { buildZip } from './io/zipStore';
 
 interface LocalCollectionDraft {
@@ -230,9 +229,7 @@ async function ingestFiles(fileList: FileList | null | undefined): Promise<void>
     if (/\.png$/i.test(f.name) || f.type === 'image/png') pngFiles.push(f);
     else if (/\.svg$/i.test(f.name) || f.type.includes('svg')) svgTexts.push(await f.text());
   }
-  const firstPass = svgTexts.map((t) => autoZoneSvg(t, nuancier));
-  const locked = lockColorsAcrossVariations(firstPass);
-  const zoned = svgTexts.map((t) => autoZoneSvg(t, nuancier, locked));
+  const zoned = zoneSvgBatch(svgTexts, nuancier);
   editing.files = [];
   for (const r of zoned) {
     editing.files.push({

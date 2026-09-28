@@ -2074,3 +2074,198 @@ dialog.library .kit-menu {
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4) var(--space-4);
 }
+
+/* —— Atelier motif (V12) —— */
+html:has(body.motif-page) {
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+}
+body.motif-page {
+  height: auto;
+  min-height: 100%;
+  overflow: auto;
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, #f3ebe0 0%, transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, #e8eef2 0%, transparent 50%),
+    #f6f2eb;
+  color: var(--ink, #1d1d1b);
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+}
+.motif-header {
+  padding: 1.25rem 1.5rem 0.5rem;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.motif-header a {
+  color: var(--muted, #5a5348);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.motif-header h1 {
+  margin: 0.35rem 0 0.25rem;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.75rem;
+}
+.motif-lede {
+  margin: 0;
+  color: var(--muted, #5a5348);
+  max-width: 36rem;
+}
+.motif-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 1.25rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem 2rem;
+  align-items: start;
+  min-height: calc(900px - 120px);
+}
+.motif-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.motif-preview {
+  position: sticky;
+  top: 0.75rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line, #ddd5c8);
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.motif-preview h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.motif-preview-tabs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.motif-preview-canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #e8e4dc;
+  border: 1px solid var(--line, #ddd5c8);
+  image-rendering: pixelated;
+}
+.motif-preview-3d {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  background: #ecebe8;
+  border: 1px solid var(--line, #ddd5c8);
+  position: relative;
+  overflow: hidden;
+}
+.motif-preview-3d canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.motif-field {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+.motif-field input,
+.motif-field textarea,
+.motif-field select {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--line, #ddd5c8);
+  background: #fff;
+}
+.motif-id-preview {
+  color: var(--muted, #5a5348);
+  font-size: 0.85rem;
+}
+.motif-drop {
+  border: 1.5px dashed #c8c0b4;
+  padding: 1rem;
+  text-align: center;
+  background: #fff;
+  cursor: pointer;
+}
+.motif-drop.is-drag {
+  border-color: var(--accent, #ab4236);
+  background: #fff8f5;
+}
+.motif-var-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.motif-var-card {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--line, #ddd5c8);
+  padding: 0.4rem;
+}
+.motif-var-card img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  background: #eeeae4;
+}
+.motif-var-meta {
+  font-size: 0.85rem;
+}
+.motif-warn {
+  color: #b86a1a;
+  font-size: 0.85rem;
+}
+.motif-zone-rows {
+  display: grid;
+  gap: 0.4rem;
+}
+.motif-zone-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.motif-zone-row .swatch {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 1px solid #c8c0b4;
+  display: inline-block;
+}
+.motif-reco-list {
+  display: grid;
+  gap: 0.5rem;
+}
+.motif-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.motif-status {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  background: #1d1d1b;
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  z-index: 40;
+}
+.motif-status[data-ok="0"] {
+  background: #a33;
+}
+@media (max-width: 960px) {
+  .motif-layout {
+    grid-template-columns: 1fr;
+  }
+  .motif-preview {
+    position: static;
+  }
+}

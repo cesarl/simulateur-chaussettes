@@ -1224,3 +1224,14 @@ Contrôle visuel :
 - `visuel-t101-lien-reouvert.png` : même motif après `/?dev#p=2.…` dans un contexte neuf ; calque Motif = collection Test Partage.
 Décisions : D82
 Reste / risques : atelier motif.html (T102) ; modifier/supprimer (T103).
+
+## T102 — Vue Créer un motif (atelier) — 2026-09-28 18:10
+Statut : terminée
+Fait : `motif.html` / `motifPage.ts` ; `motifDraft` + `zoneSvgBatch` (admin branché) ; client API ; entrée Bibliothèque + menu projet ; e2e-api créer + brouillon.
+Vérification : unit motif-draft ✅ ; e2e-api motif-creer ✅ (2 tests).
+Contrôle visuel (ouvert) :
+- `visuel-t102-variations.png` : formulaire 5 étapes à gauche ; 3 cartes VAR1–3 « 2 zones » ; preview 2D rouge brique et chaussette 3D rouge/noir à droite.
+- `visuel-t102-preview.png` : calepinage **Damier** actif ; preview 2D avec détail géométrique sur le bord ; 3D toujours unie (aperçu simplifié, pas le pavage complet).
+- `visuel-t102-bibliotheque.png` : après enregistrement, Motif « Atelier Test » appliqué (2D tige rouge, 3D rouge/noir) ; Collection partagée visible.
+Décisions : D83
+Reste / risques : preview 3D motif encore grossière ; T103 modifier/dupliquer/supprimer.

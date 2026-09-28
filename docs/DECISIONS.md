@@ -500,3 +500,9 @@ Contexte : collections `p-…` en ligne doivent s’utiliser comme le catalogue 
 Options : A) catalogue parallèle ; B) fusion dans `loadCatalogue` avec `source: 'partagee'` ; C) proxy SVG locaux.
 Choix : B — `mergeSharedIntoCatalogue` ; `fichierUrl` / `resolveVariationUrl` acceptent chemins `./carreaux/…` et `/api/collections/…/fichiers/…?v=` ; GET par id charge aussi la corbeille avant `applyShare` ; message « Motif « p-… » introuvable (supprimé ?) ».
 Conséquence : hors ligne / vite sans API → `sharedCollectionsUnavailable` + note Bibliothèque ; décor « autre collection » marche via le même catalogue.
+
+## D83 — Atelier motif.html + zoneSvgBatch partagé (T102)
+Contexte : page dédiée pour créer des collections partagées, sans dupliquer la logique admin.
+Options : A) étendre admin.html ; B) `motif.html` + extraction `zoneSvgBatch` / `motifDraft` ; C) iframe admin.
+Choix : B — entrée Vite `motif` ; kit V11 (disclosure, dialog, toast) ; calepinage via boutons rapides (grille/damier/…) faute de brancher `calepGallery` (couplé au state simulateur) ; aperçu 2D canvas 4×4 + 3D `createSockObject` ; brouillon `localStorage` ; mot de passe via `askSharedPassword` V10.
+Conséquence : admin.ts utilise `zoneSvgBatch` ; Bibliothèque montre « + Nouveau motif » même sans collections partagées ; menu ⋯ projet → Créer un motif.

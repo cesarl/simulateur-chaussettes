@@ -91,7 +91,7 @@ Interface faite **avec le kit de V11**, dans le même style ; pas de nouvelle d�
   - un SVG avec `<script>` ou `onload` ressort nettoyé ;
   - deux collections du même nom reçoivent deux identifiants différents.
 
-### [ ] T101 — Les collections partagées dans le simulateur
+### [x] T101 — Les collections partagées dans le simulateur
 
 - Au démarrage, `loadCatalogue` fusionne `/api/collections` au catalogue local : `source: 'partagee'`, catégorie « Collections partagées ».
   - Hors ligne, ou en mode `vite` sans API : le simulateur marche sans elles, avec un message discret dans la Bibliothèque.
@@ -102,10 +102,10 @@ Interface faite **avec le kit de V11**, dans le même style ; pas de nouvelle d�
 - **Décor** « comme la chaussette » et « autre collection » : fonctionnent aussi avec une collection partagée.
 
 **Critères**
-- [ ] Test unitaire : fusion du catalogue (identifiants `p-`, catégorie, URL versionnées).
-- [ ] e2e : une collection partagée créée par l'API apparaît dans Bibliothèque › Collections › Collections partagées. Ajoutée en calque Motif, puis « Copier le lien » et ouverture dans un navigateur neuf : même empreinte de grille.
+- [x] Test unitaire : fusion du catalogue (identifiants `p-`, catégorie, URL versionnées).
+- [x] e2e : une collection partagée créée par l'API apparaît dans Bibliothèque › Collections › Collections partagées. Ajoutée en calque Motif, puis « Copier le lien » et ouverture dans un navigateur neuf : même empreinte de grille.
 
-### [ ] T102 — Vue « Créer un motif » (atelier)
+### [x] T102 — Vue « Créer un motif » (atelier)
 
 Nouvelle page **`motif.html`** (entrée Vite). On y accède :
 
@@ -149,15 +149,15 @@ Nouvelle page **`motif.html`** (entrée Vite). On y accède :
 - sélecteur de palette à prévisualiser : défaut, conseillée 1, 2, 3.
 
 **Critères**
-- [ ] e2e `motif-creer.spec.ts`, à la souris :
+- [x] e2e `motif-creer.spec.ts`, à la souris :
   - déposer 3 SVG de test → 3 variations, zones détectées ;
   - changer une couleur de zone → la prévisualisation 2D change ;
   - choisir le calepinage « damier » par défaut ;
   - Enregistrer (mot de passe « essai ») ;
   - le motif est dans `/api/collections` et dans la Bibliothèque ;
   - l'ajouter en calque Motif : il arrive avec son calepinage et ses couleurs par défaut.
-- [ ] e2e : brouillon → recharger la page → « Reprendre le brouillon » retrouve les 3 variations.
-- [ ] Captures de chaque étape et de la prévisualisation (2D, 3D, décor), décrites.
+- [x] e2e : brouillon → recharger la page → « Reprendre le brouillon » retrouve les 3 variations.
+- [x] Captures de chaque étape et de la prévisualisation (2D, 3D, décor), décrites.
 
 ### [ ] T103 — Modifier, dupliquer, supprimer
 

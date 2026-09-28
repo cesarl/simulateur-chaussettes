@@ -309,6 +309,14 @@ export function mountProjectBar(
     },
     { separator: true },
     {
+      id: 'new-motif',
+      label: 'Créer un motif',
+      icon: 'layers',
+      onSelect: () => {
+        window.location.href = './motif.html';
+      },
+    },
+    {
       id: 'gallery',
       label: 'Galerie des favoris',
       icon: 'gallery',

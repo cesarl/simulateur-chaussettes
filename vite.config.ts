@@ -16,6 +16,7 @@ export default defineConfig({
         admin: resolve(root, 'admin.html'),
         favoris: resolve(root, 'favoris.html'),
         kit: resolve(root, 'kit.html'),
+        motif: resolve(root, 'motif.html'),
       },
     },
   },

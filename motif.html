@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Créer un motif — César Bazaar</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="motif-page">
+    <header class="motif-header" data-testid="motif-header">
+      <a href="./index.html?dev=1" data-testid="motif-back">← Simulateur</a>
+      <h1 data-testid="motif-title">Créer un motif</h1>
+      <p class="motif-lede" data-testid="motif-lede">
+        Variations, couleurs, calepinage — enregistré en ligne et utilisable partout.
+      </p>
+    </header>
+    <main class="motif-layout" data-testid="motif-layout">
+      <aside class="motif-form" data-testid="motif-form"></aside>
+      <section class="motif-preview" data-testid="motif-preview"></section>
+    </main>
+    <p class="motif-status" data-testid="motif-status" hidden></p>
+    <script type="module" src="/src/motifPage.ts"></script>
+  </body>
+</html>

@@ -797,6 +797,24 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
 
     for (const group of CATEGORY_ORDER) {
       const cols = byCat.get(group.id);
+      if (group.id === 'partagees') {
+        const h = document.createElement('h3');
+        h.className = 'calep-group-title';
+        h.textContent = group.label;
+        h.dataset.testid = `lib-cat-${group.id}`;
+        collectionsList.appendChild(h);
+        const row = document.createElement('div');
+        row.className = 'library-grid';
+        const neo = document.createElement('a');
+        neo.href = './motif.html';
+        neo.className = 'library-item library-item--new';
+        neo.dataset.testid = 'lib-new-motif';
+        neo.innerHTML = `<div class="library-item-media library-item-media--new">+</div><div class="library-item-body"><span class="coll-name">Nouveau motif</span><span class="coll-meta">Créer une collection</span></div>`;
+        row.appendChild(neo);
+        for (const c of cols ?? []) renderCollectionItem(c, catalogue, row);
+        collectionsList.appendChild(row);
+        continue;
+      }
       if (!cols?.length) continue;
       const h = document.createElement('h3');
       h.className = 'calep-group-title';
