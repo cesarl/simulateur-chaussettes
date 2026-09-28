@@ -221,7 +221,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
   - importer un PNG → ★ Favori → « Envoyer et enregistrer » → le favori s'ouvre dans un navigateur neuf (sans localStorage) avec l'image visible ;
   - l'image apparaît dans « Bibliothèque partagée ».
 
-### [ ] T87 — Bilan V10
+### [x] T87 — Bilan V10
 
 - README : bibliothèque partagée, limites (2 Mo, PNG / SVG), et la commande `npx wrangler r2 bucket create simulateur-chaussettes-images` pour César.
 - Captures dans `docs/captures/v10/`.

@@ -1807,8 +1807,25 @@ async function boot(): Promise<void> {
     update(patch, { skipHistory: true });
   }
 
-  // Différé : le lien #p= est appliqué APRÈS le premier recompute (plus bas),
-  // pour que __SIM__.ready soit vrai même si un calque partagee fige ensuite.
+  const hashResult = await decodeShareHash(window.location.hash);
+  if (hashResult.ok) {
+    await applyShare(hashResult.parsed);
+  } else {
+    if (hashResult.reason === 'illisible' || hashResult.reason === 'version') {
+      showShareHint(
+        hashResult.reason === 'version'
+          ? 'Lien d’une version plus récente : modèle par défaut.'
+          : 'Lien illisible : modèle par défaut.',
+      );
+    }
+    try {
+      const saved = await loadLastProject();
+      if (saved) await applyParsedProject(saved);
+    } catch {
+      // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
+    }
+  }
+
   panelApi = mountPanel(panel, {
     tabs: optionsTabs,
     layerKeyColors: layerColorsOf,
@@ -1891,28 +1908,6 @@ async function boot(): Promise<void> {
   recompute();
   scheduleShareHash();
   decor.sync();
-
-  const hashResult = await decodeShareHash(window.location.hash);
-  if (hashResult.ok) {
-    await applyShare(hashResult.parsed);
-    publish(); // rafraîchir __SIM__ sans attendre le recompute éventuellement lourd
-    // Recompute hors du tick de boot : un calque partagee peut figer SwiftShader.
-    window.setTimeout(() => recompute(), 0);
-  } else {
-    if (hashResult.reason === 'illisible' || hashResult.reason === 'version') {
-      showShareHint(
-        hashResult.reason === 'version'
-          ? 'Lien d’une version plus récente : modèle par défaut.'
-          : 'Lien illisible : modèle par défaut.',
-      );
-    }
-    try {
-      const saved = await loadLastProject();
-      if (saved) await applyParsedProject(saved);
-    } catch {
-      // IndexedDB absent ou document illisible : le modèle par défaut reste en place.
-    }
-  }
 
   if (openFavoriId) {
     void fetchFavorisJson<{ nom: string }>(`/api/favoris/${encodeURIComponent(openFavoriId)}`)

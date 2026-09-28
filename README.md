@@ -60,6 +60,15 @@ En local avec l’API : `.dev.vars` puis `npm run dev:api` (port 4173). Tests AP
 
 `npm run dev` (Vite seul) reste utilisable : les appels `/api` échouent avec « Favoris indisponibles en mode vite : lancer npm run dev:api ».
 
+### Bibliothèque partagée (Worker + R2)
+
+Les images importées (PNG ou SVG) peuvent être envoyées en ligne et réutilisées par tout le monde.
+
+- **★ Favori** sur un projet qui contient des images embarquées propose « Envoyer N image(s) dans la bibliothèque partagée et enregistrer ». Les calques passent de `embarquee` à `partagee` (une étape d’annulation), puis le favori est enregistré. Le lien `#p=2.` contient l’identifiant (`s:<id>`), pas les octets.
+- **Bibliothèque › Images › Bibliothèque partagée** : vignettes, filtre, clic pour ajouter un calque Image, « Envoyer une image… », renommer et retirer (mot de passe). Hors ligne : « Bibliothèque partagée indisponible » ; le reste de la bibliothèque continue de marcher.
+- **Limites** : 2 Mo maximum ; PNG (signature vérifiée) ou SVG (commence par `<svg` ou `<?xml`). JPEG et faux PNG sont refusés. Un même fichier (empreinte SHA-256) n’est stocké qu’une fois.
+- Les **carreaux PNG importés d’un Motif** ne passent pas dans le favori en V10 : message clair, il faut une collection ou le fichier `.json`.
+
 #### Commandes de mise en ligne (César)
 
 À lancer **une seule fois** sur le compte Cloudflare (placeholders — aucun secret dans le dépôt) :
@@ -67,6 +76,8 @@ En local avec l’API : `.dev.vars` puis `npm run dev:api` (port 4173). Tests AP
 ```bash
 npx wrangler d1 create simulateur-chaussettes
 # → copier database_id dans wrangler.jsonc
+
+npx wrangler r2 bucket create simulateur-chaussettes-images
 
 npm run db:migrate:remote
 npx wrangler secret put MOT_DE_PASSE
@@ -107,6 +118,7 @@ Captures : [`docs/captures/v9/`](docs/captures/v9/).
 7. **Bibliothèque** (barre projet ou « + Motif » / « + Image ») :
    - Collections du catalogue ;
    - section **Bibliothèque** (images publiques sous `bibliotheque-images/`, ex. Logo) — passent dans le lien de partage ;
+   - section **Bibliothèque partagée** (images en ligne, PNG/SVG ≤ 2 Mo) — passent aussi dans le lien ;
    - Images du projet (PNG/SVG embarqués dans le `.json`).
 8. **Couleurs d’un calque** : lignes avec pastille, nom/code, **œil** (transparence). Sur une Image, **Remplacer…** choisit un fil déjà sur la chaussette ou du nuancier.
 9. **Poignées** sur la vue 2D : déplacer / tourner / redimensionner une Image (cadre correct sous le talon) ; décaler / bande un Motif.
@@ -124,7 +136,7 @@ Les modes séparés « Carreaux » / « Composition » de V6 sont remplacés par
 
 ## Partage et limites
 
-- Lien `#p=2.` : état sans images embarquées (les images **bibliothèque** y passent). Trop long → message ; préférer le `.json`.
+- Lien `#p=2.` : état sans images embarquées (les images **bibliothèque** et **partagées** y passent). Trop long → message ; préférer le `.json`.
 - Palette unique (`resolveStackPalette`) : le bandeau n’apparaît que si les couleurs **visibles** dépassent la limite machine.
 - Pas de motif sur bord-côte, talon, pointe. Œil barré sur une couleur de calque pour laisser voir le dessous.
 

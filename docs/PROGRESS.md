@@ -1044,3 +1044,37 @@ Vérification : typecheck ✅ ; e2e:api `images-partagees.spec.ts` ✅ (1 test, 
 Contrôle visuel : après enregistrement, message « Enregistré dans les favoris — voir la galerie », chaussette 3D avec damier noir/blanc et cercle rouge, panneau « Image : » suivi de l'identifiant partagé. Bibliothèque › Images : titre « Bibliothèque partagée », filtre, bouton « Envoyer une image… », vignette damier nommée « carreau-test-damier… ». La vue à plat reste unie (le motif est sur le devant 3D).
 Décisions : aucune.
 Reste / risques : T87 bilan, README, `npm run verify`.
+
+## T87 — Bilan V10 — 2026-09-28 15:20
+Statut : terminée
+Fait : README (bibliothèque partagée, 2 Mo, PNG/SVG, `wrangler r2 bucket create`). Captures `docs/captures/v10/`. Le lien `#p=` est appliqué avant que la page se déclare prête (les ouvertures de favori ne montraient plus le modèle par défaut).
+Vérification : César a validé à la main (`npm run dev:api`, import PNG, ★ Favori, bibliothèque partagée, réouverture en fenêtre privée). Suite `npm run verify` non relancée, à sa demande. Avant ça : typecheck ✅, 196+9 tests ✅, e2e images partagées ✅, et les 3 e2e qui avaient cassé (couleurs, liens réels, palette du lien) ✅.
+Décisions : aucune.
+Reste / risques : mise en ligne (D1 + R2 + secret) encore à faire par César.
+
+## Point pour César — V10 — 2026-09-28
+
+### Ce qui marche
+- Favoris en ligne (galerie, mot de passe, corbeille) — étape A.
+- ★ Favori envoie les images importées dans la bibliothèque partagée, puis le favori s'ouvre ailleurs avec la même image.
+- Bibliothèque › Images › Bibliothèque partagée.
+
+### Tester en 3 étapes
+1. `npm run dev:api` → http://localhost:4173/?dev (mot de passe `essai`)
+2. Importer un PNG → ★ Favori → « Envoyer et enregistrer »
+3. Bibliothèque partagée, puis le même favori dans une fenêtre privée
+
+### Mise en ligne
+```bash
+npx wrangler d1 create simulateur-chaussettes
+npx wrangler r2 bucket create simulateur-chaussettes-images
+npm run db:migrate:remote
+npx wrangler secret put MOT_DE_PASSE
+npm run build && npx wrangler deploy
+```
+
+### Décisions à relire
+D66–D72.
+
+### Blocages
+Aucun. Les carreaux PNG d'un Motif ne passent pas dans un favori (collection ou fichier .json).
