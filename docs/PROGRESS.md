@@ -964,3 +964,10 @@ Fait : `worker/index.ts` (`/api/sante`), migration `0001_favoris.sql`, `wrangler
 Vérification : typecheck ✅ ; 195 unitaires ✅ ; `e2e:api` ✅ (`/api/sante` + `/`). `dev:api` manuel : `{ ok: true, db: true }` et index.html 200.
 Décisions : D66 (Playwright API séparé), D67 (database_id attente), D68 (seuils perf), D69 (file:// sync).
 Reste / risques : API CRUD favoris en T81 ; `.dev.vars` local non commité.
+
+## T81 — API des favoris — 2026-09-28 09:58
+Statut : terminée
+Fait : `worker/api/favoris.ts` (CRUD + corbeille + vignette WebP), validation `decodeShare` / tailles, 401 Worker. Tests D1 via `getPlatformProxy` (`vitest.workers.config.ts`, D70) faute de peer Vitest 5 pour `@cloudflare/vitest-pool-workers`. `npm test` enchaîne unitaires + Worker.
+Vérification : typecheck ✅ ; 195 unitaires + 4 Worker ✅.
+Décisions : D70.
+Reste / risques : UI ★ Favori (T82).

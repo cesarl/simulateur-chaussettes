@@ -412,3 +412,9 @@ Contexte : Node 24 Windows refuse `import` d'un chemin absolu `C:\…` (ERR_UNSU
 Options : A) laisser échouer sur Windows ; B) `pathToFileURL` dans le runner du test.
 Choix : B.
 Conséquence : le test T66 passe sur Windows.
+
+## D70 — Tests Worker via getPlatformProxy (T81)
+Contexte : T81 demande `@cloudflare/vitest-pool-workers`, dont le peer est Vitest ^4. Le projet est en Vitest 5 : conflit ERESOLVE, pas de version compatible.
+Options : A) downgrader Vitest 4 ; B) `--legacy-peer-deps` fragile ; C) `getPlatformProxy` (wrangler déjà présent) + config `vitest.workers.config.ts` lancée par `npm test`.
+Choix : C — même D1 local, sans nouvelle dépendance incompatible.
+Conséquence : `npm test` = unitaires node puis suite Worker ; pas de `@cloudflare/vitest-pool-workers`.

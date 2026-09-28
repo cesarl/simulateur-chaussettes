@@ -1,13 +1,21 @@
 import type { Env } from './env';
+import { handleFavoris } from './api/favoris';
 
 /** Point d'entrée Worker : API `/api/*` ; le reste est servi par les assets. */
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === '/api/sante' || url.pathname === '/api/sante/') {
+    const path = url.pathname;
+
+    if (path === '/api/sante' || path === '/api/sante/') {
       return handleSante(env);
     }
+
+    if (path === '/api/favoris' || path.startsWith('/api/favoris/')) {
+      return handleFavoris(request, env, path);
+    }
+
     return Response.json({ erreur: 'Route API inconnue.' }, { status: 404 });
   },
 };

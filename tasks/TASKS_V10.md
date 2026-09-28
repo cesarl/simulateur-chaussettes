@@ -73,7 +73,7 @@ Quelques points qui restent vrais tout au long de la série :
 - [x] `npm run dev:api` → `/` répond comme avant ; `/api/sante` renvoie `{ ok: true, db: true }`.
 - [x] Les tests existants restent verts.
 
-### [ ] T81 — API des favoris
+### [x] T81 — API des favoris
 
 `worker/api/favoris.ts` : une logique pure qui prend `env` en paramètre, pour être testable.
 
@@ -96,7 +96,7 @@ Validation des entrées :
 Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configuration vitest séparée, lancée par `npm test`.
 
 **Critères**
-- [ ] Tests :
+- [x] Tests :
   - créer, lister, renommer, supprimer, voir la corbeille, restaurer ;
   - 401 sans mot de passe ;
   - un lien abîmé est refusé ;
