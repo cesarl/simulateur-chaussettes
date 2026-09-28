@@ -189,7 +189,7 @@ Fenêtre large (≈ 1000 × 680, adaptée à l'écran) :
   - dans Partagée, « ⋯ » → Renommer.
 - [x] Captures avant / après de chaque onglet, et d'une fiche d'infos ouverte, décrites.
 
-### [ ] T95 — Cohérence et finitions
+### [x] T95 — Cohérence et finitions
 
 - **Tout passe par le kit** :
   - la barre de la visionneuse (icônes, vues, « Copier le lien », décor) ;
@@ -201,7 +201,7 @@ Fenêtre large (≈ 1000 × 680, adaptée à l'écran) :
 - **Aide / raccourcis** (menu ⋯) : petite fenêtre qui liste les raccourcis (annuler, rétablir, vues 3D, outils de dessin, Maj+D mode dev).
 
 **Critères**
-- [ ] Captures finales de chaque zone à 1440 × 900 : simulateur (Motif, Image, Dessin), visionneuse, bibliothèque, galerie ; téléphone : visionneuse et galerie.
+- [x] Captures finales de chaque zone à 1440 × 900 : simulateur (Motif, Image, Dessin), visionneuse, bibliothèque, galerie ; téléphone : visionneuse et galerie.
 - [ ] `npm run verify` complet vert.
 
 ### [ ] T96 — Bilan V11

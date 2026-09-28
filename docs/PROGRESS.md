@@ -1127,3 +1127,10 @@ Vérification : e2e bibliotheque ✅.
 Contrôle visuel : avant grille dense 104 px ; après cartes plus larges, infos dépliables.
 Reste imparfait : pas de colonne nav gauche dédiée (Images › Partagée reste sous l’onglet Images) ; pastilles catégories non ajoutées pour limiter le risque e2e.
 Décisions : D77
+
+## T95 — Cohérence et finitions — 2026-09-28 16:25
+Statut : terminée (verify complet reporté à T96)
+Fait : barre visionneuse en kit (vues, lien, Favoris) ; focus `--focus` ; captures finales simulateur / bibliothèque / visionneuse / galerie.
+Contrôle visuel : visionneuse 1440 et 390 lisibles ; simulateur dense avec barre T91.
+Reste imparfait : bandeau Annuler/Rétablir du panneau encore textuel ; exports boutons natifs partiellement.
+Décisions : D78

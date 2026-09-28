@@ -2,6 +2,9 @@ import type { DecorMode } from '../core/types';
 import { tileCmFromFormat } from '../render/decorController';
 import type { ViewName } from '../render/sock3d/studio';
 import { editingCollection, getState, subscribe, update } from '../state';
+import { kitButton } from './kit/button';
+import { showToast } from './kit/toast';
+import { icon } from './kit/icons';
 
 const VIEWER_VIEWS: Array<{ id: ViewName; label: string; testId: string }> = [
   { id: 'trois-quarts', label: '¾', testId: 'viewer-view-trois-quarts' },
@@ -40,11 +43,13 @@ export function mountViewerBar(
   const views = document.createElement('div');
   views.className = 'viewer-views';
   for (const view of VIEWER_VIEWS) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.dataset.testid = view.testId;
-    button.textContent = view.label;
-    button.addEventListener('click', () => options.onView(view.id));
+    const button = kitButton({
+      variant: 'ghost',
+      label: view.label,
+      compact: true,
+      testId: view.testId,
+      onClick: () => options.onView(view.id),
+    });
     views.appendChild(button);
   }
 
@@ -88,19 +93,28 @@ export function mountViewerBar(
     options.onFlat?.(flatCheck.checked);
   });
 
-  const copy = document.createElement('button');
-  copy.type = 'button';
-  copy.dataset.testid = 'viewer-copy-link';
-  copy.textContent = 'Copier le lien';
-  copy.addEventListener('click', () => {
-    void options.onCopyLink();
+  const copy = kitButton({
+    variant: 'ghost',
+    icon: 'link',
+    label: 'Copier le lien',
+    compact: true,
+    testId: 'viewer-copy-link',
+    ariaLabel: 'Copier le lien',
+    tooltip: 'Copier le lien',
+    onClick: () => {
+      void (async () => {
+        const ok = await options.onCopyLink();
+        if (ok !== false) showToast({ message: 'Lien copié' });
+      })();
+    },
   });
 
   const favoris = document.createElement('a');
   favoris.href = './favoris.html';
-  favoris.className = 'viewer-favoris-link';
+  favoris.className = 'kit-btn kit-btn--ghost kit-btn--compact viewer-favoris-link';
   favoris.dataset.testid = 'viewer-favoris-link';
-  favoris.textContent = 'Favoris';
+  favoris.setAttribute('aria-label', 'Galerie des favoris');
+  favoris.append(icon('gallery', { size: 16 }), document.createTextNode(' Favoris'));
 
   bar.append(title, views, decorLabel, flatLabel, copy, favoris);
   viewport.appendChild(bar);

@@ -458,3 +458,8 @@ Conséquence : e2e-api mis à jour (mdp en localStorage pour les écritures).
 Contexte : fenêtre ~1000×680, cartes avec Ajouter / ⋯ / infos.
 Choix : dialogue agrandi ; cartes carrées avec hover « Ajouter » + menu kit (motif / variation image) ; disclosure Infos (format, variations, pastilles nuancier). Les sections Images intégrée/partagée/projet restent dans l’onglet Images existant (pas de colonne gauche dédiée — trop invasif pour une série sans changement de comportement).
 Conséquence : e2e bibliothèque inchangé sur les testids principaux.
+
+## D78 — Visionneuse sur le kit (T95)
+Contexte : unifier barre visionneuse avec boutons/icônes du kit et focus `--focus`.
+Choix : vues et « Copier le lien » en `kitButton` ; Favoris en lien kit ; anneau de focus global `--focus`. Aide/raccourcis déjà dans le menu ⋯ (T91).
+Conséquence : pas de changement de testids visionneuse.
