@@ -100,6 +100,8 @@ describe('API favoris (D1 local)', () => {
     expect(vignetteRes.status).toBe(200);
     expect(vignetteRes.headers.get('Content-Type')).toBe('image/webp');
     expect(vignetteRes.headers.get('Cache-Control')).toContain('immutable');
+    const vignetteBytes = new Uint8Array(await vignetteRes.arrayBuffer());
+    expect(vignetteBytes.byteLength).toBeGreaterThan(3);
 
     const del = await call(`/api/favoris/${id}`, { method: 'DELETE', headers: authHeaders() });
     expect(del.status).toBe(200);

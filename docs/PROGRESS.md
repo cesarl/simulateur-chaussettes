@@ -971,3 +971,11 @@ Fait : `worker/api/favoris.ts` (CRUD + corbeille + vignette WebP), validation `d
 Vérification : typecheck ✅ ; 195 unitaires + 4 Worker ✅.
 Décisions : D70.
 Reste / risques : UI ★ Favori (T82).
+
+## T82 — ★ Favori dans l''éditeur — 2026-09-28 10:10
+Statut : terminée
+Fait : bouton ★ Favori (barre projet), dialogue nom/mdp, vignette WebP 480×600, POST/PATCH, `?favori=`, message images importées, « Oublier le mot de passe » (Global). e2e souris `favori-enregistrer.spec.ts`.
+Vérification : typecheck ✅ ; unitaires ✅ ; e2e:api favori ✅.
+Contrôle visuel `visuel-t82-favori-enregistre.png` : barre avec ★ Favori ; vue 2D Jardin (bleu/blanc) + 3D sur décor carreaux ; bandeau « Enregistré dans les favoris — voir la galerie » sous la 3D ; dock Motif + Fond.
+Décisions : aucune nouvelle (D70 inchangé).
+Reste / risques : page galerie T83.

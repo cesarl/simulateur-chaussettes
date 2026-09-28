@@ -1159,3 +1159,22 @@ dialog.library .hint { margin: 8px 12px 0; font-size: 11px; color: var(--muted);
   flex: 0 0 auto;
 }
 .zone-swatches .color-row { cursor: pointer; }
+
+/* Favoris (T82) */
+dialog.favori-dialog {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  max-width: 420px;
+  width: calc(100% - 2rem);
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+}
+dialog.favori-dialog::backdrop { background: rgba(29, 29, 27, 0.45); }
+.favori-dialog h2 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+.favori-dialog label { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.75rem; font-size: 0.9rem; }
+.favori-dialog input { font: inherit; padding: 0.4rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; }
+.favori-dialog-error { color: var(--accent); font-size: 0.9rem; margin: 0 0 0.5rem; }
+.favori-dialog-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
+.favori-dialog-actions button { font: inherit; padding: 0.4rem 0.75rem; cursor: pointer; }

@@ -7,6 +7,7 @@ export function mountProjectBar(
   actions: {
     copyShareLink: () => void | Promise<void>;
     openLibrary?: () => void;
+    onFavori?: () => void | Promise<void>;
     onToggleView?: (which: '2d' | '3d') => void;
     getViewVisibility?: () => { view2d: boolean; view3d: boolean };
   },
@@ -39,6 +40,18 @@ export function mountProjectBar(
     void actions.copyShareLink();
   });
 
+  const favoriBtn = document.createElement('button');
+  favoriBtn.type = 'button';
+  favoriBtn.dataset.testid = 'project-favori';
+  favoriBtn.textContent = '★ Favori';
+  if (actions.onFavori) {
+    favoriBtn.addEventListener('click', () => {
+      void actions.onFavori?.();
+    });
+  } else {
+    favoriBtn.disabled = true;
+  }
+
   const openBtn = document.createElement('button');
   openBtn.type = 'button';
   openBtn.dataset.testid = 'bar-project-open';
@@ -61,7 +74,7 @@ export function mountProjectBar(
     libBtn.disabled = true;
   }
 
-  body.append(title, undoBtn, redoBtn, copy, openBtn, saveBtn, libBtn);
+  body.append(title, undoBtn, redoBtn, copy, favoriBtn, openBtn, saveBtn, libBtn);
   host.appendChild(body);
 
   // T64 — bascules 2D / 3D (mode ?dev seulement ; la barre est déjà hidden hors dev).

@@ -38,6 +38,19 @@ import {
   type ProjectCollectionMeta,
 } from './io/project';
 import { enterDevMode, leaveDevMode, resolveDevMode } from './io/shareLink';
+import {
+  createFavori,
+  forgetPassword,
+  FavorisApiError,
+  IMPORTED_IMAGES_MESSAGE,
+  patchFavori,
+  readStoredPassword,
+  storePassword,
+} from './io/favorisClient';
+import { fetchFavorisJson } from './io/favorisApi';
+import { encodeFavoriVignette } from './io/favoriVignette';
+import { openFavoriDialog } from './ui/favoriDialog';
+import { shareableManualTiles } from './io/shareState';
 import { buildShareUrl, decodeShareHash, type ParsedShare } from './io/shareState';
 import { fixtureUrl, loadTileFromUrl, loadTileFromSvgText } from './io/tiles';
 import { createScene } from './render/scene';
@@ -402,7 +415,7 @@ async function copyShareLink(): Promise<void> {
   } catch {
     /* presse-papiers indisponible */
   }
-  window.history.replaceState(null, '', `${window.location.pathname}${built.hash}`);
+  window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${built.hash}`);
   if (built.tilesOmitted) {
     showShareHint(
       'Les carreaux importés ne sont pas dans le lien : utilisez une collection ou envoyez le projet .json',
@@ -442,6 +455,7 @@ function applyViewVisibility(): void {
 mountProjectBar(projectBar, {
   copyShareLink,
   openLibrary: () => library.open('collections'),
+  onFavori: () => saveAsFavori(),
   onToggleView: (which) => {
     if (which === '2d') view2dVisible = !view2dVisible;
     else view3dVisible = !view3dVisible;
@@ -450,6 +464,108 @@ mountProjectBar(projectBar, {
   getViewVisibility: () => ({ view2d: view2dVisible, view3d: view3dVisible }),
 });
 applyViewVisibility();
+
+/** Identifiant du favori ouvert (`?favori=`), hors lien `#p=`. */
+let openFavoriId: string | null = (() => {
+  try {
+    return new URLSearchParams(window.location.search).get('favori');
+  } catch {
+    return null;
+  }
+})();
+let openFavoriName: string | null = null;
+
+function setOpenFavori(id: string | null, name: string | null): void {
+  openFavoriId = id;
+  openFavoriName = name;
+  const url = new URL(window.location.href);
+  if (id) url.searchParams.set('favori', id);
+  else url.searchParams.delete('favori');
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
+function projectBlocksFavori(): boolean {
+  const state = getState();
+  const hasEmbedded = state.design.layers.some((l) => {
+    if (l.kind !== 'image' || l.asset.kind !== 'embarquee') return false;
+    const assetId = l.asset.assetId;
+    return state.embeddedAssets.some((a) => a.id === assetId);
+  });
+  if (hasEmbedded) return true;
+  return shareableManualTiles(state).omitted;
+}
+
+async function saveAsFavori(retryError: string | null = null): Promise<void> {
+  if (projectBlocksFavori()) {
+    showShareHint(IMPORTED_IMAGES_MESSAGE);
+    return;
+  }
+  const { design } = getState();
+  const motif = design.layers.find((l) => l.kind === 'motif');
+  const defaultName = openFavoriName ?? motif?.name ?? design.name ?? 'Favori';
+  const result = await openFavoriDialog({
+    defaultName,
+    existingName: openFavoriId ? (openFavoriName ?? defaultName) : null,
+    storedPassword: readStoredPassword(),
+    errorMessage: retryError,
+  });
+  if (result.kind === 'cancel') return;
+
+  storePassword(result.password);
+
+  let vignette: string;
+  let lien: string;
+  try {
+    const capture = await capturePair(600, '#ecebe8');
+    vignette = await encodeFavoriVignette(capture);
+    const built = await buildShareUrl();
+    lien = built.hash.replace(/^#/, '');
+  } catch (e) {
+    showShareHint(e instanceof Error ? e.message : 'Échec de la vignette.');
+    return;
+  }
+
+  try {
+    if (result.choice === 'update' && openFavoriId) {
+      await patchFavori(
+        openFavoriId,
+        { nom: result.nom, lien, vignette },
+        result.password,
+      );
+      openFavoriName = result.nom;
+      showFavoriSaved(openFavoriId);
+    } else {
+      const { id } = await createFavori(
+        { nom: result.nom, lien, vignette },
+        result.password,
+      );
+      setOpenFavori(id, result.nom);
+      showFavoriSaved(id);
+    }
+  } catch (e) {
+    if (e instanceof FavorisApiError && e.status === 401) {
+      forgetPassword();
+      await saveAsFavori('Mot de passe incorrect');
+      return;
+    }
+    showShareHint(e instanceof Error ? e.message : 'Enregistrement favori impossible.');
+  }
+}
+
+function showFavoriSaved(id: string): void {
+  const hint = document.createElement('span');
+  hint.textContent = 'Enregistré dans les favoris — ';
+  const link = document.createElement('a');
+  link.href = './favoris.html';
+  link.textContent = 'voir la galerie';
+  link.dataset.testid = 'favori-gallery-link';
+  shareHint.replaceChildren(hint, link);
+  shareHint.hidden = false;
+  shareHint.dataset.favoriId = id;
+  window.setTimeout(() => {
+    if (shareHint.dataset.favoriId === id) showShareHint(null);
+  }, 5000);
+}
 
 function applyShellMode(dev: boolean): void {
   devMode = dev;
@@ -1429,7 +1545,11 @@ function scheduleShareHash(): void {
     if (hasEmbedded) return;
     void buildShareUrl()
       .then((built) => {
-        window.history.replaceState(null, '', `${window.location.pathname}${built.hash}`);
+        window.history.replaceState(
+          null,
+          '',
+          `${window.location.pathname}${window.location.search}${built.hash}`,
+        );
       })
       .catch(() => undefined);
   }, 500);
@@ -1645,6 +1765,11 @@ async function boot(): Promise<void> {
       leaveDevMode(storage);
       applyShellMode(false);
     },
+    forgetFavoriPassword: () => {
+      forgetPassword();
+      showShareHint('Mot de passe oublié.');
+      window.setTimeout(() => showShareHint(null), 2000);
+    },
     copyShareLink: () => copyShareLink(),
   });
   subscribe(recompute);
@@ -1659,6 +1784,14 @@ async function boot(): Promise<void> {
   recompute();
   scheduleShareHash();
   decor.sync();
+
+  if (openFavoriId) {
+    void fetchFavorisJson<{ nom: string }>(`/api/favoris/${encodeURIComponent(openFavoriId)}`)
+      .then((f) => {
+        openFavoriName = f.nom;
+      })
+      .catch(() => undefined);
+  }
 
   handle.controls.addEventListener('change', () => {
     const sim = window.__SIM__;

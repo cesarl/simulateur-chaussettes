@@ -160,6 +160,7 @@ export interface PanelActions extends LayerOptionsDeps {
   saveProject: () => Promise<void>;
   openProject: (text: string) => Promise<void>;
   leaveDev: () => void;
+  forgetFavoriPassword?: () => void;
   copyShareLink: () => void | Promise<void>;
   /** Onglets du panneau : le volet affiché suit l’onglet actif. */
   tabs: OptionsTabsApi;
@@ -1766,6 +1767,13 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   leave.textContent = 'Quitter le mode dev';
   leave.addEventListener('click', () => actions.leaveDev());
 
+  const forgetMdp = document.createElement('button');
+  forgetMdp.type = 'button';
+  forgetMdp.dataset.testid = 'forget-favori-password';
+  forgetMdp.className = 'leave-dev';
+  forgetMdp.textContent = 'Oublier le mot de passe';
+  forgetMdp.addEventListener('click', () => actions.forgetFavoriPassword?.());
+
   const adminLink = document.createElement('a');
   adminLink.href = './admin.html';
   adminLink.dataset.testid = 'admin-collections-link';
@@ -1773,5 +1781,5 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   adminLink.textContent = 'Gérer mes collections';
   adminLink.style.display = 'block';
   adminLink.style.marginTop = '0.5rem';
-  panes.global.append(adminLink, leave);
+  panes.global.append(adminLink, forgetMdp, leave);
 }

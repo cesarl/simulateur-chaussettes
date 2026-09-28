@@ -102,7 +102,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
   - un lien abîmé est refusé ;
   - une vignette trop grosse est refusée.
 
-### [ ] T82 — « ★ Favori » dans l'éditeur
+### [x] T82 — « ★ Favori » dans l'éditeur
 
 - Barre du projet (mode dev) : bouton **« ★ Favori »**.
   - Premier enregistrement : petite fenêtre avec le nom (pré-rempli avec le nom du modèle) → vignette → POST.
@@ -121,7 +121,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
 - Confirmation discrète « Enregistré dans les favoris », avec un lien vers la galerie.
 
 **Critères**
-- [ ] e2e `favori-enregistrer.spec.ts`, à la souris :
+- [x] e2e `favori-enregistrer.spec.ts`, à la souris :
   - ouvrir le lien Jardin d'Azur en dev → ★ Favori → mot de passe « essai » → nom → le favori existe (`GET /api/favoris`) avec une vignette WebP 480 × 600 ;
   - modifier la chaussette → ★ → « Mettre à jour » → le lien enregistré a changé ;
   - un mauvais mot de passe affiche l'erreur et n'enregistre rien.

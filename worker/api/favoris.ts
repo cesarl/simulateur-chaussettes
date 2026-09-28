@@ -102,19 +102,37 @@ async function getFavori(env: Env, id: string): Promise<Response> {
 async function getVignette(env: Env, id: string, url: URL): Promise<Response> {
   const row = await env.DB.prepare(`SELECT vignette, modifie_le, supprime_le FROM favoris WHERE id = ?`)
     .bind(id)
-    .first<{ vignette: ArrayBuffer | null; modifie_le: number; supprime_le: number | null }>();
-  if (!row || !row.vignette) return jsonErreur('Vignette introuvable.', 404);
-  const v = url.searchParams.get('v');
-  if (v !== null && v !== String(row.modifie_le)) {
-    // On sert quand même : le cache-busting est indicatif.
-  }
-  return new Response(row.vignette, {
+    .first<{ vignette: ArrayBuffer | Uint8Array | string | null; modifie_le: number; supprime_le: number | null }>();
+  if (!row || row.vignette == null) return jsonErreur('Vignette introuvable.', 404);
+  const bytes = toUint8(row.vignette);
+  if (!bytes || bytes.byteLength === 0) return jsonErreur('Vignette introuvable.', 404);
+  void url;
+  return new Response(bytes, {
     status: 200,
     headers: {
       'Content-Type': 'image/webp',
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
+}
+
+function toUint8(value: ArrayBuffer | Uint8Array | string): Uint8Array | null {
+  if (typeof value === 'string') {
+    try {
+      const bin = atob(value);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    } catch {
+      return null;
+    }
+  }
+  if (value instanceof Uint8Array) return value;
+  return new Uint8Array(value);
+}
+
+function blobBind(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
 async function createFavori(request: Request, env: Env): Promise<Response> {
@@ -156,7 +174,7 @@ async function createFavori(request: Request, env: Env): Promise<Response> {
         `INSERT INTO favoris (id, nom, lien, vignette, cree_le, modifie_le, supprime_le)
          VALUES (?, ?, ?, ?, ?, ?, NULL)`,
       )
-        .bind(id, nom, lien, vignette, now, now)
+        .bind(id, nom, lien, vignette ? blobBind(vignette) : null, now, now)
         .run();
       return Response.json({ id }, { status: 201 });
     } catch {
@@ -211,7 +229,7 @@ async function patchFavori(request: Request, env: Env, id: string): Promise<Resp
       if (!vignette) return jsonErreur('Vignette invalide (base64 attendu).', 400);
       if (vignette.byteLength > VIGNETTE_MAX) return jsonErreur('Vignette trop grosse (200 Ko max).', 413);
       sets.push('vignette = ?');
-      values.push(vignette);
+      values.push(blobBind(vignette));
     } else {
       return jsonErreur('Vignette invalide (base64 attendu).', 400);
     }
