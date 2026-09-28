@@ -22,7 +22,7 @@ test('galerie : 75+11 avec filtre tous ; rosace change la grille ; reroll aléat
   await page.getByTestId('calep-filter').selectOption('tous');
   await expect(page.getByTestId('calep-gallery')).toBeVisible();
   const thumbs = page.locator('[data-testid^="calep-thumb-"]');
-  await expect(thumbs).toHaveCount(86); // 75 + 11
+  await expect(thumbs).toHaveCount(89); // 78 synchronisés + 11 rapides
 
   const hashBefore = await page.evaluate(() => window.__SIM__!.gridHash);
   const id0 = await page.evaluate(() => window.__SIM__!.computeId);

@@ -463,3 +463,9 @@ Conséquence : e2e bibliothèque inchangé sur les testids principaux.
 Contexte : unifier barre visionneuse avec boutons/icônes du kit et focus `--focus`.
 Choix : vues et « Copier le lien » en `kitButton` ; Favoris en lien kit ; anneau de focus global `--focus`. Aide/raccourcis déjà dans le menu ⋯ (T91).
 Conséquence : pas de changement de testids visionneuse.
+
+## D79 — Nuancier : restaurer etat/public après sync César (T96)
+Contexte : le commit `f73e1ee` (collections boobs/bleuet/cailloux) a resynchronisé `catalogue.json` depuis une source « simulateur » qui a vidé `etat` → 0 couleurs `public`. Les e2e nuancier/Fond/dessin/palettes tombaient (aucun `fond-yarn-*`, `dessin-color-yarn-*`, `nuancier-*`). Les calepinages sont passés de 75 à 78.
+Options : A) laisser le catalogue cassé ; B) resync depuis le configurateur (indisponible ici) ; C) réinjecter les `etat` depuis le dernier catalogue sain (`88b5961`).
+Choix : C — 181 teintes rétrocopient Validé/Test (144 public) ; 12 teintes nouvelles restent `Test`. Critère e2e galerie : 89 vignettes (78 + 11 rapides) au lieu de 86.
+Conséquence : `npm run sync:carreaux` depuis une source sans Etat re-cassera le nuancier ; préférer une source avec Etat=Validé.

@@ -24,3 +24,9 @@
 - Fichiers copiés : 1
 
 Aucun avertissement bibliothèque.
+
+## Correctif agent (V11 / T96)
+
+- Date : 2026-09-28T14:49:58.828Z
+- Les champs `etat` / `public` du nuancier avaient été vidés par le sync « simulateur » (commit f73e1ee, 0 validées).
+- Restauration des `etat` depuis le catalogue 88b5961 (144 Validé). 12 nouvelles teintes restent `Test`.

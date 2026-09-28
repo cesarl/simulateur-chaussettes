@@ -1134,3 +1134,34 @@ Fait : barre visionneuse en kit (vues, lien, Favoris) ; focus `--focus` ; captur
 Contrôle visuel : visionneuse 1440 et 390 lisibles ; simulateur dense avec barre T91.
 Reste imparfait : bandeau Annuler/Rétablir du panneau encore textuel ; exports boutons natifs partiellement.
 Décisions : D78
+
+## T96 — Bilan V11 — 2026-09-28 16:55
+Statut : terminée
+Fait : README (Lucide ISC, kit bouton/menu/tooltip, usage V11) ; captures `docs/captures/v11/` ; Point pour César. Correctif catalogue : réinjection des `etat`/`public` du nuancier (vidés par sync César f73e1ee) ; e2e calep 89 vignettes (78+11).
+Vérification : `npm run verify` ✅ (196 unitaires + 9 workers ; e2e complets).
+Décisions : D73–D79
+Reste / risques : T18 fabricant ; CI Actions facturation possible ≠ échec code ; ne pas toucher `wrangler.jsonc` ; un nouveau `sync:carreaux` sans Etat re-casse le nuancier.
+
+## Point pour César — V11 finitions — 2026-09-28
+
+### Ce qui marche
+- Kit UI (`src/ui/kit/`, démo `kit.html`) : icônes Lucide ISC, boutons, menus ⋯, tooltips, toasts, dialogs.
+- Barre projet condensée (★ Favori principal, Annuler/Rétablir icônes, export JSON dans ⋯).
+- Onglets soulignés, dock « + Calque ▾ », galerie favoris 4:5, bibliothèque cartes + infos.
+- Nuancier à nouveau utilisable (144 fils Validé restaurés — D79).
+
+### Tester en 3 étapes
+1. `npm run sync:local && npm run dev` → http://localhost:5173/?dev
+2. Survoler ↶ (tooltip Ctrl+Z) ; ⋯ → Aide / raccourcis ; Bibliothèque → Infos sur Medina
+3. `npm run dev:api` → Favoris : cartes 4:5, ⋯ → Renommer / Supprimer → Annuler
+
+### Avant / après (aperçu)
+- Barre : `docs/captures/v11/visuel-t91-avant-barre-1440.png` → `visuel-t91-apres-barre-1440.png`
+- Galerie : `visuel-t93-avant-galerie-1440.png` → `visuel-t93-apres-galerie-1440.png`
+- Final : `visuel-t95-simulateur-1440.png`, `visuel-t95-visionneuse-1440.png`, `visuel-t95-galerie-1440.png`
+
+### Décisions à relire
+D73 (kit Lucide), D74 (barre), D75 (dock + reset dialog), D76 (galerie), D77 (bibliothèque), D78 (visionneuse), D79 (nuancier après sync).
+
+### Blocages
+Aucun pour V11. T18 en attente des tailles fabricant. CI GitHub Actions : facturation possible ≠ échec code. Attention : resync depuis une source sans champ Etat (comme f73e1ee) vide à nouveau le nuancier public.

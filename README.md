@@ -4,6 +4,26 @@ Outil web local qui transforme des carreaux de ciment (PNG/SVG) en motif jacquar
 
 Les icônes de l'interface (V11) reprennent les tracés [Lucide](https://lucide.dev) (licence ISC), intégrés en SVG inline dans `src/ui/kit/` — aucune dépendance npm Lucide.
 
+### Kit UI (V11)
+
+Composants DOM maison dans [`src/ui/kit/`](src/ui/kit/) — pas de framework :
+
+| Module | Usage |
+|---|---|
+| `kitButton({ variant, icon, label, tooltip, shortcut })` | `primary` / `ghost` / `icon` |
+| `openMenu({ anchor, items })` / `moreButton` | un seul menu à la fois ; Échap / clic dehors |
+| `attachTooltip(el, { label, shortcut })` | délai 400 ms |
+| `showToast` / `openDialog` / `disclosure` | notifications, modales, infos repliables |
+
+Page de démo (dev) : [`kit.html`](kit.html). Captures V11 : [`docs/captures/v11/`](docs/captures/v11/).
+
+## Utilisation (V11 — finitions)
+
+1. `npm run sync:local && npm run dev` → `http://localhost:5173/?dev`
+2. Barre projet : nom✎, ↶↷, 2D/3D, Bibliothèque, Favoris, lien, **★ Favori**, menu **⋯** (ouvrir/exporter JSON, aide).
+3. Dock : **+ Calque ▾** → Motif / Image / Dessin ; menu **⋯** sur chaque carte.
+4. Galerie [`favoris.html`](favoris.html) : cartes **4:5**, menus fermés, toast Annuler après suppression.
+
 - Ce que fait l'outil : [`docs/CAHIER_DES_CHARGES.md`](docs/CAHIER_DES_CHARGES.md)
 - Comment il est construit : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Tâches de développement : [`tasks/TASKS.md`](tasks/TASKS.md) — avancement dans [`docs/PROGRESS.md`](docs/PROGRESS.md)

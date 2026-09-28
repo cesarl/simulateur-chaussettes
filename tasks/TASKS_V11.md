@@ -191,7 +191,7 @@ Fenêtre large (≈ 1000 × 680, adaptée à l'écran) :
 
 ### [x] T95 — Cohérence et finitions
 
-- **Tout passe par le kit** :
+
   - la barre de la visionneuse (icônes, vues, « Copier le lien », décor) ;
   - les fenêtres (favori, mot de passe, renommer, confirmation) ;
   - les messages, qui deviennent des toasts ;
@@ -202,9 +202,9 @@ Fenêtre large (≈ 1000 × 680, adaptée à l'écran) :
 
 **Critères**
 - [x] Captures finales de chaque zone à 1440 × 900 : simulateur (Motif, Image, Dessin), visionneuse, bibliothèque, galerie ; téléphone : visionneuse et galerie.
-- [ ] `npm run verify` complet vert.
+- [x] `npm run verify` complet vert.
 
-### [ ] T96 — Bilan V11
+### [x] T96 — Bilan V11
 
 - README :
   - captures ;
