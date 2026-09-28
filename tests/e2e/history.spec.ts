@@ -51,8 +51,8 @@ test('reset section, undo, reset-all avec confirmation', async ({ page }) => {
   const tilesBefore = await page.evaluate(() => window.__SIM__!.design.layout.tileIds.length);
   await page.getByTestId('tab-global').click();
   await page.getByTestId('reset-all').click();
-  await expect(page.getByTestId('reset-all')).toHaveText('Confirmer ?');
-  await page.getByTestId('reset-all').click();
+  await expect(page.getByTestId('reset-all-confirm')).toBeVisible();
+  await page.getByTestId('reset-all-confirm-ok').click();
   await page.waitForFunction(() => window.__SIM__?.design.zones.heelHeightMm === 55);
   expect(await page.evaluate(() => window.__SIM__!.design.quantize.maxColors)).toBe(4);
   expect(await page.evaluate(() => window.__SIM__!.design.layout.calepinage.genere.ordre)).toBe('unique');

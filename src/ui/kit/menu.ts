@@ -14,6 +14,8 @@ export interface MenuItem {
   danger?: boolean;
   disabled?: boolean;
   separator?: false;
+  /** Surcharge du data-testid (sinon `kit-menu-item-${id}`). */
+  testId?: string;
   onSelect?: () => void;
 }
 
@@ -158,7 +160,7 @@ export function openMenu(options: OpenMenuOptions): HTMLElement {
     if (item.danger) btn.classList.add('kit-menu__item--danger');
     btn.setAttribute('role', 'menuitem');
     btn.dataset.menuId = item.id;
-    btn.dataset.testid = `kit-menu-item-${item.id}`;
+    btn.dataset.testid = item.testId ?? `kit-menu-item-${item.id}`;
     if (item.disabled) btn.disabled = true;
 
     if (item.icon) btn.appendChild(icon(item.icon, { size: 16 }));

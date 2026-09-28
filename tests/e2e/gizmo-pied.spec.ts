@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { dockAdd } from './helpers/dock';
 
 /**
  * T61 — cadre image sous le talon : conversions motif↔grille qui sautent le talon.
@@ -31,7 +32,7 @@ async function waitCompute(page: Page, previous: number): Promise<void> {
 
 async function addExampleImage(page: Page): Promise<string> {
   const before = await computeId(page);
-  await page.getByTestId('dock-add-image').click();
+  await dockAdd(page, 'image');
   await expect(page.getByTestId('library-dialog')).toBeVisible();
   await page.getByTestId('lib-image-example').click();
   await expect(page.getByTestId('library-dialog')).toBeHidden({ timeout: 30_000 });

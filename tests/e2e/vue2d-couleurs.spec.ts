@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, copyFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { dockAdd } from './helpers/dock';
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -27,7 +28,7 @@ async function waitCompute(page: Page, before: number): Promise<void> {
 
 async function addMotifFromLibrary(page: Page, collectionId: string): Promise<void> {
   const before = await computeId(page);
-  await page.getByTestId('dock-add-motif').click();
+  await dockAdd(page, 'motif');
   await expect(page.getByTestId('library-dialog')).toBeVisible();
   await page.getByTestId(`lib-collection-${collectionId}`).click();
   await expect(page.getByTestId('library-dialog')).toBeHidden({ timeout: 60_000 });

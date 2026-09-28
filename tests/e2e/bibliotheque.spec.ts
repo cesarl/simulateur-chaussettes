@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import path from 'node:path';
+import { dockAdd } from './helpers/dock';
 
 /**
  * T57 — Bibliothèque : dialogue modal, collections, import image.
@@ -88,7 +89,7 @@ test.describe('T57 bibliothèque', () => {
     await expect(motifCards.first()).toHaveAttribute('data-selected', 'true');
 
     const beforeImage = await computeId(page);
-    await page.getByTestId('dock-add-image').click();
+    await dockAdd(page, 'image');
     await expect(page.getByTestId('library-dialog')).toBeVisible();
     await page.getByTestId('lib-tab-images').click();
     await page.getByTestId('lib-image-import').click();

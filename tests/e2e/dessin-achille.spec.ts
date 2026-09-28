@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, copyFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { dockAdd } from './helpers/dock';
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -57,7 +58,7 @@ test.describe('T72 dessin tendon d’Achille', () => {
     await page.goto('/?dev');
     await waitReady(page);
 
-    await page.getByTestId('dock-add-dessin').click();
+    await dockAdd(page, 'dessin');
     await expect(page.getByTestId('dessin-toolbar')).toBeVisible({ timeout: 30_000 });
 
     await page.getByTestId('dessin-tool-trait').click();
@@ -204,7 +205,7 @@ test.describe('T72 dessin tendon d’Achille', () => {
     await page.goto('/?dev');
     await waitReady(page);
 
-    await page.getByTestId('dock-add-dessin').click();
+    await dockAdd(page, 'dessin');
     await expect(page.getByTestId('dessin-toolbar')).toBeVisible({ timeout: 30_000 });
 
     // Symétrie Devant ↔ Dos + crayon

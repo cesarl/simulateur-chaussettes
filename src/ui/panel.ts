@@ -7,6 +7,7 @@ import { CATALOGUE_MISSING_MESSAGE } from '../io/catalogue';
 import type { ExportRequest, FlatKind } from '../io/exportPng';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { VIEW_ANGLES, type ViewId } from '../render/views';
+import { confirmDialog } from './kit/dialog';
 import {
   canRedo,
   canUndo,
@@ -664,7 +665,6 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
   const initialLayout = editingLayoutSettings();
   let keepRatio = true;
   let paletteKey = '';
-  let resetAllArmed: ReturnType<typeof setTimeout> | undefined;
 
   const history = document.createElement('div');
   history.className = 'row history-bar';
@@ -1625,21 +1625,19 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
 
   const resetAll = document.createElement('button');
   resetAll.type = 'button';
+  resetAll.className = 'kit-btn kit-btn--ghost kit-btn--danger';
   resetAll.dataset.testid = 'reset-all';
   resetAll.textContent = 'Tout réinitialiser';
   resetAll.addEventListener('click', () => {
-    if (resetAllArmed !== undefined) {
-      clearTimeout(resetAllArmed);
-      resetAllArmed = undefined;
-      resetAll.textContent = 'Tout réinitialiser';
-      resetAllDesign();
-      return;
-    }
-    resetAll.textContent = 'Confirmer ?';
-    resetAllArmed = setTimeout(() => {
-      resetAll.textContent = 'Tout réinitialiser';
-      resetAllArmed = undefined;
-    }, 4000);
+    void confirmDialog({
+      title: 'Tout réinitialiser ?',
+      message: 'Les réglages du modèle et l’historique d’annulation seront effacés.',
+      confirmLabel: 'Tout réinitialiser',
+      danger: true,
+      testId: 'reset-all-confirm',
+    }).then((ok) => {
+      if (ok) resetAllDesign();
+    });
   });
 
   panes.motif.appendChild(layout);

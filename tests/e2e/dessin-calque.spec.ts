@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync, copyFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { dockAdd } from './helpers/dock';
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -70,7 +71,7 @@ test.describe('T71 calque Dessin', () => {
     await page.goto('/?dev');
     await waitReady(page);
 
-    await page.getByTestId('dock-add-dessin').click();
+    await dockAdd(page, 'dessin');
     await expect(page.locator('[data-testid^="layer-card-dessin-"]')).toHaveCount(1, {
       timeout: 30_000,
     });

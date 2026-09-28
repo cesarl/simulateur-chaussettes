@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { dockAdd } from './helpers/dock';
 
 /**
  * T54 — dock des calques, à la souris uniquement pour les actions testées.
@@ -81,7 +82,7 @@ for (let col = 8; col <= 80; col += 12) {
 
 async function addMotifFromLibrary(page: Page, collectionId: string): Promise<void> {
   const before = await computeId(page);
-  await page.getByTestId('dock-add-motif').click();
+  await dockAdd(page, 'motif');
   await expect(page.getByTestId('library-dialog')).toBeVisible();
   await page.getByTestId(`lib-collection-${collectionId}`).click();
   await expect(page.getByTestId('library-dialog')).toBeHidden({ timeout: 30_000 });
@@ -90,7 +91,7 @@ async function addMotifFromLibrary(page: Page, collectionId: string): Promise<vo
 
 async function addExampleImage(page: Page): Promise<void> {
   const before = await computeId(page);
-  await page.getByTestId('dock-add-image').click();
+  await dockAdd(page, 'image');
   await expect(page.getByTestId('library-dialog')).toBeVisible();
   await page.getByTestId('lib-image-example').click();
   await expect(page.getByTestId('library-dialog')).toBeHidden({ timeout: 30_000 });
@@ -240,7 +241,7 @@ test.describe('T54 dock des calques', () => {
     expect(metrics!.bodyScroll).toBeLessThanOrEqual(metrics!.bodyClient);
 
     // Au-delà de 16 : refus avec message.
-    await page.getByTestId('dock-add-motif').click();
+    await dockAdd(page, 'motif');
     await expect(page.getByTestId('dock-message')).toContainText('16 calques au maximum');
     await expect(page.getByTestId('library-dialog')).toBeHidden();
     await expect(page.locator(CARD)).toHaveCount(16);

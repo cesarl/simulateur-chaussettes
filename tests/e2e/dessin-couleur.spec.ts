@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { dockAdd } from './helpers/dock';
 
 function trackErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -46,7 +47,7 @@ test.describe('T73 couleur du crayon', () => {
     await page.goto('/?dev');
     await waitReady(page);
 
-    await page.getByTestId('dock-add-dessin').click();
+    await dockAdd(page, 'dessin');
     await expect(page.getByTestId('dessin-toolbar')).toBeVisible({ timeout: 30_000 });
     await page.getByTestId('dessin-tool-crayon').click();
     await page.getByTestId('dessin-thickness').fill('1');

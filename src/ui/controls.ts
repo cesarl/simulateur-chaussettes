@@ -25,10 +25,15 @@ export function details(
   section.dataset.testid = testId;
   const summary = document.createElement('summary');
   summary.className = 'section-summary';
+  const chevron = document.createElement('span');
+  chevron.className = 'section-chevron';
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.innerHTML =
+    '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>';
   const label = document.createElement('span');
   label.className = 'section-title';
   label.textContent = title;
-  summary.appendChild(label);
+  summary.append(chevron, label);
   if (options?.dirtyId) {
     const badge = document.createElement('span');
     badge.className = 'section-dirty';
@@ -40,9 +45,12 @@ export function details(
   if (options?.resetId && options.onReset) {
     const reset = document.createElement('button');
     reset.type = 'button';
-    reset.className = 'section-reset';
+    reset.className = 'section-reset kit-btn kit-btn--icon kit-btn--compact';
     reset.dataset.testid = options.resetId;
-    reset.textContent = 'Réinitialiser';
+    reset.setAttribute('aria-label', 'Réinitialiser cette section');
+    reset.title = 'Réinitialiser';
+    reset.innerHTML =
+      '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
     reset.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();

@@ -110,7 +110,7 @@ Hauteur 44 px, un seul rang, groupes séparés par un fin trait vertical :
   - les zones de la barre ne se chevauchent pas à 1100 px.
 - [x] Captures avant / après à 1440 et 1100 px.
 
-### [ ] T92 — Panneau d'options, onglets et dock des calques
+### [x] T92 — Panneau d'options, onglets et dock des calques
 
 - **Onglets** (Calque, Chaussette, Décor, Export, Global) : onglets soulignés, icône + libellé, 36 px de haut.
 - **Sections** : en-tête compact 32 px avec chevron (`disclosure`) ; espacements de l'échelle ; libellé à gauche et commande à droite quand elle est courte (cases, petits nombres).
@@ -129,9 +129,9 @@ Hauteur 44 px, un seul rang, groupes séparés par un fin trait vertical :
   - « Quitter le mode dev ».
 
 **Critères**
-- [ ] Le panneau d'options tient à 1440 × 900 sans défilement pour l'onglet Calque d'un Motif simple, sections repliées sauf la première.
-- [ ] e2e existants verts (options, dock, dessin).
-- [ ] Captures avant / après : onglet Calque (Motif, Image, Dessin), Chaussette, dock.
+- [x] Le panneau d'options tient à 1440 × 900 sans défilement pour l'onglet Calque d'un Motif simple, sections repliées sauf la première.
+- [x] e2e existants verts (options, dock, dessin).
+- [x] Captures avant / après : onglet Calque (Motif, Image, Dessin), Chaussette, dock.
 
 ### [ ] T93 — Galerie des favoris
 

@@ -1100,3 +1100,14 @@ Contrôle visuel :
 - **Après 1100** : même structure, groupes sans chevauchement ; libellés encore visibles à 1100 (masqués < 1100).
 Reste imparfait : toast aussi quand le lien est « trop long » ; le panneau garde encore Annuler/Rétablir texte (T92) ; « modele » minuscule peu élégant.
 Décisions : D74
+
+## T92 — Panneau, onglets, dock — 2026-09-28 15:20
+Statut : terminée
+Fait : onglets icône+libellé soulignés 36 px ; sections chevron + reset icône ; dock cartes accent-soft, menu kit, « + Calque ▾ » ; Global « Tout réinitialiser » via dialog.
+Vérification : calques-dock ✅ ; history ✅ ; dessin-calque ✅.
+Contrôle visuel :
+- **Avant** : onglets plaines ; 3 boutons + Motif/+ Image/+ Dessin ; reset texte.
+- **Après calque** : onglets soulignés (Calque actif brique) + icônes ; chevron « Mes carreaux ».
+- **Après dock** : Motif sélectionné fond accent-soft + bordure ; « + Calque ▾ » à droite.
+Reste imparfait : bandeau Annuler/Rétablir/Copier encore textuel ; « Réinitialiser ce calque » encore texte ; pastilles collections toujours carrées (pas la galerie favoris) ; Global réduit en icône settings seule sur la capture (libellé masqué par largeur).
+Décisions : D75

@@ -442,3 +442,9 @@ Contexte : retirer « Enregistrer » de la barre tout en gardant l’ouverture/e
 Options : A) garder Ouvrir/Enregistrer visibles ; B) menu ⋯ (ouvrir + exporter + galerie + aide).
 Choix : B — seul ★ Favori reste principal ; Annuler/Rétablir en icônes ; 2D/3D segmenté ; libellés masqués sous 1100 px. Le nom éditable est `design.name` (pas le nom du calque Motif). Ctrl+Y ajoute le rétablir (en plus de Ctrl+Maj+Z).
 Conséquence : `bar-project-save` disparaît ; export panneau (`project-save`) inchangé ; toast « Lien copié » en plus du bandeau.
+
+## D75 — Dock : menu kit + « + Calque ▾ » ; reset-all en dialog (T92)
+Contexte : regrouper + Motif/+ Image/+ Dessin et unifier les menus ⋯ ; confirmation « Tout réinitialiser » via la fenêtre commune.
+Options : A) garder 3 boutons ; B) un menu + Calque avec les mêmes testids d’items.
+Choix : B — helper e2e `dockAdd` ; menus calque via `openMenu` (`dock-menu`) ; onglets soulignés 36 px avec icônes Lucide ; reset section = icône rotate ; reset-all → `confirmDialog` (history.spec mis à jour).
+Conséquence : les e2e cliquent `dock-add-calque` puis l’item ; le panneau garde encore Annuler/Rétablir texte en tête (T95).

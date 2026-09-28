@@ -85,7 +85,7 @@ const PATHS: Record<IconName, string> = {
 };
 
 export interface IconOptions {
-  size?: 16 | 18 | 20 | 24;
+  size?: 14 | 16 | 18 | 20 | 24;
   className?: string;
   title?: string;
 }

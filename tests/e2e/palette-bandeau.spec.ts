@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { dockAdd } from './helpers/dock';
 
 /**
  * T60 — palette unique + Fond remplace la couleur du pied.
@@ -51,7 +52,7 @@ async function useSockMotif(page: Page, collectionId: string): Promise<string> {
 
 async function addMotifFromLibrary(page: Page, collectionId: string): Promise<string> {
   const before = await computeId(page);
-  await page.getByTestId('dock-add-motif').click();
+  await dockAdd(page, 'motif');
   await expect(page.getByTestId('library-dialog')).toBeVisible();
   await page.getByTestId('lib-search').fill(collectionId);
   await page.getByTestId(`lib-collection-${collectionId}`).click();
