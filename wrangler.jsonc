@@ -1,26 +1,33 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "simulateur-chaussettes",
-  "compatibility_date": "2026-09-24",
-  "main": "worker/index.ts",
-  "assets": {
-    "directory": "./dist",
-    "not_found_handling": "404-page",
-    "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "simulateur-chaussettes",
-      "database_id": "00000000-0000-0000-0000-000000000000",
-      "migrations_dir": "migrations"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "IMAGES",
-      "bucket_name": "simulateur-chaussettes-images"
-    }
-  ]
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "simulateur-chaussettes",
+	"compatibility_date": "2026-09-24",
+	"main": "worker/index.ts",
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "404-page",
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	"d1_databases": [
+		{
+			"binding": "simulateur_chaussettes",
+			"database_name": "simulateur-chaussettes",
+			"database_id": "d0ac15e0-d948-4969-b498-49df6481f3e0",
+			"remote": true
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "IMAGES",
+			"bucket_name": "simulateur-chaussettes-images"
+		},
+		{
+			"bucket_name": "simulateur-chaussettes-images",
+			"binding": "simulateur_chaussettes_images",
+			"remote": true
+		}
+	]
 }
