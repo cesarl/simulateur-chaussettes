@@ -1165,3 +1165,31 @@ D73 (kit Lucide), D74 (barre), D75 (dock + reset dialog), D76 (galerie), D77 (bi
 
 ### Blocages
 Aucun pour V11. T18 en attente des tailles fabricant. CI GitHub Actions : facturation possible ≠ échec code. Attention : resync depuis une source sans champ Etat (comme f73e1ee) vide à nouveau le nuancier public.
+
+## Fix nuancier zones — 2026-09-28 16:40
+Statut : terminée
+Fait : module `nuancierDefaults.ts` ; `defaultDesign()` / palette manuelle / crayon / suggestion zones vide / joint / fond composition / aperçus quantize branchés sur hex Validé (BL016, RD060, BK001, YL010, YL008, BK010). Share/golden intacts (D80).
+Vérification : `npm run typecheck` ✅ ; unitaires 199 ✅ ; workers 9 ✅ (`.dev.vars` local) ; e2e 85 ✅ dont `nuancier-zones` + dessin Achille (BK001).
+Contrôle visuel (captures ouvertes) :
+- `visuel-nuancier-zones-avant-3d.png` : bord-côte bleu marine `#1f3a5f`, tige crème `#f1e9dc`, talon terracotta `#b5462f`, pointe quasi noire `#1d1d1b`.
+- `visuel-nuancier-zones-apres-3d.png` : bord-côte bleu-noir BL016 `#303446` plus sombre, tige ivoire YL008 `#fbeed5`, talon brique RD060 `#ab4236`, pointe BK001 `#1a1a1a`.
+- Plat avant/après : bande bord-côte + pastille gauche ; tige crème ; même structure Intérieur/Dos/Extérieur.
+Décisions : D80
+Reste / risques : chrome UI V11 et constantes golden (`PATTERN_BACKGROUND`, `EMPTY_STITCH_COLOR`) restent hors nuancier volontairement.
+
+## Point pour César — défauts nuancier zones — 2026-09-28
+
+### Ce qui marche
+- Nouveau projet : bord-côte, talon, pointe, pied, fond et crayon = fils du nuancier public.
+- Liens `#p=` / empreintes golden / `v1ShareDefaults` inchangés.
+
+### Tester en 3 étapes
+1. `npm run sync:local && npm run dev` → http://localhost:5173/?dev
+2. Vérifier les pastilles Zones (bord-côte BL016, talon RD060, pointe BK001) et le Fond YL008
+3. Comparer `docs/captures/nuancier-zones/visuel-nuancier-zones-avant-*.png` vs `après-*.png`
+
+### Décisions à relire
+- D80 (mapping nuancier + intouchables)
+
+### Blocages
+- aucun ; CI GitHub peut rester rouge facturation ≠ juge local
