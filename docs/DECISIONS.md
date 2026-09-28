@@ -494,3 +494,9 @@ Contexte : motifs utilisateur en ligne, réutilisables comme le catalogue, sans 
 Options : A) table D1 seule (BLOB fichiers) ; B) D1 métadonnées + R2 fichiers (comme images V10) ; C) Worker séparé.
 Choix : B — table `collections` (migration 0003), fichiers sous `collections/<id>/<VARn>-<empreinte>.svg|png` dans le bucket R2 existant (`IMAGES`), sanitize SVG pur (`src/core/sanitizeSvg.ts`) partagé page/Worker, ids `p-<slug>` avec suffixe si collision. Multipart (champ `json` + fichiers VAR*). GET par id lit aussi la corbeille (favoris).
 Conséquence : `npm run db:migrate:remote` requis en prod ; `source: 'partagee'` côté client en T101 ; wrangler.jsonc inchangé (même D1/R2).
+
+## D82 — Fusion catalogue partagé + fichierUrl (T101)
+Contexte : collections `p-…` en ligne doivent s’utiliser comme le catalogue sans changer `#p=2.`.
+Options : A) catalogue parallèle ; B) fusion dans `loadCatalogue` avec `source: 'partagee'` ; C) proxy SVG locaux.
+Choix : B — `mergeSharedIntoCatalogue` ; `fichierUrl` / `resolveVariationUrl` acceptent chemins `./carreaux/…` et `/api/collections/…/fichiers/…?v=` ; GET par id charge aussi la corbeille avant `applyShare` ; message « Motif « p-… » introuvable (supprimé ?) ».
+Conséquence : hors ligne / vite sans API → `sharedCollectionsUnavailable` + note Bibliothèque ; décor « autre collection » marche via le même catalogue.

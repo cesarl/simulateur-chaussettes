@@ -1214,3 +1214,13 @@ Fait : migration `0003_collections.sql` ; `sanitizeSvg` + `collectionSlug` purs 
 Vérification : `test:unit` sanitize ✅ ; `test:worker` collections-api ✅ (créer 3 SVG, patch VAR2+couleurs, 401/413/415, SVG nettoyé, ids `p-vagues` / `p-vagues-2`) ; typecheck ✅.
 Décisions : D81
 Reste / risques : fusion catalogue + atelier UI en T101–T104 ; César doit lancer `npm run db:migrate:remote` en fin V12.
+
+## T101 — Collections partagées dans le simulateur — 2026-09-28 18:00
+Statut : terminée
+Fait : `sharedCatalogue` + fusion dans `loadCatalogue` ; `fichierUrl` ; état `sharedCollectionsUnavailable` ; `applyShare` charge les `p-…` (corbeille incluse) ; catégorie Bibliothèque « Collections partagées » ; e2e-api.
+Vérification : unit `shared-catalogue` ✅ ; `e2e:api` collections-partagees ✅ (empreinte grille identique après réouverture du lien).
+Contrôle visuel :
+- `visuel-t101-bibliotheque-partagees.png` : motif rouge à pois marine « Test Partage » en 2D et 3D ; panneau Collection › COLLECTIONS PARTAGÉES avec vignette ; toast « Lien copié ».
+- `visuel-t101-lien-reouvert.png` : même motif après `/?dev#p=2.…` dans un contexte neuf ; calque Motif = collection Test Partage.
+Décisions : D82
+Reste / risques : atelier motif.html (T102) ; modifier/supprimer (T103).

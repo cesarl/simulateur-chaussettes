@@ -47,6 +47,7 @@ export interface LibraryApi {
 const EXAMPLE_IMAGE = 'carreau-test-damier.png';
 
 const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
+  { id: 'partagees', label: 'Collections partagées' },
   { id: 'mes-collections', label: 'Mes collections' },
   { id: 'signature', label: 'Signature' },
   { id: 'classic', label: 'Classiques' },
@@ -55,8 +56,10 @@ const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
 ];
 
 function categoryKey(c: Collection): string {
+  if (c.source === 'partagee') return 'partagees';
   if (c.source === 'locale') return 'mes-collections';
   const cat = (c.categorie ?? '').toLowerCase();
+  if (cat === 'collections partagées' || cat === 'partagees' || cat === 'partagées') return 'partagees';
   if (cat === 'mes-collections' || cat === 'locale' || cat === 'local') return 'mes-collections';
   if (cat === 'signature') return 'signature';
   if (cat === 'classic' || cat === 'classique' || cat === 'classiques') return 'classic';
@@ -762,7 +765,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   }
 
   function renderCollections(): void {
-    const { catalogue } = getState();
+    const { catalogue, sharedCollectionsUnavailable } = getState();
     collectionsList.replaceChildren();
     if (!catalogue) {
       setStatus('Collections non synchronisées : lancez `npm run sync:carreaux`.');
@@ -771,10 +774,18 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     const query = search.value.trim();
     const items = visibleCollections(catalogue, false).filter((c) => matches(c, query));
     if (items.length === 0) {
-      setStatus('Aucune collection ne correspond.');
+      setStatus(
+        sharedCollectionsUnavailable
+          ? 'Aucune collection ne correspond. Collections partagées indisponibles (hors ligne ou API absente).'
+          : 'Aucune collection ne correspond.',
+      );
       return;
     }
-    setStatus(`${items.length} collection${items.length > 1 ? 's' : ''} · un clic ajoute un calque Motif.`);
+    setStatus(
+      sharedCollectionsUnavailable
+        ? `${items.length} collection${items.length > 1 ? 's' : ''} · Collections partagées indisponibles.`
+        : `${items.length} collection${items.length > 1 ? 's' : ''} · un clic ajoute un calque Motif.`,
+    );
 
     const byCat = new Map<string, Collection[]>();
     for (const c of items) {
@@ -790,11 +801,20 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       const h = document.createElement('h3');
       h.className = 'calep-group-title';
       h.textContent = group.label;
+      h.dataset.testid = `lib-cat-${group.id}`;
       collectionsList.appendChild(h);
       const row = document.createElement('div');
       row.className = 'library-grid';
       for (const c of cols) renderCollectionItem(c, catalogue, row);
       collectionsList.appendChild(row);
+    }
+
+    if (sharedCollectionsUnavailable && !byCat.has('partagees')) {
+      const note = document.createElement('p');
+      note.className = 'library-empty';
+      note.dataset.testid = 'lib-shared-unavailable';
+      note.textContent = 'Collections partagées indisponibles (hors ligne ou API absente).';
+      collectionsList.appendChild(note);
     }
   }
 

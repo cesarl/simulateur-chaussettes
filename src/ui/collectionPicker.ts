@@ -13,6 +13,7 @@ import { editingCollection, getState, setMotifCollection, update } from '../stat
 import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 
 const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
+  { id: 'partagees', label: 'Collections partagées' },
   { id: 'mes-collections', label: 'Mes collections' },
   { id: 'signature', label: 'Signature' },
   { id: 'classic', label: 'Classiques' },
@@ -21,8 +22,10 @@ const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
 ];
 
 function categoryKey(c: Collection): string {
+  if (c.source === 'partagee') return 'partagees';
   if (c.source === 'locale') return 'mes-collections';
   const cat = (c.categorie ?? '').toLowerCase();
+  if (cat === 'collections partagées' || cat === 'partagees' || cat === 'partagées') return 'partagees';
   if (cat === 'mes-collections' || cat === 'locale' || cat === 'local') return 'mes-collections';
   if (cat === 'signature') return 'signature';
   if (cat === 'classic' || cat === 'classique' || cat === 'classiques') return 'classic';

@@ -25,8 +25,10 @@ import {
 import { yarnColors, isPngCollection } from './core/collections';
 import { previewFallbackPalette } from './core/nuancierDefaults';
 import { runExports, renderPair } from './io/exportPng';
-import { loadCatalogue } from './io/catalogue';
+import { loadCatalogue, fetchSharedCollectionById } from './io/catalogue';
 import { tilesFromCollection, nuancierMap } from './io/collectionTiles';
+import { upsertSharedCollection } from './core/sharedCatalogue';
+import { isSharedCollectionId } from './core/collectionSlug';
 import {
   loadLastProject,
   parseProject,
@@ -1715,8 +1717,46 @@ function scheduleShareHash(): void {
   }, 500);
 }
 
+async function ensureSharedCollectionsInCatalogue(
+  ids: Iterable<string>,
+): Promise<{ missing: string[] }> {
+  const missing: string[] = [];
+  let { catalogue } = getState();
+  if (!catalogue) return { missing: [...ids].filter(isSharedCollectionId) };
+  for (const id of ids) {
+    if (!isSharedCollectionId(id)) continue;
+    if (catalogue.collections.some((c) => c.id === id)) continue;
+    const fetched = await fetchSharedCollectionById(id);
+    if (!fetched) {
+      missing.push(id);
+      continue;
+    }
+    catalogue = upsertSharedCollection(catalogue, fetched);
+    update({ catalogue }, { skipHistory: true, silent: true });
+  }
+  return { missing };
+}
+
+function collectSharedIdsFromDesign(design: SockDesignV2): string[] {
+  const ids = new Set<string>();
+  for (const layer of design.layers) {
+    if (layer.kind === 'motif' && layer.source.kind === 'collection') {
+      ids.add(layer.source.collectionId);
+    }
+    if (layer.kind === 'image' && layer.asset.kind === 'collection') {
+      ids.add(layer.asset.collectionId);
+    }
+  }
+  if (design.decor.otherCollectionId) ids.add(design.decor.otherCollectionId);
+  return [...ids];
+}
+
 async function applyShare(parsed: ParsedShare): Promise<void> {
-  const { catalogue } = getState();
+  const needed = new Set(collectSharedIdsFromDesign(parsed.designV2));
+  if (parsed.activeCollectionId) needed.add(parsed.activeCollectionId);
+  const { missing } = await ensureSharedCollectionsInCatalogue(needed);
+
+  let { catalogue } = getState();
   let design = parsed.designV2;
 
   if (parsed.activeCollectionId && catalogue) {
@@ -1766,14 +1806,65 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
         update({ error: message }, { skipHistory: true, silent: true });
       }
     } else {
+      const id = parsed.activeCollectionId;
+      const msg = isSharedCollectionId(id)
+        ? `Motif « ${id} » introuvable (supprimé ?)`
+        : `Collection « ${id} » absente : modèle par défaut.`;
+      update({ error: msg }, { skipHistory: true, silent: true });
+    }
+  } else if (missing.length > 0) {
+    update(
+      {
+        error: `Motif « ${missing[0]} » introuvable (supprimé ?)`,
+      },
+      { skipHistory: true, silent: true },
+    );
+  }
+
+  // V2 multi-calques : charger les carreaux des collections encore présentes.
+  catalogue = getState().catalogue;
+  if (catalogue) {
+    const allTiles: Awaited<ReturnType<typeof tilesFromCollection>> = [];
+    const seen = new Set<string>();
+    for (const layer of design.layers) {
+      if (layer.kind !== 'motif' || layer.source.kind !== 'collection') continue;
+      const cid = layer.source.collectionId;
+      if (seen.has(cid)) continue;
+      seen.add(cid);
+      const collection = catalogue.collections.find((c) => c.id === cid);
+      if (!collection) continue;
+      try {
+        const tiles = await tilesFromCollection(
+          collection,
+          layer.source.colors,
+          nuancierMap(catalogue),
+        );
+        allTiles.push(...tiles);
+      } catch {
+        // repli : carreaux manquants → grille sans motif pour ce calque
+      }
+    }
+    if (allTiles.length > 0) {
       update(
         {
-          error: `Collection « ${parsed.activeCollectionId} » absente : modèle par défaut.`,
+          design: {
+            name: design.name,
+            dimensions: design.dimensions,
+            zones: design.zones,
+            quantize: design.quantize,
+            decor: design.decor,
+            layers: design.layers,
+          },
+          tiles: allTiles,
+          selectedLayerId: primaryMotifLayer(design.layers)?.id ?? 'fond',
+          error: missing.length > 0 ? `Motif « ${missing[0]} » introuvable (supprimé ?)` : null,
         },
         { skipHistory: true, silent: true },
       );
+      return;
     }
   }
+
   if (parsed.tiles.length > 0) {
     const tiles: Awaited<ReturnType<typeof loadTileFromSvgText>>[] = [];
     for (const shared of parsed.tiles) {
@@ -1821,7 +1912,7 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
         layers: design.layers,
       },
       tiles: [],
-      error: null,
+      error: missing.length > 0 ? `Motif « ${missing[0]} » introuvable (supprimé ?)` : null,
     },
     { skipHistory: true, silent: true },
   );
@@ -1830,11 +1921,19 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
 async function boot(): Promise<void> {
   const bundle = await loadCatalogue();
   if (bundle.missing) {
-    update({ catalogue: null, catalogueMissing: true }, { skipHistory: true });
+    update(
+      {
+        catalogue: null,
+        catalogueMissing: true,
+        sharedCollectionsUnavailable: bundle.sharedUnavailable,
+      },
+      { skipHistory: true },
+    );
   } else {
     const patch: Parameters<typeof update>[0] = {
       catalogue: bundle.catalogue,
       catalogueMissing: false,
+      sharedCollectionsUnavailable: bundle.sharedUnavailable,
     };
     if (bundle.presets && bundle.presets.length > 0) {
       patch.calepPresets = bundle.presets;

@@ -4,7 +4,7 @@
  */
 import { assetKey, type AssetRef, type RasterImage, type EmbeddedAsset } from '../core/composition';
 import { recolorSvg, zoneHex, type Catalogue, type ZoneColors } from '../core/collections';
-import { carreauxUrl } from './collectionTiles';
+import { resolveVariationUrl } from './collectionTiles';
 import { bibliothequeImageUrl, resolveBibliothequeFichier } from './bibliothequeImages';
 import { loadTileFromSvgText, loadTileFromUrl } from './tiles';
 import { base64ToBytes, decodePng } from './pngCodec';
@@ -111,10 +111,10 @@ export async function loadCompositionImage(req: CompositionImageRequest): Promis
       throw new Error(`Variation introuvable : ${ref.collectionId}/${ref.variation}`);
     }
     if (/\.png$/i.test(variation.file)) {
-      const tile = await loadTileFromUrl(carreauxUrl(variation.file));
+      const tile = await loadTileFromUrl(resolveVariationUrl(variation.file));
       img = { width: tile.width, height: tile.height, rgba: tile.rgba };
     } else {
-      const res = await fetch(carreauxUrl(variation.file));
+      const res = await fetch(resolveVariationUrl(variation.file));
       if (!res.ok) throw new Error(`SVG introuvable : ${variation.file}`);
       let svg = await res.text();
       if (req.zoneColors && cat) {

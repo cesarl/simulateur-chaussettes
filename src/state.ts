@@ -215,6 +215,8 @@ export interface AppState {
   calepWarnings: string[];
   catalogue: Catalogue | null;
   catalogueMissing: boolean;
+  /** true si `/api/collections` est inaccessible (hors ligne / vite sans Worker). */
+  sharedCollectionsUnavailable: boolean;
   /** Calque sélectionné (null = aucun). Le Fond peut être sélectionné. */
   selectedLayerId: string | null;
   /** Images embarquées du projet (référencées par les calques Image). */
@@ -231,6 +233,7 @@ export interface StatePatch {
   calepWarnings?: string[];
   catalogue?: Catalogue | null;
   catalogueMissing?: boolean;
+  sharedCollectionsUnavailable?: boolean;
   selectedLayerId?: string | null;
   embeddedAssets?: EmbeddedAsset[];
 }
@@ -268,6 +271,7 @@ function createInitial(): AppState {
     calepWarnings: [...BUILTIN_PRESET_WARNINGS],
     catalogue: null,
     catalogueMissing: false,
+    sharedCollectionsUnavailable: false,
     selectedLayerId: design.layers.find((l) => l.kind === 'motif')?.id ?? 'fond',
     embeddedAssets: [],
   };
@@ -512,6 +516,10 @@ export function update(patch: StatePatch, options: UpdateOptions = {}): void {
     catalogue: patch.catalogue === undefined ? state.catalogue : patch.catalogue,
     catalogueMissing:
       patch.catalogueMissing === undefined ? state.catalogueMissing : patch.catalogueMissing,
+    sharedCollectionsUnavailable:
+      patch.sharedCollectionsUnavailable === undefined
+        ? state.sharedCollectionsUnavailable
+        : patch.sharedCollectionsUnavailable,
     selectedLayerId: sel,
     embeddedAssets: patch.embeddedAssets ?? state.embeddedAssets,
   };

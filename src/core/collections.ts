@@ -47,7 +47,7 @@ export interface Collection {
   calepinageParDefaut: string | null;
   urlCollection: string | null;
   /** Provenance (T43) : absent dans d’anciens catalogues ⇒ traité comme `carreaux`. */
-  source?: 'carreaux' | 'locale';
+  source?: 'carreaux' | 'locale' | 'partagee';
 }
 
 /** Collection locale PNG (pas de zones) → pas de recoloration. */

@@ -4,6 +4,7 @@ import {
   isPngCollection,
   type Catalogue,
   type Collection,
+  type CollectionVariation,
   type NuancierColor,
   type ZoneColors,
 } from '../core/collections';
@@ -21,9 +22,24 @@ export function carreauxUrl(rel: string): string {
   return `${CARREAUX_BASE}${clean}`;
 }
 
-/** Récupère le texte SVG d’une variation (chemin relatif catalogue). */
+/**
+ * URL d’un fichier de variation : chemin catalogue relatif, ou URL API déjà absolue
+ * (`/api/collections/…/fichiers/…?v=`).
+ */
+export function resolveVariationUrl(file: string): string {
+  if (/^https?:\/\//i.test(file) || file.startsWith('/')) return file;
+  return carreauxUrl(file);
+}
+
+/** URL versionnée d’une variation (catalogue local ou collection partagée). */
+export function fichierUrl(collection: Collection, variation: CollectionVariation): string {
+  void collection;
+  return resolveVariationUrl(variation.file);
+}
+
+/** Récupère le texte SVG d’une variation. */
 export async function fetchSvgText(file: string): Promise<string> {
-  const res = await fetch(carreauxUrl(file));
+  const res = await fetch(resolveVariationUrl(file));
   if (!res.ok) throw new Error(`SVG introuvable : ${file}`);
   return res.text();
 }
@@ -37,8 +53,9 @@ export async function tilesFromCollection(
   const hexByZone = zoneHex(colors, nuancier);
   const out: TileAsset[] = [];
   for (const variation of collection.variations) {
+    const url = fichierUrl(collection, variation);
     if (/\.png$/i.test(variation.file)) {
-      const tile = await loadTileFromUrl(carreauxUrl(variation.file));
+      const tile = await loadTileFromUrl(url);
       out.push({ ...tile, id: tile.id, name: `${collection.id}-${variation.name}` });
       continue;
     }
@@ -57,7 +74,7 @@ export async function collectionThumbDataUrl(
 ): Promise<string> {
   const first = collection.variations[0];
   if (!first) return '';
-  if (/\.png$/i.test(first.file)) return carreauxUrl(first.file);
+  if (/\.png$/i.test(first.file)) return fichierUrl(collection, first);
   const raw = await fetchSvgText(first.file);
   const hexByZone = zoneHex(collection.couleursParDefaut, nuancier);
   const svg = isPngCollection(collection) || first.zones.length === 0 ? raw : recolorSvg(raw, hexByZone);
