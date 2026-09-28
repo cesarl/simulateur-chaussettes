@@ -682,7 +682,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
       let name: string;
       if (asset.kind === 'embarquee') {
         name = getState().embeddedAssets.find((a) => a.id === asset.assetId)?.name ?? 'image du projet';
-      } else if (asset.kind === 'bibliotheque') {
+      } else if (asset.kind === 'bibliotheque' || asset.kind === 'partagee') {
         name = asset.imageId;
       } else {
         name = `${asset.collectionId} ${asset.variation}`;

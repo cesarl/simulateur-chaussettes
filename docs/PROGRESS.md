@@ -1029,3 +1029,10 @@ D66–D72 (Playwright API séparé, database_id attente, getPlatformProxy, perf,
 
 ### Blocages
 Aucun pour l’étape A. Étape B (images R2) non commencée ici — A est verte.
+
+## T85 — Images en ligne R2 + D1 — 2026-09-28 11:50
+Statut : terminée
+Fait : migration `0002_images.sql`, `worker/api/images.ts`, R2 binding, AssetRef `partagee` (`s:<id>`), chargement `/api/images/:id`. Tests Worker PNG/SVG/doublon/413/415/401/en-têtes.
+Vérification : typecheck ✅ ; 9 tests Worker ✅ ; assetKey partagee ✅.
+Décisions : aucune nouvelle.
+Reste / risques : T86 branchement UI.

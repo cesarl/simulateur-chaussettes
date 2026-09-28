@@ -168,7 +168,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
 
 ## Étape B — Bibliothèque d'images partagée (facultative)
 
-### [ ] T85 — Images en ligne (R2 + D1)
+### [x] T85 — Images en ligne (R2 + D1)
 
 - `wrangler.jsonc` : `r2_buckets` avec `binding: "IMAGES"`, `bucket_name: "simulateur-chaussettes-images"`.
 - `migrations/0002_images.sql` :
@@ -197,7 +197,7 @@ Tests : `@cloudflare/vitest-pool-workers` avec un D1 local, dans une configurati
 - **Nouveau type d'image** pour les calques : `AssetRef … | { kind: 'partagee'; imageId }` ; `assetKey` → `s:<id>` ; chargement depuis `/api/images/:id`. Ces images passent dans le lien de partage (gabarit et `cleanAsset` dans `layers.ts` : ajout d'un cas, sans changer les autres).
 
 **Critères**
-- [ ] Tests Worker :
+- [x] Tests Worker :
   - envoi PNG et SVG ;
   - doublon fusionné ;
   - 413 au-delà de 2 Mo ;

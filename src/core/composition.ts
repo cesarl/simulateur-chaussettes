@@ -14,11 +14,12 @@
 
 export type Hex = string;
 
-/** Référence d'image : collection, embarquée dans le projet, ou bibliothèque publique. */
+/** Référence d'image : collection, embarquée, bibliothèque publique, ou partagée (API). */
 export type AssetRef =
   | { kind: 'collection'; collectionId: string; variation: string } // ex. { 'medina', 'VAR2' }
   | { kind: 'embarquee'; assetId: string }
-  | { kind: 'bibliotheque'; imageId: string };
+  | { kind: 'bibliotheque'; imageId: string }
+  | { kind: 'partagee'; imageId: string };
 
 /** Image embarquée dans le fichier projet (jamais envoyée sur un serveur). */
 export interface EmbeddedAsset {
@@ -60,6 +61,7 @@ export const EMPTY_COMPOSITION: Composition = { background: '#f1e9dc', layers: [
 export function assetKey(ref: AssetRef): string {
   if (ref.kind === 'collection') return `c:${ref.collectionId}/${ref.variation}`;
   if (ref.kind === 'bibliotheque') return `b:${ref.imageId}`;
+  if (ref.kind === 'partagee') return `s:${ref.imageId}`;
   return `e:${ref.assetId}`;
 }
 

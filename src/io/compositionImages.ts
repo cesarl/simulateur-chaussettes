@@ -32,6 +32,7 @@ export function compositionCacheKey(req: CompositionImageRequest): string {
   const side = req.targetSide ?? 512;
   if (req.ref.kind === 'embarquee') return `${key}|e|${side}`;
   if (req.ref.kind === 'bibliotheque') return `${key}|b|${side}`;
+  if (req.ref.kind === 'partagee') return `${key}|s|${side}`;
   return `${key}|${colorsKey(req.zoneColors)}|${side}`;
 }
 
@@ -69,6 +70,9 @@ export async function loadCompositionImage(req: CompositionImageRequest): Promis
     const fichier = await resolveBibliothequeFichier(req.ref.imageId);
     if (!fichier) throw new Error(`Image bibliothèque introuvable : ${req.ref.imageId}`);
     const tile = await loadTileFromUrl(bibliothequeImageUrl(fichier));
+    img = { width: tile.width, height: tile.height, rgba: tile.rgba };
+  } else if (req.ref.kind === 'partagee') {
+    const tile = await loadTileFromUrl(`/api/images/${encodeURIComponent(req.ref.imageId)}`);
     img = { width: tile.width, height: tile.height, rgba: tile.rgba };
   } else {
     const ref = req.ref;

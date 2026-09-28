@@ -970,6 +970,7 @@ function cleanAsset(a: unknown): AssetRef {
   const r = (isObj(a) ? a : {}) as Record<string, J>;
   if (r.kind === 'embarquee') return { kind: 'embarquee', assetId: String(r.assetId ?? '') };
   if (r.kind === 'bibliotheque') return { kind: 'bibliotheque', imageId: String(r.imageId ?? '') };
+  if (r.kind === 'partagee') return { kind: 'partagee', imageId: String(r.imageId ?? '') };
   return { kind: 'collection', collectionId: String(r.collectionId ?? ''), variation: String(r.variation ?? 'VAR1') };
 }
 

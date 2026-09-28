@@ -1,5 +1,6 @@
 import type { Env } from './env';
 import { handleFavoris } from './api/favoris';
+import { handleImages } from './api/images';
 
 /** Point d'entrée Worker : API `/api/*` ; le reste est servi par les assets. */
 
@@ -14,6 +15,10 @@ export default {
 
     if (path === '/api/favoris' || path.startsWith('/api/favoris/')) {
       return handleFavoris(request, env, path);
+    }
+
+    if (path === '/api/images' || path.startsWith('/api/images/')) {
+      return handleImages(request, env, path);
     }
 
     return Response.json({ erreur: 'Route API inconnue.' }, { status: 404 });
