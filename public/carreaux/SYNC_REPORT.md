@@ -1,17 +1,22 @@
 # Rapport de synchronisation carreaux → chaussettes
 
-- Date : 2026-09-27T09:23:56.845Z
-- Source : `configurateur-carreaux-cesar-bazaar+local` (commit f513e1fb8c7c)
-- Mode : local-only
-- Collections : 75 (0 locales)
-- Variations (fichiers copiés) : 189
-- Couleurs du nuancier : 181 (144 validées)
-- Calepinages : 75
-- Recommandations de l'artiste : 96
+- Date : 2026-09-28T08:25:00.317Z
+- Source : `simulateur`
+- Mode : complet
+- Collections : 83 (0 locales)
+- Variations (fichiers copiés) : 209
+- Couleurs du nuancier : 193 (0 validées)
+- Calepinages : 78
+- Recommandations de l'artiste : 113
 
-## Avertissements (0)
+## Avertissements (6)
 
-Aucun.
+- secret-garden : URL de recommandation mal formée (deux adresses collées ?) : https://https://www.cesarbazaar.fr/boutique-carreaux-de-ciment/p/simulateur-carreaux-cimen…
+- secret-garden : recommandation zone-3=GN019WWW.CESARBAZAAR.FR/BOUTIQUE-CARREAUX-DE-CIMENT/P/SIMULATEUR-CARREAUX-CIMENT?DEV inconnue du nuancier (ignorée)
+- classique21 : calepinage « rosace revert 2 » inconnu de calepinages.json
+- assets/svg/OMG-VAR1.svg : n'appartient à aucune collection (non copié)
+- assets/svg/OMG-VAR2.svg : n'appartient à aucune collection (non copié)
+- assets/svg/OMG-VAR3.svg : n'appartient à aucune collection (non copié)
 
 ## Bibliothèque d’images
 
