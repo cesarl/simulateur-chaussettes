@@ -45,7 +45,7 @@ Interface faite **avec le kit de V11**, dans le même style ; pas de nouvelle d�
 
 ---
 
-### [ ] T100 — Stockage en ligne des collections
+### [x] T100 — Stockage en ligne des collections
 
 - `migrations/0003_collections.sql` :
   ```sql
@@ -85,7 +85,7 @@ Interface faite **avec le kit de V11**, dans le même style ; pas de nouvelle d�
   - le JSON des données fait au plus 64 Ko.
 
 **Critères**
-- [ ] Tests Worker :
+- [x] Tests Worker :
   - créer (3 SVG), lire, modifier (remplacer VAR2, changer les couleurs), supprimer, restaurer ;
   - 401 sans mot de passe, 413 et 415 pour un fichier refusé ;
   - un SVG avec `<script>` ou `onload` ressort nettoyé ;

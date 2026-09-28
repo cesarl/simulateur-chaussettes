@@ -119,5 +119,8 @@ Réglages d’**aperçu du talon** (V3) : `zones.heelHeightMm` / `heelDepthMm` /
 ### Captures 3D
 Rendu hors écran (`WebGLRenderTarget` ou renderer dédié) à la taille demandée, caméra placée selon `render/views.ts`, fond uni ou transparent, puis `toBlob`. Le cadrage est automatique (boîte englobante) pour que la chaussette remplisse ~85 % de l'image.
 
+### Collections partagées (V12)
+Stockage en ligne (D1 `collections` + R2 `collections/<id>/…`) via `/api/collections` (même Worker et mot de passe que les favoris). Identifiants `p-…`. Les SVG sont nettoyés (`sanitizeSvg`) avant R2. Le simulateur les fusionne au catalogue avec `source: 'partagee'` (T101+).
+
 ### Crochet de test
 `window.__SIM__` expose l'état utile aux tests e2e (prêt, dimensions de la grille, palette, dernière durée de recalcul, alertes) et quelques actions (`loadFixture(nom)`, `setDesign(partiel)`). Il n'est pas documenté pour l'utilisateur.

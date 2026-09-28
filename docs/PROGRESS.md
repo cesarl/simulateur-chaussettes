@@ -1207,3 +1207,10 @@ Décisions : D80
 
 ### Blocages
 - aucun ; CI GitHub peut rester rouge facturation ≠ juge local
+
+## T100 — Stockage en ligne des collections — 2026-09-28 17:35
+Statut : terminée
+Fait : migration `0003_collections.sql` ; `sanitizeSvg` + `collectionSlug` purs ; API Worker `/api/collections` (CRUD corbeille, fichiers R2, vignette, multipart) ; tests unitaires sanitize/slug + 5 tests Worker.
+Vérification : `test:unit` sanitize ✅ ; `test:worker` collections-api ✅ (créer 3 SVG, patch VAR2+couleurs, 401/413/415, SVG nettoyé, ids `p-vagues` / `p-vagues-2`) ; typecheck ✅.
+Décisions : D81
+Reste / risques : fusion catalogue + atelier UI en T101–T104 ; César doit lancer `npm run db:migrate:remote` en fin V12.

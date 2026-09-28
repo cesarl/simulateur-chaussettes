@@ -488,3 +488,9 @@ Choix : C — module `src/core/nuancierDefaults.ts` :
 - joint : BK010 `#cfcec9`
 Intouchables : `v1ShareDefaults.json`, `DEFAULT_FOND_COLOR` (`#f1e9dc` pour gabarits/liens), `PATTERN_BACKGROUND` / `EMPTY_STITCH_COLOR` / repli calepinage `#f4f1ea`/`#d9d4cc` (empreintes golden T41), chrome UI V11 (`--bg`/`--ink`/`--accent`).
 Conséquence : `defaultDesign()` diverge volontairement des défauts de fusion `#p=` (déjà autorisé depuis D47/commentaire layers) ; e2e dessin Achille attend BK001.
+
+## D81 — Collections partagées : D1 + R2, SVG nettoyé, id p- (T100)
+Contexte : motifs utilisateur en ligne, réutilisables comme le catalogue, sans changer `#p=2.`.
+Options : A) table D1 seule (BLOB fichiers) ; B) D1 métadonnées + R2 fichiers (comme images V10) ; C) Worker séparé.
+Choix : B — table `collections` (migration 0003), fichiers sous `collections/<id>/<VARn>-<empreinte>.svg|png` dans le bucket R2 existant (`IMAGES`), sanitize SVG pur (`src/core/sanitizeSvg.ts`) partagé page/Worker, ids `p-<slug>` avec suffixe si collision. Multipart (champ `json` + fichiers VAR*). GET par id lit aussi la corbeille (favoris).
+Conséquence : `npm run db:migrate:remote` requis en prod ; `source: 'partagee'` côté client en T101 ; wrangler.jsonc inchangé (même D1/R2).

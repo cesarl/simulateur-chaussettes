@@ -1,4 +1,5 @@
 import type { Env } from './env';
+import { handleCollections } from './api/collections';
 import { handleFavoris } from './api/favoris';
 import { handleImages } from './api/images';
 
@@ -19,6 +20,10 @@ export default {
 
     if (path === '/api/images' || path.startsWith('/api/images/')) {
       return handleImages(request, env, path);
+    }
+
+    if (path === '/api/collections' || path.startsWith('/api/collections/')) {
+      return handleCollections(request, env, path);
     }
 
     return Response.json({ erreur: 'Route API inconnue.' }, { status: 404 });
