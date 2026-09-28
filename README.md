@@ -91,6 +91,35 @@ Les images importées (PNG ou SVG) peuvent être envoyées en ligne et réutilis
 - **Limites** : 2 Mo maximum ; PNG (signature vérifiée) ou SVG (commence par `<svg` ou `<?xml`). JPEG et faux PNG sont refusés. Un même fichier (empreinte SHA-256) n’est stocké qu’une fois.
 - Les **carreaux PNG importés d’un Motif** ne passent pas dans le favori en V10 : message clair, il faut une collection ou le fichier `.json`.
 
+### Créer un motif (collections partagées — V12)
+
+Page dédiée [`motif.html`](motif.html) pour fabriquer ses propres collections en ligne (mêmes usages que le catalogue : calques Motif, liens `#p=2.`, favoris, décor).
+
+**Accès**
+- Bibliothèque › Collections › carte **+ Nouveau motif** ;
+- barre projet › menu **⋯** › Créer un motif ;
+- URL directe `motif.html` (édition `?id=p-…`, duplication `?dup=p-…`).
+
+**Étapes**
+1. Identité (nom → id `p-…`, format 20×20 / 15×15 / 10×10, description).
+2. Variations : déposer N fichiers SVG ou PNG (VAR1, VAR2…) ; zones détectées comme dans l’admin.
+3. Couleurs par zone (nuancier Validé) + jusqu’à 3 palettes conseillées.
+4. Calepinage par défaut (+ calepinages proposés).
+5. Enregistrer en ligne (mot de passe commun, même Worker que les favoris).
+
+**Limites** : 1 à 16 variations ; 1 Mo max par fichier (SVG ou PNG) ; au plus 8 zones de couleur ; JSON des données ≤ 64 Ko. Les SVG sont nettoyés (pas de script / `on*` / liens externes).
+
+**Après enregistrement** : le motif apparaît dans Bibliothèque › Collections partagées (vignette WebP 480×600, infos, menu Modifier / Dupliquer / Supprimer). Corbeille des motifs dans la même section. Un favori qui cite `p-…` charge la version live des couleurs par défaut.
+
+#### Mise en ligne (César) — migration collections
+Le bucket R2 existe déjà (V10). Il reste à appliquer la table D1 :
+
+```bash
+npm run db:migrate:remote
+```
+
+(migration `migrations/0003_collections.sql`). Puis redéployer le Worker comme d’habitude.
+
 #### Commandes de mise en ligne (César)
 
 À lancer **une seule fois** sur le compte Cloudflare (placeholders — aucun secret dans le dépôt) :

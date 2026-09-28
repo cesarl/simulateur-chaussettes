@@ -55,14 +55,27 @@ test.describe('T103 modifier dupliquer supprimer', () => {
     // Créer un favori via le simulateur (lien valide contenant l'id)
     await page.goto('/?dev');
     await page.waitForFunction(() => window.__SIM__?.ready === true, null, { timeout: 90_000 });
+    await page.getByTestId('layer-card-motif-1').click();
+    await page.getByTestId('tab-calque').click();
     await page.getByTestId('coll-search').fill('Edit Me');
+    await expect(page.getByTestId(`coll-item-${id}`)).toBeVisible({ timeout: 15_000 });
+    const beforeCompute = await page.evaluate(() => window.__SIM__?.computeId ?? 0);
+    const hashBefore = await page.evaluate(() => window.location.hash);
     await page.getByTestId(`coll-item-${id}`).click();
-    await page.waitForFunction((cid) => window.__SIM__?.activeCollectionId === cid, id, {
-      timeout: 30_000,
-    });
-    await page.waitForFunction(() => window.location.hash.startsWith('#p=2.'), null, { timeout: 10_000 });
+    await page.waitForFunction(
+      (args) =>
+        (window.__SIM__?.computeId ?? 0) > args.before && window.__SIM__?.activeCollectionId === args.id,
+      { before: beforeCompute, id },
+      { timeout: 30_000 },
+    );
+    await page.waitForFunction(
+      (prev) => window.location.hash.startsWith('#p=2.') && window.location.hash !== prev,
+      hashBefore,
+      { timeout: 15_000 },
+    );
     await page.getByTestId('panel-copy-link').click();
     const hash = await page.evaluate(() => window.location.hash);
+    expect(hash).toMatch(/^#p=2\./);
     const favRes = await request.post('/api/favoris', {
       headers: { 'Content-Type': 'application/json', 'X-Mot-De-Passe': PASSWORD },
       data: { nom: 'Fav motif', lien: hash.replace(/^#/, '') },
@@ -73,7 +86,7 @@ test.describe('T103 modifier dupliquer supprimer', () => {
     // Modifier la couleur
     await page.goto(`/motif.html?id=${id}`);
     await expect(page.getByTestId('motif-nom')).toHaveValue('Edit Me', { timeout: 30_000 });
-    await expect(page.getByTestId('motif-status')).toContainText(/favori/i);
+    await expect(page.getByTestId('motif-status')).toContainText(/favori/i, { timeout: 15_000 });
     await page.screenshot({ path: 'test-results/visuel-t103-edition-favori.png' });
     const zoneSel = page.getByTestId('motif-zone-color-zone-1');
     await expect(zoneSel).toBeVisible();

@@ -188,7 +188,7 @@ Nouvelle page **`motif.html`** (entrée Vite). On y accède :
 **Critères**
 - [x] Captures : section Collections partagées, fiche d'infos ouverte, corbeille.
 
-### [ ] T105 — Bilan V12
+### [x] T105 — Bilan V12
 
 - README : « Créer un motif » (étapes, limites : 16 variations, 1 Mo par fichier, SVG / PNG, 8 zones).
 - **Commande de mise en ligne pour César** : `npm run db:migrate:remote`. Le stockage R2 existe déjà depuis V10.

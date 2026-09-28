@@ -1246,3 +1246,53 @@ Contrôle visuel (ouvert, décrit honnêtement) :
 - `visuel-t103-menu-modifier.png` : Bibliothèque › Collections partagées, carte Edit Me, menu ⋯ ouvert avec Modifier / Dupliquer / Supprimer (danger) ; carte « + Nouveau motif » à gauche.
 Décisions : D84
 Reste / risques : T104 galerie + vignettes WebP + corbeille UI.
+
+## T104 — Galerie Motifs et finitions — 2026-09-28 18:35
+Statut : terminée
+Fait : vignette WebP 480×600 à l’enregistrement (atelier) ; cartes bibliothèque préfèrent `vignetteUrl` ; infos (format, date, miniatures variations, pastilles) ; Corbeille des motifs + Restaurer ; bonus `admin-publish`.
+Vérification : e2e-api `motif-galerie.spec.ts` ✅.
+Contrôle visuel (ouvert) :
+- `visuel-t104-partagees.png` : section COLLECTIONS PARTAGÉES avec « + Nouveau motif », carte « Galerie V12 » (carré brique = thumb SVG, pas encore de WebP car créée via API sans vignette), bouton Corbeille à droite du titre.
+- `visuel-t104-infos.png` : Infos ouvert — Format 20×20, « Modifié le 28 sept. 2026 », miniature VAR1, pastille couleur ; overlay Ajouter + ⋯.
+- `visuel-t104-corbeille.png` : vue Corbeille des motifs (17 entrées résiduelles des tests locaux + Galerie V12), cartes grises, boutons Restaurer ; « Retour » en primaire.
+Décisions : D85
+Reste / risques : T105 verify + README + migration remote pour César.
+
+## T105 — Bilan V12 — 2026-09-28 18:50
+Statut : terminée
+Fait : README « Créer un motif » (étapes + limites) ; commande `npm run db:migrate:remote` documentée ; `npm run verify` complet vert (85 e2e) ; e2e-api V12 (créer / edit / galerie / partage) verts.
+Décisions à relire : D81–D85.
+
+## Point pour César — V12 (motifs partagés)
+
+### Ce qui marche
+- Atelier [`motif.html`](../motif.html) : N variations SVG/PNG, couleurs/zones, calepinage, preview 2D/3D, enregistrement en ligne (D1 + R2, mot de passe commun).
+- Collections `p-…` fusionnées au catalogue, utilisables comme le reste (liens `#p=2.` inchangé, favoris, décor).
+- Modifier / Dupliquer / Supprimer (corbeille) ; avertissement si le motif est dans des favoris ; « Recharger le motif » dans le calque.
+- Bibliothèque › Collections partagées : + Nouveau motif, infos, Corbeille ; vignette WebP à l’enregistrement depuis l’atelier.
+- Bonus : `admin.html` → « Publier en ligne ».
+
+### Tester en 3 étapes
+1. `npm run db:migrate:local && npm run dev:api` → http://localhost:4173/?dev
+2. Bibliothèque › + Nouveau motif → déposer un SVG → Enregistrer (mdp `essai`) → le motif apparaît en Collections partagées
+3. L’ajouter en Motif → Copier le lien → ouvrir dans un onglet neuf → même chaussette
+
+### Migration à lancer **en ligne** (obligatoire)
+Le bucket R2 existe déjà (V10). Il faut seulement la table D1 `collections` :
+
+```bash
+npm run db:migrate:remote
+```
+
+Puis redéployer le Worker. Sans cette commande, `/api/collections` échouera en production.
+
+### Décisions à relire
+- D81 stockage D1+R2 ids `p-`
+- D82 fusion catalogue
+- D83 atelier + zoneSvgBatch
+- D84 couleurs live palette défaut + count favoris décodé
+- D85 vignette WebP + corbeille UI
+
+### Blocages
+- aucun côté code ; CI GitHub Actions peut rester rouge pour facturation ≠ juge local (`npm run verify` vert).
+- Aperçu 3D de l’atelier encore simplifié (pas le pavage complet comme le simulateur).
