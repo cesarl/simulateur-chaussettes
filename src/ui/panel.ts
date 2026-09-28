@@ -161,7 +161,7 @@ export interface PanelActions extends LayerOptionsDeps {
   openProject: (text: string) => Promise<void>;
   leaveDev: () => void;
   forgetFavoriPassword?: () => void;
-  copyShareLink: () => void | Promise<void>;
+  copyShareLink: () => void | Promise<void | boolean>;
   /** Onglets du panneau : le volet affiché suit l’onglet actif. */
   tabs: OptionsTabsApi;
 }

@@ -83,7 +83,7 @@ Les tailles sont à vérifier à **1440 × 900** et à **1100 × 800**, et pour 
   - un seul menu ouvert à la fois ;
   - l'infobulle apparaît au survol.
 
-### [ ] T91 — Barre du projet (simulateur)
+### [x] T91 — Barre du projet (simulateur)
 
 Hauteur 44 px, un seul rang, groupes séparés par un fin trait vertical :
 
@@ -104,11 +104,11 @@ Hauteur 44 px, un seul rang, groupes séparés par un fin trait vertical :
 - En dessous de 1100 px de large, les libellés disparaissent : icônes seules, avec infobulles.
 
 **Critères**
-- [ ] e2e à la souris :
+- [x] e2e à la souris :
   - Annuler et Rétablir par les icônes, puis par Ctrl+Z / Ctrl+Y ;
   - le bouton « Enregistrer » n'existe plus, « Exporter le projet (.json) » est dans ⋯ et télécharge bien ;
   - les zones de la barre ne se chevauchent pas à 1100 px.
-- [ ] Captures avant / après à 1440 et 1100 px.
+- [x] Captures avant / après à 1440 et 1100 px.
 
 ### [ ] T92 — Panneau d'options, onglets et dock des calques
 

@@ -1089,3 +1089,14 @@ Contrôle visuel :
 Reste imparfait : la démo n’applique pas encore le kit au simulateur (T91+) ; la grille d’icônes est un peu serrée ; pas encore d’animation de toast d’entrée.
 Décisions : D73
 Reste / risques : brancher barre (T91) sans casser les testids.
+
+## T91 — Barre du projet — 2026-09-28 14:45
+Statut : terminée
+Fait : barre 44 px — nom✎, ↶↷, segment 2D/3D, Bibliothèque, Favoris, lien, ★ Favori (principal), menu ⋯ (ouvrir/exporter/galerie/aide). « Enregistrer » retiré. Ctrl+Y. Toast lien.
+Vérification : e2e `project-bar.spec.ts` ✅ ; kit ✅ ; vues-bascule (smoke).
+Contrôle visuel :
+- **Avant** : rangée de boutons texte égaux (Annuler… Enregistrer…), pas de hiérarchie, 2D/3D à droite.
+- **Après 1440** : nom « modele » + crayon ; icônes undo/redo ; segment 2D (actif soft)/3D ; à droite Bibliothèque, Favoris, lien, ★ Favori brique, ⋯. Dense et lisible.
+- **Après 1100** : même structure, groupes sans chevauchement ; libellés encore visibles à 1100 (masqués < 1100).
+Reste imparfait : toast aussi quand le lien est « trop long » ; le panneau garde encore Annuler/Rétablir texte (T92) ; « modele » minuscule peu élégant.
+Décisions : D74

@@ -22,7 +22,7 @@ export function mountViewerBar(
   viewport: HTMLElement,
   options: {
     onView: (view: ViewName) => void;
-    onCopyLink: () => void | Promise<void>;
+    onCopyLink: () => void | Promise<void | boolean>;
     onFlat?: (flat: boolean) => void;
     isFlat?: () => boolean;
   },

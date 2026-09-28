@@ -436,3 +436,9 @@ Contexte : T90 demande un système de design léger (boutons, menu, tooltip, toa
 Options : A) ajouter lucide / tippy / headless-ui ; B) SVG Lucide en ligne + composants DOM maison.
 Choix : B — `src/ui/kit/` ; épaisseur 1,75 ; licence ISC mentionnée dans le README. Variante « discret » = `kit-btn--ghost`. Un seul menu et une seule modale à la fois.
 Conséquence : T91+ branchent la barre, le dock, la galerie et la bibliothèque sur ce kit ; `kit.html` sert de page de démo (entrée Vite `kit`).
+
+## D74 — Barre projet : export/ouvrir dans ⋯, nom = design.name (T91)
+Contexte : retirer « Enregistrer » de la barre tout en gardant l’ouverture/export JSON pour les projets avec PNG embarqués.
+Options : A) garder Ouvrir/Enregistrer visibles ; B) menu ⋯ (ouvrir + exporter + galerie + aide).
+Choix : B — seul ★ Favori reste principal ; Annuler/Rétablir en icônes ; 2D/3D segmenté ; libellés masqués sous 1100 px. Le nom éditable est `design.name` (pas le nom du calque Motif). Ctrl+Y ajoute le rétablir (en plus de Ctrl+Maj+Z).
+Conséquence : `bar-project-save` disparaît ; export panneau (`project-save`) inchangé ; toast « Lien copié » en plus du bandeau.

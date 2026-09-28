@@ -404,7 +404,7 @@ function showSaveProgress(phase: string, message: string): void {
   shareHint.textContent = message;
 }
 
-async function copyShareLink(): Promise<void> {
+async function copyShareLink(): Promise<boolean> {
   const { design, embeddedAssets } = getState();
   const hasEmbedded = design.layers.some((l) => {
     if (l.kind !== 'image' || l.asset.kind !== 'embarquee') return false;
@@ -415,7 +415,7 @@ async function copyShareLink(): Promise<void> {
     showShareHint(
       'Ce projet contient des images importées : envoyez le fichier projet (.json)',
     );
-    return;
+    return false;
   }
   const built = await buildShareUrl();
   try {
@@ -428,11 +428,14 @@ async function copyShareLink(): Promise<void> {
     showShareHint(
       'Les carreaux importés ne sont pas dans le lien : utilisez une collection ou envoyez le projet .json',
     );
+    return false;
   } else if (built.tooLong) {
     showShareHint('Lien long : certaines messageries peuvent le tronquer.');
+    return true;
   } else {
     showShareHint('Lien copié.');
     window.setTimeout(() => showShareHint(null), 2500);
+    return true;
   }
 }
 
@@ -460,19 +463,6 @@ function applyViewVisibility(): void {
   }
 }
 
-mountProjectBar(projectBar, {
-  copyShareLink,
-  openLibrary: () => library.open('collections'),
-  onFavori: () => saveAsFavori(),
-  onToggleView: (which) => {
-    if (which === '2d') view2dVisible = !view2dVisible;
-    else view3dVisible = !view3dVisible;
-    applyViewVisibility();
-  },
-  getViewVisibility: () => ({ view2d: view2dVisible, view3d: view3dVisible }),
-});
-applyViewVisibility();
-
 /** Identifiant du favori ouvert (`?favori=`), hors lien `#p=`. */
 let openFavoriId: string | null = (() => {
   try {
@@ -483,6 +473,50 @@ let openFavoriId: string | null = (() => {
 })();
 let openFavoriName: string | null = null;
 
+async function exportProjectJson(): Promise<void> {
+  const { design, tiles, embeddedAssets } = getState();
+  const json = await serializeProject(design, tiles, {
+    collection: currentCollectionMeta(),
+    assets: embeddedAssets,
+  });
+  const bytes = projectByteLength(json);
+  if (bytes > PROJECT_SIZE_WARN_BYTES) {
+    const mo = (bytes / (1024 * 1024)).toFixed(1);
+    const ok = window.confirm(
+      `Le projet fait ${mo} Mo (seuil conseillé : 20 Mo). Enregistrer quand même ?`,
+    );
+    if (!ok) return;
+  }
+  const blob = new Blob([json], { type: 'application/json' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.href = url;
+  link.download = `${design.name || 'modele'}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+const projectBarApi = mountProjectBar(projectBar, {
+  copyShareLink,
+  openLibrary: () => library.open('collections'),
+  onFavori: () => saveAsFavori(),
+  onToggleView: (which) => {
+    if (which === '2d') view2dVisible = !view2dVisible;
+    else view3dVisible = !view3dVisible;
+    applyViewVisibility();
+  },
+  getViewVisibility: () => ({ view2d: view2dVisible, view3d: view3dVisible }),
+  saveProject: exportProjectJson,
+  openProjectFile: async (text) => {
+    const project = await parseProject(text);
+    await applyParsedProject(project);
+  },
+  getFavoriContext: () => ({ id: openFavoriId, name: openFavoriName }),
+});
+applyViewVisibility();
+
 function setOpenFavori(id: string | null, name: string | null): void {
   openFavoriId = id;
   openFavoriName = name;
@@ -490,6 +524,7 @@ function setOpenFavori(id: string | null, name: string | null): void {
   if (id) url.searchParams.set('favori', id);
   else url.searchParams.delete('favori');
   window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  projectBarApi.sync();
 }
 
 function embeddedImageAssets(): EmbeddedAsset[] {
@@ -1858,28 +1893,7 @@ async function boot(): Promise<void> {
       );
     },
     saveProject: async () => {
-      const { design, tiles, embeddedAssets } = getState();
-      const json = await serializeProject(design, tiles, {
-        collection: currentCollectionMeta(),
-        assets: embeddedAssets,
-      });
-      const bytes = projectByteLength(json);
-      if (bytes > PROJECT_SIZE_WARN_BYTES) {
-        const mo = (bytes / (1024 * 1024)).toFixed(1);
-        const ok = window.confirm(
-          `Le projet fait ${mo} Mo (seuil conseillé : 20 Mo). Enregistrer quand même ?`,
-        );
-        if (!ok) return;
-      }
-      const blob = new Blob([json], { type: 'application/json' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.href = url;
-      link.download = `${design.name || 'modele'}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+      await exportProjectJson();
     },
     openProject: async (text) => {
       const project = await parseProject(text);
@@ -1947,6 +1961,11 @@ async function boot(): Promise<void> {
       event.preventDefault();
       if (event.shiftKey) redo();
       else undo();
+      return;
+    }
+    if (mod && event.key.toLowerCase() === 'y') {
+      event.preventDefault();
+      redo();
       return;
     }
     const key = event.key.toLowerCase();
