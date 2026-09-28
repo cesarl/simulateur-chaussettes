@@ -52,6 +52,20 @@ function closeMenu(): void {
   document.removeEventListener('keydown', onKey, true);
 }
 
+/**
+ * Host du menu : à l’intérieur du `<dialog open>` qui contient l’ancre
+ * (même top-layer que la modale native), sinon `document.body`.
+ */
+function menuHost(anchor: OpenMenuOptions['anchor']): HTMLElement {
+  if (anchor instanceof HTMLElement) {
+    const dlg = anchor.closest('dialog');
+    if (dlg instanceof HTMLDialogElement && dlg.open) return dlg;
+  }
+  const openDlg = document.querySelector('dialog[open]');
+  if (openDlg instanceof HTMLDialogElement) return openDlg;
+  return document.body;
+}
+
 function onDocPointer(event: PointerEvent): void {
   if (!openMenuEl) return;
   const target = event.target;
@@ -182,7 +196,7 @@ export function openMenu(options: OpenMenuOptions): HTMLElement {
     menu.appendChild(btn);
   }
 
-  document.body.appendChild(menu);
+  menuHost(options.anchor).appendChild(menu);
   openMenuEl = menu;
   openTrigger = options.trigger ?? (options.anchor instanceof HTMLElement ? options.anchor : null);
   if (openTrigger) openTrigger.setAttribute('aria-expanded', 'true');

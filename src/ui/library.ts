@@ -31,9 +31,10 @@ import {
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { calepinageForCollection } from './collectionPicker';
-import { openMenu, type MenuEntry } from './kit/menu';
+import { openMenu, closeOpenMenu, type MenuEntry } from './kit/menu';
 import { kitButton } from './kit/button';
 import { disclosure } from './kit/disclosure';
+import { icon } from './kit/icons';
 
 export type LibraryTab = 'collections' | 'images';
 
@@ -74,6 +75,24 @@ function assetPreviewUrl(asset: EmbeddedAsset): string {
   }
   if (asset.data.startsWith('data:')) return asset.data;
   return `data:${asset.mime};base64,${asset.data}`;
+}
+
+/** Champ recherche avec loupe (kit). */
+function makeSearchField(opts: {
+  placeholder: string;
+  testId: string;
+  extraClass?: string;
+}): { root: HTMLElement; input: HTMLInputElement } {
+  const root = document.createElement('div');
+  root.className = 'library-search-field';
+  const ico = icon('search', { size: 16, className: 'library-search-icon' });
+  const input = document.createElement('input');
+  input.type = 'search';
+  input.placeholder = opts.placeholder;
+  input.dataset.testid = opts.testId;
+  if (opts.extraClass) input.className = opts.extraClass;
+  root.append(ico, input);
+  return { root, input };
 }
 
 /** Carreau rasterisé (PNG ou SVG) → image embarquée dans le projet (aucun envoi réseau). */
@@ -119,10 +138,13 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   const spacer = document.createElement('span');
   spacer.className = 'library-spacer';
 
-  const closeBtn = document.createElement('button');
-  closeBtn.type = 'button';
-  closeBtn.dataset.testid = 'lib-close';
-  closeBtn.textContent = 'Fermer';
+  const closeBtn = kitButton({
+    variant: 'ghost',
+    label: 'Fermer',
+    compact: true,
+    testId: 'lib-close',
+    icon: 'close',
+  });
 
   header.append(tabCollections, tabImages, spacer, closeBtn);
 
@@ -135,17 +157,18 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   collectionsPane.className = 'library-pane';
   collectionsPane.dataset.testid = 'lib-pane-collections';
 
-  const search = document.createElement('input');
-  search.type = 'search';
-  search.placeholder = 'Rechercher une collection…';
-  search.dataset.testid = 'lib-search';
-  search.className = 'coll-search';
+  const searchField = makeSearchField({
+    placeholder: 'Rechercher une collection…',
+    testId: 'lib-search',
+    extraClass: 'coll-search',
+  });
+  const search = searchField.input;
 
   const collectionsList = document.createElement('div');
   collectionsList.className = 'library-collections';
   collectionsList.dataset.testid = 'lib-collections';
 
-  collectionsPane.append(search, collectionsList);
+  collectionsPane.append(searchField.root, collectionsList);
 
   // -------------------------------------------------------------- onglet Images
   const imagesPane = document.createElement('div');
@@ -153,36 +176,55 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   imagesPane.dataset.testid = 'lib-pane-images';
 
   const bibSection = document.createElement('section');
-  bibSection.className = 'library-bib';
+  bibSection.className = 'library-section library-bib';
   bibSection.dataset.testid = 'lib-bib-section';
+  const bibHead = document.createElement('div');
+  bibHead.className = 'library-section-head';
   const bibTitle = document.createElement('h3');
   bibTitle.className = 'calep-group-title';
   bibTitle.textContent = 'Bibliothèque';
-  const bibFilter = document.createElement('input');
-  bibFilter.type = 'search';
-  bibFilter.className = 'library-search';
-  bibFilter.placeholder = 'Filtrer la bibliothèque…';
-  bibFilter.dataset.testid = 'lib-bib-filter';
+  const bibCount = document.createElement('span');
+  bibCount.className = 'library-section-count';
+  bibCount.dataset.testid = 'lib-bib-count';
+  bibHead.append(bibTitle, bibCount);
+  const bibFilterField = makeSearchField({
+    placeholder: 'Filtrer la bibliothèque…',
+    testId: 'lib-bib-filter',
+    extraClass: 'library-search',
+  });
+  const bibFilter = bibFilterField.input;
   const bibList = document.createElement('div');
   bibList.className = 'library-grid';
   bibList.dataset.testid = 'lib-bib-list';
-  bibSection.append(bibTitle, bibFilter, bibList);
+  bibSection.append(bibHead, bibFilterField.root, bibList);
 
   const sharedSection = document.createElement('section');
-  sharedSection.className = 'library-shared';
+  sharedSection.className = 'library-section library-shared';
   sharedSection.dataset.testid = 'lib-shared-section';
+  const sharedHead = document.createElement('div');
+  sharedHead.className = 'library-section-head';
   const sharedTitle = document.createElement('h3');
   sharedTitle.className = 'calep-group-title';
   sharedTitle.textContent = 'Bibliothèque partagée';
-  const sharedFilter = document.createElement('input');
-  sharedFilter.type = 'search';
-  sharedFilter.className = 'library-search';
-  sharedFilter.placeholder = 'Filtrer le partagé…';
-  sharedFilter.dataset.testid = 'lib-shared-filter';
-  const sharedUpload = document.createElement('button');
-  sharedUpload.type = 'button';
-  sharedUpload.dataset.testid = 'lib-shared-upload';
-  sharedUpload.textContent = 'Envoyer une image…';
+  const sharedCount = document.createElement('span');
+  sharedCount.className = 'library-section-count';
+  sharedCount.dataset.testid = 'lib-shared-count';
+  sharedHead.append(sharedTitle, sharedCount);
+  const sharedToolbar = document.createElement('div');
+  sharedToolbar.className = 'library-section-toolbar';
+  const sharedFilterField = makeSearchField({
+    placeholder: 'Filtrer le partagé…',
+    testId: 'lib-shared-filter',
+    extraClass: 'library-search',
+  });
+  const sharedFilter = sharedFilterField.input;
+  const sharedUpload = kitButton({
+    variant: 'ghost',
+    label: 'Envoyer une image…',
+    icon: 'upload',
+    compact: true,
+    testId: 'lib-shared-upload',
+  });
   const sharedFile = document.createElement('input');
   sharedFile.type = 'file';
   sharedFile.accept = '.png,.svg,image/png,image/svg+xml';
@@ -191,27 +233,42 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   const sharedStatus = document.createElement('p');
   sharedStatus.className = 'hint';
   sharedStatus.dataset.testid = 'lib-shared-status';
+  sharedStatus.hidden = true;
   const sharedList = document.createElement('div');
   sharedList.className = 'library-grid';
   sharedList.dataset.testid = 'lib-shared-list';
-  sharedSection.append(sharedTitle, sharedFilter, sharedUpload, sharedFile, sharedStatus, sharedList);
+  sharedToolbar.append(sharedFilterField.root, sharedUpload, sharedFile);
+  sharedSection.append(sharedHead, sharedToolbar, sharedStatus, sharedList);
 
+  const projectSection = document.createElement('section');
+  projectSection.className = 'library-section library-project';
+  const projectHead = document.createElement('div');
+  projectHead.className = 'library-section-head';
   const projectTitle = document.createElement('h3');
   projectTitle.className = 'calep-group-title';
   projectTitle.textContent = 'Images du projet';
+  const projectCount = document.createElement('span');
+  projectCount.className = 'library-section-count';
+  projectCount.dataset.testid = 'lib-project-count';
+  projectHead.append(projectTitle, projectCount);
 
   const imagesTools = document.createElement('div');
   imagesTools.className = 'library-tools';
 
-  const exampleBtn = document.createElement('button');
-  exampleBtn.type = 'button';
-  exampleBtn.dataset.testid = 'lib-image-example';
-  exampleBtn.textContent = 'Ajouter l’image d’exemple';
+  const exampleBtn = kitButton({
+    variant: 'ghost',
+    label: 'Ajouter l’image d’exemple',
+    compact: true,
+    testId: 'lib-image-example',
+  });
 
-  const importBtn = document.createElement('button');
-  importBtn.type = 'button';
-  importBtn.dataset.testid = 'lib-image-import';
-  importBtn.textContent = 'Importer PNG / SVG…';
+  const importBtn = kitButton({
+    variant: 'ghost',
+    label: 'Importer PNG / SVG…',
+    icon: 'download',
+    compact: true,
+    testId: 'lib-image-import',
+  });
 
   const importAsMotif = document.createElement('label');
   importAsMotif.className = 'row library-import-motif';
@@ -238,20 +295,15 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   imagesList.className = 'library-grid';
   imagesList.dataset.testid = 'lib-images';
 
-  imagesPane.append(bibSection, sharedSection, projectTitle, imagesTools, imagesDrop, imagesList);
+  projectSection.append(projectHead, imagesTools, imagesDrop, imagesList);
+  imagesPane.append(bibSection, sharedSection, projectSection);
 
-  const variationMenu = document.createElement('div');
-  variationMenu.className = 'library-variation-menu';
-  variationMenu.dataset.testid = 'lib-variation-menu';
-  variationMenu.hidden = true;
-  variationMenu.setAttribute('role', 'menu');
-
-  dialog.append(header, status, collectionsPane, imagesPane, variationMenu);
+  dialog.append(header, status, collectionsPane, imagesPane);
   host.appendChild(dialog);
 
   let activeTab: LibraryTab = 'collections';
   let busy = false;
-  let variationAnchor: HTMLElement | null = null;
+  let openInfoId: string | null = null;
   const thumbs = new Map<string, string>();
 
   function setStatus(message: string): void {
@@ -264,14 +316,9 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   }
 
   function close(): void {
-    closeVariationMenu();
+    closeOpenMenu();
+    openInfoId = null;
     if (dialog.open) dialog.close();
-  }
-
-  function closeVariationMenu(): void {
-    variationMenu.hidden = true;
-    variationAnchor = null;
-    variationMenu.replaceChildren();
   }
 
   async function thumbFor(c: Collection, cat: Catalogue): Promise<string> {
@@ -346,14 +393,17 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   function renderShared(entries: SharedImage[] | null, unavailable: boolean): void {
     sharedList.replaceChildren();
     if (unavailable) {
-      sharedStatus.textContent = 'Bibliothèque partagée indisponible';
+      sharedCount.textContent = '';
+      sharedStatus.hidden = true;
+      sharedStatus.textContent = '';
       const empty = document.createElement('p');
-      empty.className = 'hint';
+      empty.className = 'library-empty';
       empty.textContent = 'Bibliothèque partagée indisponible';
       empty.dataset.testid = 'lib-shared-unavailable';
       sharedList.appendChild(empty);
       return;
     }
+    sharedStatus.hidden = true;
     sharedStatus.textContent = '';
     const list = entries ?? [];
     const q = sharedFilter.value.trim().toLowerCase();
@@ -361,9 +411,10 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       if (!q) return true;
       return `${e.nom} ${e.id}`.toLowerCase().includes(q);
     });
+    sharedCount.textContent = `${filtered.length}`;
     if (filtered.length === 0) {
       const empty = document.createElement('p');
-      empty.className = 'hint';
+      empty.className = 'library-empty';
       empty.textContent = list.length === 0 ? 'Aucune image partagée pour l’instant.' : 'Aucun résultat.';
       sharedList.appendChild(empty);
       return;
@@ -377,38 +428,71 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       button.type = 'button';
       button.className = 'library-item';
       button.dataset.testid = `lib-shared-${entry.id}`;
+      const media = document.createElement('div');
+      media.className = 'library-item-media';
       const img = document.createElement('img');
       img.alt = '';
       img.className = 'coll-thumb';
       img.src = sharedImageUrl(entry.id);
+      media.appendChild(img);
+      const body = document.createElement('div');
+      body.className = 'library-item-body';
       const name = document.createElement('span');
       name.className = 'coll-name';
       name.textContent = entry.nom;
-      button.append(img, name);
+      body.appendChild(name);
+      button.append(media, body);
       button.addEventListener('click', () => addSharedLayer(entry));
 
-      const actions = document.createElement('div');
-      actions.className = 'library-shared-actions';
-      const renameBtn = document.createElement('button');
-      renameBtn.type = 'button';
-      renameBtn.className = 'library-item-more';
-      renameBtn.dataset.testid = `lib-shared-rename-${entry.id}`;
-      renameBtn.textContent = 'Renommer';
-      renameBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        void renameSharedEntry(entry);
+      const more = kitButton({
+        variant: 'icon',
+        icon: 'more',
+        compact: true,
+        testId: `lib-shared-menu-${entry.id}`,
+        ariaLabel: 'Plus d’actions',
       });
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = 'library-item-more';
-      removeBtn.dataset.testid = `lib-shared-remove-${entry.id}`;
-      removeBtn.textContent = 'Retirer';
-      removeBtn.addEventListener('click', (event) => {
+      more.classList.add('library-item-more');
+      more.setAttribute('aria-haspopup', 'menu');
+      more.setAttribute('aria-expanded', 'false');
+      more.addEventListener('click', (event) => {
         event.stopPropagation();
-        void removeSharedEntry(entry);
+        const items: MenuEntry[] = [
+          {
+            id: 'add',
+            label: 'Ajouter comme image',
+            icon: 'plus',
+            onSelect: () => addSharedLayer(entry),
+          },
+          { separator: true },
+          {
+            id: 'rename',
+            label: 'Renommer',
+            icon: 'pencil',
+            testId: `lib-shared-rename-${entry.id}`,
+            onSelect: () => {
+              void renameSharedEntry(entry);
+            },
+          },
+          {
+            id: 'remove',
+            label: 'Retirer',
+            icon: 'trash',
+            danger: true,
+            testId: `lib-shared-remove-${entry.id}`,
+            onSelect: () => {
+              void removeSharedEntry(entry);
+            },
+          },
+        ];
+        openMenu({
+          anchor: more,
+          trigger: more,
+          items,
+          testId: `lib-shared-kit-menu-${entry.id}`,
+        });
       });
-      actions.append(renameBtn, removeBtn);
-      wrap.append(button, actions);
+
+      wrap.append(button, more);
       sharedList.appendChild(wrap);
     }
   }
@@ -439,6 +523,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
         await withSharedPassword(run, 'Mot de passe incorrect');
         return;
       }
+      sharedStatus.hidden = false;
       sharedStatus.textContent = e instanceof Error ? e.message : 'Action impossible.';
     }
   }
@@ -463,6 +548,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   async function uploadSharedFile(file: File): Promise<void> {
     if (busy) return;
     setBusy(true);
+    sharedStatus.hidden = false;
     sharedStatus.textContent = 'Envoi…';
     try {
       await withSharedPassword(async (password) => {
@@ -533,36 +619,20 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     }
   }
 
-  function openVariationMenu(c: Collection, anchor: HTMLElement): void {
-    if (variationAnchor === anchor && !variationMenu.hidden) {
-      closeVariationMenu();
-      return;
-    }
-    variationAnchor = anchor;
-    variationMenu.replaceChildren();
-    const title = document.createElement('p');
-    title.className = 'library-variation-title';
-    title.textContent = 'Ajouter une variation comme image';
-    variationMenu.appendChild(title);
-    for (const variation of c.variations) {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'library-variation-item';
-      item.role = 'menuitem';
-      item.dataset.testid = `lib-add-variation-${c.id}-${variation.name}`;
-      item.textContent = variation.name;
-      item.addEventListener('click', (event) => {
-        event.stopPropagation();
-        addVariationImage(c, variation);
-        closeVariationMenu();
-      });
-      variationMenu.appendChild(item);
-    }
-    variationMenu.hidden = false;
-    const rect = anchor.getBoundingClientRect();
-    const dialogRect = dialog.getBoundingClientRect();
-    variationMenu.style.left = `${Math.min(rect.left - dialogRect.left, dialogRect.width - 220)}px`;
-    variationMenu.style.top = `${rect.bottom - dialogRect.top + 4}px`;
+  function openVariationPicker(c: Collection, anchor: HTMLElement): void {
+    const items: MenuEntry[] = c.variations.map((variation) => ({
+      id: `var-${variation.name}`,
+      label: variation.name,
+      testId: `lib-add-variation-${c.id}-${variation.name}`,
+      onSelect: () => addVariationImage(c, variation),
+    }));
+    if (items.length === 0) return;
+    openMenu({
+      anchor,
+      trigger: anchor,
+      items,
+      testId: 'lib-variation-menu',
+    });
   }
 
   function renderCollectionItem(c: Collection, cat: Catalogue, container: HTMLElement): void {
@@ -574,19 +644,27 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     button.className = 'library-item';
     button.dataset.testid = `lib-collection-${c.id}`;
     button.title = c.nom;
+
+    const media = document.createElement('div');
+    media.className = 'library-item-media';
     const img = document.createElement('img');
     img.alt = '';
     img.className = 'coll-thumb';
     void thumbFor(c, cat).then((src) => {
       if (src) img.src = src;
     });
+    media.appendChild(img);
+
+    const body = document.createElement('div');
+    body.className = 'library-item-body';
     const name = document.createElement('span');
     name.className = 'coll-name';
     name.textContent = c.nom;
     const meta = document.createElement('span');
     meta.className = 'coll-meta';
     meta.textContent = `${c.variations.length} variation${c.variations.length > 1 ? 's' : ''}`;
-    button.append(img, name, meta);
+    body.append(name, meta);
+    button.append(media, body);
     button.addEventListener('click', () => void addCollectionLayer(c, cat));
     button.addEventListener('dblclick', (event) => {
       event.preventDefault();
@@ -605,6 +683,8 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
         void addCollectionLayer(c, cat);
       },
     });
+    hover.appendChild(addBtn);
+
     const more = kitButton({
       variant: 'icon',
       icon: 'more',
@@ -613,6 +693,8 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       ariaLabel: 'Plus d’actions',
     });
     more.classList.add('library-item-more');
+    more.setAttribute('aria-haspopup', 'menu');
+    more.setAttribute('aria-expanded', 'false');
     more.addEventListener('click', (event) => {
       event.stopPropagation();
       const items: MenuEntry[] = [
@@ -628,12 +710,13 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
           id: 'variation',
           label: 'Ajouter une variation comme image',
           icon: 'gallery',
-          onSelect: () => openVariationMenu(c, more),
+          onSelect: () => {
+            queueMicrotask(() => openVariationPicker(c, more));
+          },
         },
       ];
       openMenu({ anchor: more, trigger: more, items, testId: `lib-menu-${c.id}` });
     });
-    hover.append(addBtn, more);
 
     const infoBody = document.createElement('div');
     infoBody.className = 'library-info-panel';
@@ -660,9 +743,21 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       label: 'Infos',
       content: infoBody,
       testId: `lib-info-${c.id}`,
+      open: openInfoId === c.id,
+      onToggle: (open) => {
+        openInfoId = open ? c.id : openInfoId === c.id ? null : openInfoId;
+        if (open) {
+          for (const other of collectionsList.querySelectorAll<HTMLElement>('.kit-disclosure')) {
+            if (other === info) continue;
+            if (!other.classList.contains('kit-disclosure--open')) continue;
+            const trigger = other.querySelector<HTMLButtonElement>('.kit-disclosure__trigger');
+            if (trigger?.getAttribute('aria-expanded') === 'true') trigger.click();
+          }
+        }
+      },
     });
 
-    wrap.append(button, hover, info);
+    wrap.append(button, hover, more, info);
     container.appendChild(wrap);
   }
 
@@ -710,65 +805,120 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       if (!q) return true;
       return `${e.nom} ${e.id} ${e.categorie}`.toLowerCase().includes(q);
     });
+    bibCount.textContent = `${filtered.length}`;
     if (filtered.length === 0) {
       const empty = document.createElement('p');
-      empty.className = 'hint';
+      empty.className = 'library-empty';
       empty.textContent = entries.length === 0 ? 'Aucune image dans la bibliothèque.' : 'Aucun résultat.';
       bibList.appendChild(empty);
       return;
     }
     for (const entry of filtered) {
+      const wrap = document.createElement('div');
+      wrap.className = 'library-item-wrap';
+
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'library-item';
       button.dataset.testid = `lib-bib-${entry.id}`;
+      const media = document.createElement('div');
+      media.className = 'library-item-media';
       const img = document.createElement('img');
       img.alt = '';
       img.className = 'coll-thumb';
       img.src = bibliothequeImageUrl(entry.fichier);
+      media.appendChild(img);
+      const body = document.createElement('div');
+      body.className = 'library-item-body';
       const name = document.createElement('span');
       name.className = 'coll-name';
       name.textContent = entry.nom;
       const cat = document.createElement('span');
       cat.className = 'coll-meta';
       cat.textContent = entry.categorie;
-      button.append(img, name, cat);
+      body.append(name, cat);
+      button.append(media, body);
       button.addEventListener('click', () => addBibliothequeLayer(entry));
-      bibList.appendChild(button);
+
+      const hover = document.createElement('div');
+      hover.className = 'library-item-hover';
+      const addBtn = kitButton({
+        variant: 'primary',
+        label: 'Ajouter',
+        compact: true,
+        testId: `lib-bib-add-${entry.id}`,
+        onClick: (event) => {
+          event.stopPropagation();
+          addBibliothequeLayer(entry);
+        },
+      });
+      hover.appendChild(addBtn);
+
+      wrap.append(button, hover);
+      bibList.appendChild(wrap);
     }
   }
 
   function renderImages(): void {
     const { embeddedAssets } = getState();
     imagesList.replaceChildren();
+    projectCount.textContent = `${embeddedAssets.length}`;
     void loadBibliothequeImages().then((entries) => {
       if (activeTab !== 'images') return;
       renderBibliotheque(entries);
-      const bibCount = entries.length;
+      const bibN = entries.length;
       setStatus(
-        bibCount > 0
-          ? `${bibCount} image${bibCount > 1 ? 's' : ''} en bibliothèque · ${embeddedAssets.length} dans le projet.`
+        bibN > 0
+          ? `${bibN} image${bibN > 1 ? 's' : ''} en bibliothèque · ${embeddedAssets.length} dans le projet.`
           : embeddedAssets.length === 0
             ? 'Aucune image : ajoutez l’exemple ou importez un PNG / SVG.'
             : `${embeddedAssets.length} image${embeddedAssets.length > 1 ? 's' : ''} dans le projet · un clic ajoute un calque Image.`,
       );
     });
     void refreshShared();
+    if (embeddedAssets.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'library-empty';
+      empty.textContent = 'Aucune image dans le projet.';
+      imagesList.appendChild(empty);
+      return;
+    }
     for (const asset of embeddedAssets) {
+      const wrap = document.createElement('div');
+      wrap.className = 'library-item-wrap';
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'library-item';
       button.dataset.testid = `lib-asset-${asset.id}`;
+      const media = document.createElement('div');
+      media.className = 'library-item-media';
       const img = document.createElement('img');
       img.alt = '';
       img.className = 'coll-thumb';
       img.src = assetPreviewUrl(asset);
+      media.appendChild(img);
+      const body = document.createElement('div');
+      body.className = 'library-item-body';
       const name = document.createElement('span');
       name.className = 'coll-name';
       name.textContent = asset.name;
-      button.append(img, name);
+      body.appendChild(name);
+      button.append(media, body);
       button.addEventListener('click', () => addAssetLayer(asset, [...getState().embeddedAssets]));
-      imagesList.appendChild(button);
+      const hover = document.createElement('div');
+      hover.className = 'library-item-hover';
+      const addBtn = kitButton({
+        variant: 'primary',
+        label: 'Ajouter',
+        compact: true,
+        onClick: (event) => {
+          event.stopPropagation();
+          addAssetLayer(asset, [...getState().embeddedAssets]);
+        },
+      });
+      hover.appendChild(addBtn);
+      wrap.append(button, hover);
+      imagesList.appendChild(wrap);
     }
   }
 
@@ -779,7 +929,7 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     tabImages.classList.toggle('active', !onCollections);
     collectionsPane.hidden = !onCollections;
     imagesPane.hidden = onCollections;
-    closeVariationMenu();
+    closeOpenMenu();
     if (onCollections) renderCollections();
     else renderImages();
   }
@@ -787,7 +937,10 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   tabCollections.addEventListener('click', () => showTab('collections'));
   tabImages.addEventListener('click', () => showTab('images'));
   closeBtn.addEventListener('click', () => close());
-  dialog.addEventListener('close', () => closeVariationMenu());
+  dialog.addEventListener('close', () => {
+    closeOpenMenu();
+    openInfoId = null;
+  });
   search.addEventListener('input', () => {
     if (activeTab === 'collections') renderCollections();
   });
@@ -823,13 +976,6 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     imagesDrop.classList.remove('over');
     const files = [...(event.dataTransfer?.files ?? [])];
     if (files.length > 0) void importFiles(files);
-  });
-
-  document.addEventListener('pointerdown', (event) => {
-    if (variationMenu.hidden) return;
-    const target = event.target;
-    if (target instanceof Node && (variationMenu.contains(target) || variationAnchor?.contains(target))) return;
-    closeVariationMenu();
   });
 
   subscribe(() => {

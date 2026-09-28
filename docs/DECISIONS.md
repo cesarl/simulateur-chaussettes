@@ -469,3 +469,9 @@ Contexte : le commit `f73e1ee` (collections boobs/bleuet/cailloux) a resynchroni
 Options : A) laisser le catalogue cassé ; B) resync depuis le configurateur (indisponible ici) ; C) réinjecter les `etat` depuis le dernier catalogue sain (`88b5961`).
 Choix : C — 181 teintes rétrocopient Validé/Test (144 public) ; 12 teintes nouvelles restent `Test`. Critère e2e galerie : 89 vignettes (78 + 11 rapides) au lieu de 86.
 Conséquence : `npm run sync:carreaux` depuis une source sans Etat re-cassera le nuancier ; préférer une source avec Etat=Validé.
+
+## D80 — Bibliothèque modale : overlay cartes + menu dans le dialog (fix UI)
+Contexte : après V11, la modale Bibliothèque restait médiocre — hover qui décale le layout, menus kit appendés sur `body` donc **sous** le `<dialog showModal>` (top-layer), Partagée avec Renommer/Retirer au survol.
+Options : A) Popover API pour remonter le menu dans la top-layer ; B) rattacher le menu au `<dialog open>` ; C) refonte navigation colonne gauche (T94).
+Choix : B (A peignait le menu mais Playwright/hit-test restait sur le dialog) + polish cartes (overlay `pointer-events: none` sauf boutons, grille `minmax(164px)`, sections Images) ; Partagée via ⋯ kit (testids `lib-shared-rename-*` / `lib-shared-remove-*` conservés sur les items). Pas de C (hors scope métier).
+Conséquence : menus au-dessus de la modale ; e2e bibliothèque/kit verts sans changer les testids principaux ; `lib-shared-menu-*` et `lib-bib-add-*` / `lib-bib-count` / `lib-shared-count` / `lib-project-count` ajoutés (stables).

@@ -1165,3 +1165,17 @@ D73 (kit Lucide), D74 (barre), D75 (dock + reset dialog), D76 (galerie), D77 (bi
 
 ### Blocages
 Aucun pour V11. T18 en attente des tailles fabricant. CI GitHub Actions : facturation possible ≠ échec code. Attention : resync depuis une source sans champ Etat (comme f73e1ee) vide à nouveau le nuancier public.
+
+## Fix bibliothèque modale (UI) — 2026-09-28 17:07
+Statut : terminée
+Fait : polissage onglets Collections / Images (cartes carrées, overlay Ajouter+⋯ sans décalage layout, recherches à loupe, sections avec compteurs, menus kit au clic) ; `openMenu` rattaché au `<dialog open>` pour passer au-dessus de la top-layer ; Partagée en ⋯ (Renommer/Retirer) au lieu de boutons hover.
+Vérification : `npm run verify` ✅ (196 unitaires + 9 workers + 84 e2e).
+Contrôle visuel (captures `docs/captures/bibliotheque-modale/` et `/cursor/stores/self/media/bibliotheque-modale/`) :
+- **Avant Collections** : grille 6 cols, titres coupés tôt (« Medina par Bleu C… »), « > Infos » basique ; au survol, Ajouter+⋯ **poussent** le layout et désalignent la rangée.
+- **Avant menu** : clic ⋯ — menu kit invisible / sous la modale (hit-test sur vignette du dialog).
+- **Avant Images** : filtres bruts, « Envoyer… » collé, **double** « Bibliothèque partagée indisponible », drop zone en bas.
+- **Après Collections** : onglets soulignés accent, loupe, cartes bordées ratio 1:1, Infos en disclosure kit ; au survol, Ajouter en overlay bas-gauche + ⋯ coin haut-droit **sans** pousser le contenu.
+- **Après menu** : menu kit (icônes fines) clairement **au-dessus** des cartes voisines ; parent = `DIALOG` ; clic item OK.
+- **Après Images** : sections séparées + compteurs, filtres à loupe, upload kit, une seule ligne d’indisponibilité, carte Logo propre.
+Reste imparfait : titres encore tronqués sur très longs noms ; pas de nav colonne gauche T94 (volontaire, D77/D80) ; drop zone projet un peu basse quand sections vides.
+Décisions : D80
