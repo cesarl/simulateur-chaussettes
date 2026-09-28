@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kit UI — César Bazaar (dev)</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <style>
+      html, body { height: auto; overflow: auto; }
+      .kit-demo {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: var(--space-5) var(--space-4) var(--space-6);
+        display: block !important;
+        height: auto !important;
+        max-height: none !important;
+        width: 100%;
+        overflow: visible !important;
+        grid-template-columns: none !important;
+        grid-template-rows: none !important;
+        grid-template-areas: none !important;
+      }
+      .kit-demo h1 {
+        margin: 0 0 var(--space-2);
+        font-size: 22px;
+        font-weight: 600;
+      }
+      .kit-demo .lead {
+        margin: 0 0 var(--space-5);
+        color: var(--muted);
+        font-size: var(--text-ui);
+      }
+      .kit-demo section {
+        margin-bottom: var(--space-5);
+        padding: var(--space-4);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-1);
+      }
+      .kit-demo h2 {
+        margin: 0 0 var(--space-3);
+        font-size: var(--text-title);
+        font-weight: 600;
+      }
+      .kit-demo-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2);
+      }
+      .kit-demo-icons {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+        gap: var(--space-2);
+      }
+      .kit-demo-icon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: var(--space-2);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .kit-demo-swatches {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+      }
+      .kit-demo-swatch {
+        width: 72px;
+        height: 48px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--line);
+        display: flex;
+        align-items: flex-end;
+        padding: 4px;
+        font-size: 10px;
+        color: var(--ink);
+      }
+      .kit-demo-swatch.dark { color: #fff; }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="kit-demo" data-testid="kit-demo"></div>
+    <script type="module" src="/src/kitPage.ts"></script>
+  </body>
+</html>

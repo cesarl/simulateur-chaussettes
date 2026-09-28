@@ -69,6 +69,7 @@ src/
   ui/                    DOM
     panel.ts             construction du panneau
     controls.ts          petits composants (curseur+champ, sélecteur couleur, liste de carreaux)
+    kit/                 système de design léger V11 (icônes Lucide, bouton, menu, tooltip, toast, dialog, disclosure)
     flatView.ts          vue à plat
   io/
     tiles.ts             import PNG/SVG

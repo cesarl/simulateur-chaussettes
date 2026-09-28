@@ -32,7 +32,7 @@ Les tailles sont à vérifier à **1440 × 900** et à **1100 × 800**, et pour 
 
 ---
 
-### [ ] T90 — Fondations visuelles (système de design léger)
+### [x] T90 — Fondations visuelles (système de design léger)
 
 **Variables** dans `:root` (`src/styles.css`), puis on les utilise partout au lieu des valeurs en dur :
 
@@ -77,8 +77,8 @@ Les tailles sont à vérifier à **1440 × 900** et à **1100 × 800**, et pour 
 - **`dialog.ts`** : fenêtre modale commune, utilisée pour le favori, le mot de passe et le renommage. Titre, contenu, boutons alignés à droite, Échap et Entrée.
 
 **Critères**
-- [ ] Une page de démonstration `kit.html`, en mode dev, montre tous les composants. Capture décrite.
-- [ ] e2e `kit.spec.ts`, à la souris et au clavier :
+- [x] Une page de démonstration `kit.html`, en mode dev, montre tous les composants. Capture décrite.
+- [x] e2e `kit.spec.ts`, à la souris et au clavier :
   - le menu s'ouvre, se ferme avec Échap et au clic dehors ;
   - un seul menu ouvert à la fois ;
   - l'infobulle apparaît au survol.

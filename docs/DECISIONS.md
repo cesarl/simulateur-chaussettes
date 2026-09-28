@@ -430,3 +430,9 @@ Contexte : T62 exige `dragComputeMsAvg < 25`. Sous Chromium headless + SwiftShad
 Options : A) laisser flaky / impossible en CI Windows ; B) seuil 100 ms pour le logiciel WebGL, garder `motif === 0`.
 Choix : B — budget produit idéal 25 ms sur GPU ; seuil de test 100 ms pour SwiftShader.
 Conséquence : `glisser-fluide.spec.ts` assert `< 100` ; invariant motifLayerRgb inchangé.
+
+## D73 — Kit UI maison, tracés Lucide sans dépendance (T90)
+Contexte : T90 demande un système de design léger (boutons, menu, tooltip, toast, dialog, disclosure, ~30 icônes) sans framework ni lib de composants.
+Options : A) ajouter lucide / tippy / headless-ui ; B) SVG Lucide en ligne + composants DOM maison.
+Choix : B — `src/ui/kit/` ; épaisseur 1,75 ; licence ISC mentionnée dans le README. Variante « discret » = `kit-btn--ghost`. Un seul menu et une seule modale à la fois.
+Conséquence : T91+ branchent la barre, le dock, la galerie et la bibliothèque sur ce kit ; `kit.html` sert de page de démo (entrée Vite `kit`).

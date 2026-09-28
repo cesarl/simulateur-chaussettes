@@ -1078,3 +1078,14 @@ D66–D72.
 
 ### Blocages
 Aucun. Les carreaux PNG d'un Motif ne passent pas dans un favori (collection ou fichier .json).
+
+## T90 — Fondations visuelles (kit) — 2026-09-28 14:10
+Statut : terminée
+Fait : variables `:root` (surfaces, traits, accent-soft, danger, focus, échelle 4–32, rayons 6/10, ombres, texte tabular) ; `src/ui/kit/` (icons, button, tooltip 400 ms, menu unique, disclosure, toast, dialog) ; `kit.html` + e2e `kit.spec.ts`.
+Vérification : typecheck ✅ ; e2e kit ✅ (menu Échap / dehors / un seul ouvert ; tooltip Annuler · Ctrl+Z ; toast ; dialog).
+Contrôle visuel :
+- **Avant** `visuel-t90-avant-simulateur-1440.png` / `1100` : barre projet avec boutons texte égaux (Annuler, Rétablir, Copier le lien, ★ Favori, Ouvrir, Enregistrer, Bibliothèque, Favoris, 2D, 3D) ; panneau et dock densés mais sans hiérarchie ; icônes dock déjà présentes mais pas unifiées.
+- **Après** `visuel-t90-kit-apres.png` : page démo empilée — pastilles couleurs (bg → focus), grille d’icônes fines Lucide (~30), boutons principal / discret / icône / danger / désactivé, triggers menu ⋯, disclosure, toast/dialog. Menu ouvert (`visuel-t90-kit-menu.png`) : Ouvrir / Renommer F2 / Supprimer rouge + ombre pop. Tooltip (`visuel-t90-kit-tooltip.png`) : « Annuler · Ctrl+Z » sombre.
+Reste imparfait : la démo n’applique pas encore le kit au simulateur (T91+) ; la grille d’icônes est un peu serrée ; pas encore d’animation de toast d’entrée.
+Décisions : D73
+Reste / risques : brancher barre (T91) sans casser les testids.

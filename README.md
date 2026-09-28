@@ -2,6 +2,8 @@
 
 Outil web local qui transforme des carreaux de ciment (PNG/SVG) en motif jacquard de chaussette : grille de mailles (1 pixel = 1 maille), aperçu 3D tricoté et exports PNG pour le fabricant et l'IA d'image.
 
+Les icônes de l'interface (V11) reprennent les tracés [Lucide](https://lucide.dev) (licence ISC), intégrés en SVG inline dans `src/ui/kit/` — aucune dépendance npm Lucide.
+
 - Ce que fait l'outil : [`docs/CAHIER_DES_CHARGES.md`](docs/CAHIER_DES_CHARGES.md)
 - Comment il est construit : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 - Tâches de développement : [`tasks/TASKS.md`](tasks/TASKS.md) — avancement dans [`docs/PROGRESS.md`](docs/PROGRESS.md)
