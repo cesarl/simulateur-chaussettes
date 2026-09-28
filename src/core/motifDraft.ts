@@ -24,6 +24,8 @@ export type MotifVariationDraft = {
   mime: 'image/svg+xml' | 'image/png';
   /** true si le fichier n’est pas carré (avertissement). */
   notSquare: boolean;
+  /** true si le fichier doit être renvoyé au PATCH (nouveau ou remplacé). */
+  fileDirty?: boolean;
 };
 
 export type MotifRecoDraft = {
@@ -96,6 +98,7 @@ export function variationsFromZoned(
       zones: r.zones,
       mime: 'image/svg+xml',
       notSquare: detectSvgNotSquare(r.original),
+      fileDirty: true,
     });
   }
   for (const dataUrl of pngDataUrls) {
@@ -106,6 +109,7 @@ export function variationsFromZoned(
       zones: [],
       mime: 'image/png',
       notSquare: false,
+      fileDirty: true,
     });
   }
   return out;

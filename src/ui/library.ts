@@ -26,8 +26,10 @@ import {
   renameSharedImage,
   sharedImageUrl,
   uploadSharedImage,
+  storePassword,
   type SharedImage,
 } from '../io/imagesClient';
+import { deleteSharedCollection } from '../io/collectionsClient';
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { calepinageForCollection } from './collectionPicker';
@@ -322,6 +324,33 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     closeOpenMenu();
     openInfoId = null;
     if (dialog.open) dialog.close();
+  }
+
+  async function softDeleteShared(id: string): Promise<void> {
+    const password = await askSharedPassword();
+    if (!password) return;
+    storePassword(password);
+    try {
+      await deleteSharedCollection(id, password);
+      const { catalogue } = getState();
+      if (catalogue) {
+        update({
+          catalogue: {
+            ...catalogue,
+            collections: catalogue.collections.filter((c) => c.id !== id),
+          },
+        });
+      }
+      renderCollections();
+      setStatus(`Motif « ${id} » mis à la corbeille.`);
+    } catch (e) {
+      if (e instanceof FavorisApiError && e.status === 401) {
+        forgetPassword();
+        setStatus('Mot de passe incorrect.');
+        return;
+      }
+      setStatus(e instanceof Error ? e.message : 'Suppression impossible.');
+    }
   }
 
   async function thumbFor(c: Collection, cat: Catalogue): Promise<string> {
@@ -718,6 +747,39 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
           },
         },
       ];
+      if (c.source === 'partagee') {
+        items.push(
+          { separator: true },
+          {
+            id: 'edit',
+            label: 'Modifier',
+            icon: 'pencil',
+            testId: `lib-shared-edit-${c.id}`,
+            onSelect: () => {
+              window.location.href = `./motif.html?id=${encodeURIComponent(c.id)}`;
+            },
+          },
+          {
+            id: 'duplicate',
+            label: 'Dupliquer',
+            icon: 'copy',
+            testId: `lib-shared-dup-${c.id}`,
+            onSelect: () => {
+              window.location.href = `./motif.html?dup=${encodeURIComponent(c.id)}`;
+            },
+          },
+          {
+            id: 'delete',
+            label: 'Supprimer',
+            icon: 'trash',
+            danger: true,
+            testId: `lib-shared-del-${c.id}`,
+            onSelect: () => {
+              void softDeleteShared(c.id);
+            },
+          },
+        );
+      }
       openMenu({ anchor: more, trigger: more, items, testId: `lib-menu-${c.id}` });
     });
 

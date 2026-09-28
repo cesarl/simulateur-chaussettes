@@ -1,6 +1,8 @@
-/** Client API collections partagées (`/api/collections`) — T102. */
+/** Client API collections partagées (`/api/collections`) — T102 / T103. */
 
+import { shareDefaultsFor } from '../core/layers';
 import { FavorisApiError } from './favorisApi';
+import { decodeShare } from './shareLink';
 import { PASSWORD_HEADER } from '../../worker/password';
 
 export type SharedCollectionApi = {
@@ -97,12 +99,25 @@ export async function restoreSharedCollection(id: string, password: string): Pro
   }
 }
 
+/** Le lien favori est compressé (`p=2.…`) : on décode pour retrouver l’id `p-…`. */
+async function favoriLienCitesCollection(lien: string, collectionId: string): Promise<boolean> {
+  if (lien.includes(collectionId)) return true;
+  const hash = lien.startsWith('#') || lien.startsWith('p=') ? (lien.startsWith('#') ? lien : `#${lien}`) : `#${lien}`;
+  const decoded = await decodeShare(hash, shareDefaultsFor);
+  if (!decoded.ok) return false;
+  return JSON.stringify(decoded.design).includes(collectionId);
+}
+
 export async function countFavorisUsingCollection(collectionId: string): Promise<number> {
   try {
     const res = await fetch('/api/favoris');
     if (!res.ok) return 0;
     const body = (await res.json()) as { favoris: Array<{ lien: string }> };
-    return body.favoris.filter((f) => f.lien.includes(collectionId)).length;
+    let n = 0;
+    for (const f of body.favoris) {
+      if (await favoriLienCitesCollection(f.lien, collectionId)) n += 1;
+    }
+    return n;
   } catch {
     return 0;
   }

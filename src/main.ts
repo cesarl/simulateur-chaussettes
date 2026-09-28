@@ -1751,6 +1751,18 @@ function collectSharedIdsFromDesign(design: SockDesignV2): string[] {
   return [...ids];
 }
 
+/** Palette « défaut » d’une collection partagée : couleurs live (favoris / liens restent à jour). */
+function liveSharedDefaultColors(
+  collection: { id: string; couleursParDefaut: Record<string, string> },
+  paletteId: string | null | undefined,
+  fallback: Record<string, string>,
+): Record<string, string> {
+  if (isSharedCollectionId(collection.id) && (paletteId === 'defaut' || paletteId == null)) {
+    return { ...collection.couleursParDefaut };
+  }
+  return { ...fallback };
+}
+
 async function applyShare(parsed: ParsedShare): Promise<void> {
   const needed = new Set(collectSharedIdsFromDesign(parsed.designV2));
   if (parsed.activeCollectionId) needed.add(parsed.activeCollectionId);
@@ -1762,7 +1774,11 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
   if (parsed.activeCollectionId && catalogue) {
     const collection = catalogue.collections.find((c) => c.id === parsed.activeCollectionId);
     if (collection) {
-      const colors = parsed.zoneColors ?? collection.couleursParDefaut;
+      const colors = liveSharedDefaultColors(
+        collection,
+        parsed.paletteOptionId,
+        parsed.zoneColors ?? collection.couleursParDefaut,
+      );
       try {
         const tiles = await tilesFromCollection(collection, colors, nuancierMap(catalogue));
         const motif = primaryMotifLayer(design.layers);
@@ -1834,11 +1850,16 @@ async function applyShare(parsed: ParsedShare): Promise<void> {
       const collection = catalogue.collections.find((c) => c.id === cid);
       if (!collection) continue;
       try {
-        const tiles = await tilesFromCollection(
-          collection,
-          layer.source.colors,
-          nuancierMap(catalogue),
-        );
+        const colors = liveSharedDefaultColors(collection, layer.source.paletteId, layer.source.colors);
+        design = {
+          ...design,
+          layers: design.layers.map((l) =>
+            l.kind === 'motif' && l.source.kind === 'collection' && l.source.collectionId === cid
+              ? { ...l, source: { ...l.source, colors: { ...colors } } }
+              : l,
+          ),
+        };
+        const tiles = await tilesFromCollection(collection, colors, nuancierMap(catalogue));
         allTiles.push(...tiles);
       } catch {
         // repli : carreaux manquants → grille sans motif pour ce calque

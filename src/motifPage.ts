@@ -17,7 +17,8 @@ import {
 import { recolorPreview, type NuancierEntry } from './core/svgZones';
 import { recolorSvg } from './core/collections';
 import { loadTileFromSvgText } from './io/tiles';
-import { createSharedCollection } from './io/collectionsClient';
+import { createSharedCollection, patchSharedCollection, countFavorisUsingCollection } from './io/collectionsClient';
+import { fetchSharedCollectionById } from './io/catalogue';
 import { askSharedPassword } from './io/imagesClient';
 import { FavorisApiError } from './io/favorisApi';
 import { forgetPassword, storePassword } from './io/favorisClient';
@@ -671,6 +672,11 @@ function recoBlock(reco: { nom: string; colors: Record<string, string> }, index:
   return box;
 }
 
+function renderAll(): void {
+  renderForm();
+  renderPreview();
+}
+
 async function saveOnline(): Promise<void> {
   if (!draft.nom.trim()) {
     setStatus('Nom requis.', false);
@@ -699,7 +705,10 @@ async function saveOnline(): Promise<void> {
       donnees,
     }),
   );
+  // En création : tous les fichiers. En édition : seulement ceux marqués nouveaux/remplacés.
   for (const v of draft.variations) {
+    const sendFile = !draft.id || v.fileDirty === true;
+    if (!sendFile) continue;
     if (v.mime === 'image/svg+xml') {
       form.set(v.name, new Blob([v.zoned], { type: 'image/svg+xml' }), `${v.name}.svg`);
     } else {
@@ -709,11 +718,19 @@ async function saveOnline(): Promise<void> {
   }
 
   try {
-    const created = await createSharedCollection(form, password);
-    draft.id = created.id;
+    if (draft.id) {
+      const updated = await patchSharedCollection(draft.id, form, password);
+      for (const v of draft.variations) v.fileDirty = false;
+      setStatus(`Motif « ${updated.id} » mis à jour.`);
+      showToast({ message: `Motif mis à jour : ${updated.id}` });
+    } else {
+      const created = await createSharedCollection(form, password);
+      draft.id = created.id;
+      for (const v of draft.variations) v.fileDirty = false;
+      setStatus(`Motif « ${created.id} » enregistré.`);
+      showToast({ message: `Motif enregistré : ${created.id}` });
+    }
     clearDraftStorage();
-    setStatus(`Motif « ${created.id} » enregistré.`);
-    showToast({ message: `Motif enregistré : ${created.id}` });
   } catch (e) {
     if (e instanceof FavorisApiError && e.status === 401) {
       forgetPassword();
@@ -724,9 +741,69 @@ async function saveOnline(): Promise<void> {
   }
 }
 
-function renderAll(): void {
-  renderForm();
-  renderPreview();
+async function loadExisting(id: string, asCopy: boolean): Promise<void> {
+  setStatus('Chargement du motif…');
+  const col = await fetchSharedCollectionById(id);
+  if (!col) {
+    setStatus(`Motif « ${id} » introuvable.`, false);
+    return;
+  }
+  draft = emptyMotifDraft();
+  draft.id = asCopy ? null : col.id;
+  draft.nom = asCopy ? `${col.nom} (copie)` : col.nom;
+  draft.description = col.description;
+  draft.format = (['20x20', '15x15', '10x10'].includes(col.format) ? col.format : '20x20') as MotifFormat;
+  draft.couleursParDefaut = { ...col.couleursParDefaut };
+  draft.recommandations = (col.recommandations ?? []).map((r) => ({ nom: '', colors: { ...r } }));
+  draft.calepinages = [...(col.calepinages ?? [])];
+  draft.calepinageParDefaut = col.calepinageParDefaut;
+  draft.variations = [];
+  for (const v of col.variations) {
+    try {
+      const res = await fetch(v.file.startsWith('/') || /^https?:/i.test(v.file) ? v.file : v.file);
+      if (!res.ok) continue;
+      if (/\.png$/i.test(v.file)) {
+        const blob = await res.blob();
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(String(r.result));
+          r.onerror = () => reject(r.error);
+          r.readAsDataURL(blob);
+        });
+        draft.variations.push({
+          name: v.name,
+          original: dataUrl,
+          zoned: dataUrl,
+          zones: [],
+          mime: 'image/png',
+          notSquare: false,
+          fileDirty: asCopy,
+        });
+      } else {
+        const text = await res.text();
+        const zoned = zoneSvgBatch([text], nuancier);
+        const vars = variationsFromZoned(zoned);
+        const one = vars[0]!;
+        one.name = v.name;
+        one.fileDirty = asCopy;
+        draft.variations.push(one);
+      }
+    } catch {
+      /* ignore variation */
+    }
+  }
+  if (!asCopy && draft.id) {
+    const n = await countFavorisUsingCollection(draft.id);
+    if (n > 0) {
+      setStatus(`Ce motif est utilisé dans ${n} favori${n > 1 ? 's' : ''} ; ils afficheront la nouvelle version.`);
+    } else {
+      setStatus(`Édition de « ${draft.id} ».`);
+    }
+  } else {
+    setStatus(asCopy ? 'Copie prête à enregistrer (nouvel identifiant).' : '');
+  }
+  await rebuildPreviewTiles();
+  renderAll();
 }
 
 function offerDraftRestore(): void {
@@ -762,8 +839,21 @@ function offerDraftRestore(): void {
 
 async function boot(): Promise<void> {
   await loadNuancier();
-  renderAll();
-  offerDraftRestore();
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('id');
+  const dupId = params.get('dup');
+  if (editId) {
+    await loadExisting(editId, false);
+  } else if (dupId) {
+    await loadExisting(dupId, true);
+  } else {
+    renderAll();
+    offerDraftRestore();
+  }
+  const title = document.querySelector('[data-testid="motif-title"]');
+  if (title && (editId || dupId)) {
+    title.textContent = editId ? 'Modifier un motif' : 'Dupliquer un motif';
+  }
 }
 
 void boot();

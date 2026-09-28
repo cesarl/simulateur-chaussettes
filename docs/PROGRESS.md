@@ -1235,3 +1235,14 @@ Contrôle visuel (ouvert) :
 - `visuel-t102-bibliotheque.png` : après enregistrement, Motif « Atelier Test » appliqué (2D tige rouge, 3D rouge/noir) ; Collection partagée visible.
 Décisions : D83
 Reste / risques : preview 3D motif encore grossière ; T103 modifier/dupliquer/supprimer.
+
+## T103 — Modifier, dupliquer, supprimer — 2026-09-28 18:30
+Statut : terminée
+Fait : menu Bibliothèque Modifier/Dupliquer/Supprimer ; `motif.html?id=` / `?dup=` ; PATCH sans renvoyer les fichiers inchangés (`fileDirty`) ; avertissement favoris (décodage `#p=2.…`) ; bouton « Recharger le motif » ; palette `defaut` des `p-…` recharge les couleurs live à l’ouverture d’un favori/lien.
+Vérification : e2e-api `motif-edit.spec.ts` ✅.
+Contrôle visuel (ouvert, décrit honnêtement) :
+- `visuel-t103-edition-favori.png` : atelier « Modifier un motif », nom Edit Me / id `p-edit-me`, VAR1 1 zone, couleur Brun brique RD060 ; bandeau noir « Ce motif est utilisé dans 1 favori ; ils afficheront la nouvelle version. » ; preview 2D rouge brique à droite (aperçu 3D hors cadre sur cette capture).
+- `visuel-t103-favori-nouvelle-couleur.png` : après PATCH BL016, ouverture du favori — tige 2D/3D bleu marine (`#303446`), talon rouge, pointe noire ; source « collection Edit Me » ; bouton « Recharger le motif » visible ; barre ★ « Mettre à jour ».
+- `visuel-t103-menu-modifier.png` : Bibliothèque › Collections partagées, carte Edit Me, menu ⋯ ouvert avec Modifier / Dupliquer / Supprimer (danger) ; carte « + Nouveau motif » à gauche.
+Décisions : D84
+Reste / risques : T104 galerie + vignettes WebP + corbeille UI.

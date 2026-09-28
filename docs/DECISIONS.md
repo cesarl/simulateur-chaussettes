@@ -506,3 +506,9 @@ Contexte : page dédiée pour créer des collections partagées, sans dupliquer 
 Options : A) étendre admin.html ; B) `motif.html` + extraction `zoneSvgBatch` / `motifDraft` ; C) iframe admin.
 Choix : B — entrée Vite `motif` ; kit V11 (disclosure, dialog, toast) ; calepinage via boutons rapides (grille/damier/…) faute de brancher `calepGallery` (couplé au state simulateur) ; aperçu 2D canvas 4×4 + 3D `createSockObject` ; brouillon `localStorage` ; mot de passe via `askSharedPassword` V10.
 Conséquence : admin.ts utilise `zoneSvgBatch` ; Bibliothèque montre « + Nouveau motif » même sans collections partagées ; menu ⋯ projet → Créer un motif.
+
+## D84 — Favoris / liens : couleurs live pour palette défaut des p-… (T103)
+Contexte : le lien `#p=2.` est compressé — `lien.includes(collectionId)` ne compte pas les favoris ; les couleurs de zone sont aussi figées dans le lien, donc un PATCH des couleurs par défaut ne se voyait pas à la réouverture.
+Options : A) laisser les couleurs du lien ; B) décoder le share pour compter + pour `paletteId === 'defaut'|null` d’un id `p-…`, recharger `couleursParDefaut` live ; C) changer le format de lien.
+Choix : B — `countFavorisUsingCollection` décode via `decodeShare` ; `liveSharedDefaultColors` dans `applyShare` ; bouton « Recharger le motif » (`motif-reload-shared`) refetch GET `/api/collections/:id` ; PATCH n’envoie que les variations `fileDirty`.
+Conséquence : les favoris sur palette défaut affichent la nouvelle version ; les palettes custom / codes hors défaut restent ceux du lien. Format `#p=2.` inchangé.

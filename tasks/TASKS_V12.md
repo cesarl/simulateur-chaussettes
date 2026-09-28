@@ -159,7 +159,7 @@ Nouvelle page **`motif.html`** (entrée Vite). On y accède :
 - [x] e2e : brouillon → recharger la page → « Reprendre le brouillon » retrouve les 3 variations.
 - [x] Captures de chaque étape et de la prévisualisation (2D, 3D, décor), décrites.
 
-### [ ] T103 — Modifier, dupliquer, supprimer
+### [x] T103 — Modifier, dupliquer, supprimer
 
 - **Bibliothèque** (et galerie des motifs, T104) : sur une collection partagée, le menu « ⋯ » propose Modifier, Dupliquer, Supprimer (corbeille).
 - **Modifier** ouvre `motif.html?id=p-…` pré-rempli.
@@ -173,7 +173,7 @@ Nouvelle page **`motif.html`** (entrée Vite). On y accède :
 - **Supprimer** : corbeille (restaurable) ; les favoris qui l'utilisent restent lisibles (T101).
 
 **Critères**
-- [ ] e2e : modifier la couleur par défaut d'un motif utilisé dans un favori → ouvrir le favori → nouvelle couleur ; dupliquer → deux motifs distincts ; supprimer puis restaurer.
+- [x] e2e : modifier la couleur par défaut d'un motif utilisé dans un favori → ouvrir le favori → nouvelle couleur ; dupliquer → deux motifs distincts ; supprimer puis restaurer.
 
 ### [ ] T104 — Galerie « Motifs » et finitions
 

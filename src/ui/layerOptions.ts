@@ -15,6 +15,10 @@ import { motifRows } from '../core/layout';
 import { decodeDessinCells, setMotifBand, type DessinLayer, type StackLayer } from '../core/layers';
 import type { Hex } from '../core/types';
 import { NUANCIER_DEFAULTS } from '../core/nuancierDefaults';
+import { isSharedCollectionId } from '../core/collectionSlug';
+import { upsertSharedCollection } from '../core/sharedCatalogue';
+import { fetchSharedCollectionById } from '../io/catalogue';
+import { nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 import { loadTileFromFile } from '../io/tiles';
 import {
   clearDessinLayer,
@@ -26,6 +30,7 @@ import {
   setFondColor,
   setImageRecolor,
   setMotifBounds,
+  setMotifCollection,
   setMotifImportes,
   toggleLayerTransparentColor,
   update,
@@ -34,6 +39,7 @@ import { createColorRow } from './colorRow';
 import { details, makeCheckbox, makeColor, makeSliderNumber } from './controls';
 import { embeddedAssetFromTile } from './library';
 import { yarnLegendLabels } from './palettePanel';
+import { isPngCollection } from '../core/collections';
 
 export interface LayerOptionsDeps {
   /** Couleurs principales du calque (une pastille par couleur). */
@@ -126,7 +132,49 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     const layer = selected();
     if (layer?.kind === 'motif') setMotifImportes(undefined, layer.id);
   });
-  source.append(sourceText, useImported);
+  const reloadMotif = document.createElement('button');
+  reloadMotif.type = 'button';
+  reloadMotif.dataset.testid = 'motif-reload-shared';
+  reloadMotif.textContent = 'Recharger le motif';
+  reloadMotif.hidden = true;
+  reloadMotif.addEventListener('click', () => {
+    void (async () => {
+      const layer = selected();
+      if (!layer || layer.kind !== 'motif' || layer.source.kind !== 'collection') return;
+      const id = layer.source.collectionId;
+      if (!isSharedCollectionId(id)) return;
+      reloadMotif.disabled = true;
+      try {
+        const fetched = await fetchSharedCollectionById(id);
+        if (!fetched) {
+          update({ error: `Motif « ${id} » introuvable (supprimé ?)` }, { skipHistory: true });
+          return;
+        }
+        const { catalogue, tiles: existing } = getState();
+        if (!catalogue) return;
+        const nextCat = upsertSharedCollection(catalogue, fetched);
+        const paletteId = layer.source.paletteId;
+        const colors =
+          paletteId === 'defaut' || paletteId == null
+            ? { ...fetched.couleursParDefaut }
+            : { ...layer.source.colors };
+        const png = isPngCollection(fetched);
+        const newTiles = await tilesFromCollection(fetched, png ? {} : colors, nuancierMap(nextCat));
+        const prefix = `${id.toLowerCase()}-`;
+        const others = existing.filter((t) => !t.name.toLowerCase().startsWith(prefix));
+        setMotifCollection(id, png ? {} : colors, paletteId ?? 'defaut', layer.id);
+        update({ catalogue: nextCat, tiles: [...others, ...newTiles], error: null });
+      } catch (e) {
+        update(
+          { error: e instanceof Error ? e.message : 'Rechargement impossible.' },
+          { skipHistory: true },
+        );
+      } finally {
+        reloadMotif.disabled = false;
+      }
+    })();
+  });
+  source.append(sourceText, useImported, reloadMotif);
 
   // ------------------------------------------------------------------ Fond
   const fond = details('Couleur du fond', 'section-fond');
@@ -676,6 +724,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
     if (layer.kind === 'fond') {
       sourceText.textContent = 'Une seule couleur, sous tous les autres calques.';
       useImported.hidden = true;
+      reloadMotif.hidden = true;
       return;
     }
     if (layer.kind === 'image') {
@@ -690,12 +739,14 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
       }
       sourceText.textContent = `Image : ${name}`;
       useImported.hidden = true;
+      reloadMotif.hidden = true;
       return;
     }
     if (layer.kind === 'dessin') {
       // V9 : options du calque Dessin → T72
       sourceText.textContent = 'Dessin maille par maille.';
       useImported.hidden = true;
+      reloadMotif.hidden = true;
       return;
     }
     const { tiles, catalogue } = getState();
@@ -704,11 +755,13 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
       const nom = catalogue?.collections.find((c) => c.id === id)?.nom ?? id;
       sourceText.textContent = `Source : collection ${nom}`;
       useImported.hidden = tiles.length === 0;
+      reloadMotif.hidden = !isSharedCollectionId(id);
       return;
     }
     const count = layer.source.tileIds.length || tiles.length;
     sourceText.textContent = `Source : ${count} carreau${count > 1 ? 'x' : ''} importé${count > 1 ? 's' : ''}`;
     useImported.hidden = true;
+    reloadMotif.hidden = true;
   }
 
   function sync(): void {
@@ -717,6 +770,7 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
       title.textContent = 'Aucun calque sélectionné';
       sourceText.textContent = 'Choisissez un calque dans la liste du bas.';
       useImported.hidden = true;
+      reloadMotif.hidden = true;
       resetLayer.hidden = true;
       fond.hidden = true;
       extent.hidden = true;
