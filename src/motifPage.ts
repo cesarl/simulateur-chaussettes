@@ -18,6 +18,7 @@ import { recolorPreview, type NuancierEntry } from './core/svgZones';
 import { recolorSvg } from './core/collections';
 import { loadTileFromSvgText } from './io/tiles';
 import { createSharedCollection, patchSharedCollection, countFavorisUsingCollection } from './io/collectionsClient';
+import { encodeFavoriVignette, encodeSolidFavoriVignette } from './io/favoriVignette';
 import { fetchSharedCollectionById } from './io/catalogue';
 import { askSharedPassword } from './io/imagesClient';
 import { FavorisApiError } from './io/favorisApi';
@@ -677,6 +678,32 @@ function renderAll(): void {
   renderPreview();
 }
 
+async function captureMotifVignetteBlob(): Promise<Blob | null> {
+  try {
+    await rebuildPreviewTiles();
+    renderPreview();
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    if (sceneHandle) {
+      sceneHandle.renderer.render(sceneHandle.scene, sceneHandle.camera);
+      const dataUrl = sceneHandle.renderer.domElement.toDataURL('image/png');
+      const b64 = await encodeFavoriVignette(dataUrl);
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new Blob([bytes], { type: 'image/webp' });
+    }
+    const solid = await encodeSolidFavoriVignette('#ecebe8');
+    const bin = atob(solid);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: 'image/webp' });
+  } catch {
+    return null;
+  }
+}
+
 async function saveOnline(): Promise<void> {
   if (!draft.nom.trim()) {
     setStatus('Nom requis.', false);
@@ -693,6 +720,9 @@ async function saveOnline(): Promise<void> {
   const password = await askSharedPassword();
   if (!password) return;
   storePassword(password);
+
+  setStatus('Préparation de la vignette…');
+  const vignetteBlob = await captureMotifVignetteBlob();
 
   const donnees = draftToApiDonnees(draft);
   const form = new FormData();
@@ -715,6 +745,9 @@ async function saveOnline(): Promise<void> {
       const res = await fetch(v.original);
       form.set(v.name, await res.blob(), `${v.name}.png`);
     }
+  }
+  if (vignetteBlob) {
+    form.set('vignette', vignetteBlob, 'vignette.webp');
   }
 
   try {

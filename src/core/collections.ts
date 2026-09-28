@@ -48,6 +48,10 @@ export interface Collection {
   urlCollection: string | null;
   /** Provenance (T43) : absent dans d’anciens catalogues ⇒ traité comme `carreaux`. */
   source?: 'carreaux' | 'locale' | 'partagee';
+  /** Vignette WebP (collections partagées T104). */
+  vignetteUrl?: string | null;
+  /** Timestamp de dernière modification (collections partagées). */
+  modifieLe?: number;
 }
 
 /** Collection locale PNG (pas de zones) → pas de recoloration. */

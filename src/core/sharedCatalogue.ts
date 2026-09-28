@@ -51,6 +51,8 @@ export function collectionFromSharedPayload(raw: SharedCollectionPayload): Colle
     calepinageParDefaut: raw.calepinageParDefaut ?? null,
     urlCollection: null,
     source: 'partagee',
+    vignetteUrl: raw.vignette_url ?? null,
+    modifieLe: raw.modifie_le,
   };
 }
 

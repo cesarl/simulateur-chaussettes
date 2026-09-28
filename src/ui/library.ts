@@ -11,7 +11,7 @@ import {
 import type { EmbeddedAsset } from '../core/composition';
 import type { TileAsset } from '../core/types';
 import { addImageLayer, addMotifLayer, canAddLayer, defaultMotifLayout, getState, subscribe, update } from '../state';
-import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
+import { collectionThumbDataUrl, nuancierMap, resolveVariationUrl, tilesFromCollection } from '../io/collectionTiles';
 import {
   bibliothequeImageUrl,
   loadBibliothequeImages,
@@ -29,7 +29,9 @@ import {
   storePassword,
   type SharedImage,
 } from '../io/imagesClient';
-import { deleteSharedCollection } from '../io/collectionsClient';
+import { deleteSharedCollection, listSharedCollections, restoreSharedCollection } from '../io/collectionsClient';
+import { collectionFromSharedPayload, upsertSharedCollection } from '../core/sharedCatalogue';
+import { fetchSharedCollectionById } from '../io/catalogue';
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
 import { calepinageForCollection } from './collectionPicker';
@@ -309,6 +311,8 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
   let activeTab: LibraryTab = 'collections';
   let busy = false;
   let openInfoId: string | null = null;
+  let showingMotifTrash = false;
+  let trashCollections: Collection[] = [];
   const thumbs = new Map<string, string>();
 
   function setStatus(message: string): void {
@@ -353,7 +357,57 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     }
   }
 
+  async function restoreShared(id: string): Promise<void> {
+    const password = await askSharedPassword();
+    if (!password) return;
+    storePassword(password);
+    try {
+      await restoreSharedCollection(id, password);
+      const fetched = await fetchSharedCollectionById(id);
+      const { catalogue } = getState();
+      if (catalogue && fetched) {
+        update({
+          catalogue: upsertSharedCollection(catalogue, fetched),
+        });
+      }
+      showingMotifTrash = false;
+      trashCollections = [];
+      renderCollections();
+      setStatus(`Motif « ${id} » restauré.`);
+    } catch (e) {
+      if (e instanceof FavorisApiError && e.status === 401) {
+        forgetPassword();
+        setStatus('Mot de passe incorrect.');
+        return;
+      }
+      setStatus(e instanceof Error ? e.message : 'Restauration impossible.');
+    }
+  }
+
+  async function toggleMotifTrash(): Promise<void> {
+    if (showingMotifTrash) {
+      showingMotifTrash = false;
+      trashCollections = [];
+      renderCollections();
+      return;
+    }
+    try {
+      const raw = await listSharedCollections(true);
+      trashCollections = raw.map((r) => collectionFromSharedPayload(r));
+      showingMotifTrash = true;
+      renderCollections();
+      setStatus(
+        trashCollections.length
+          ? `Corbeille : ${trashCollections.length} motif${trashCollections.length > 1 ? 's' : ''}.`
+          : 'Corbeille vide.',
+      );
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : 'Corbeille indisponible.');
+    }
+  }
+
   async function thumbFor(c: Collection, cat: Catalogue): Promise<string> {
+    if (c.vignetteUrl) return c.vignetteUrl;
     const cached = thumbs.get(c.id);
     if (cached !== undefined) return cached;
     const url = await collectionThumbDataUrl(c, nuancierMap(cat));
@@ -787,11 +841,36 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     infoBody.className = 'library-info-panel';
     const format = document.createElement('p');
     format.textContent = c.format ? `Format ${c.format}` : 'Format —';
-    const vars = document.createElement('p');
-    vars.textContent = `Variations : ${c.variations.map((v) => v.name).join(', ')}`;
-    infoBody.append(format, vars);
+    infoBody.appendChild(format);
+    if (c.modifieLe) {
+      const date = document.createElement('p');
+      date.className = 'coll-meta';
+      date.dataset.testid = `lib-info-date-${c.id}`;
+      date.textContent = `Modifié le ${new Date(c.modifieLe).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })}`;
+      infoBody.appendChild(date);
+    }
+    const varsLabel = document.createElement('p');
+    varsLabel.textContent = 'Variations';
+    infoBody.appendChild(varsLabel);
+    const varsRow = document.createElement('div');
+    varsRow.className = 'library-info-variations';
+    varsRow.dataset.testid = `lib-info-vars-${c.id}`;
+    for (const v of c.variations.slice(0, 8)) {
+      const mini = document.createElement('img');
+      mini.alt = v.name;
+      mini.title = v.name;
+      mini.className = 'library-info-var-thumb';
+      mini.src = resolveVariationUrl(v.file);
+      varsRow.appendChild(mini);
+    }
+    if (varsRow.childElementCount) infoBody.appendChild(varsRow);
     const swatches = document.createElement('div');
     swatches.className = 'library-info-swatches';
+    swatches.dataset.testid = `lib-info-swatches-${c.id}`;
     const map = nuancierMap(cat);
     const defaults = c.couleursParDefaut ?? {};
     for (const code of Object.values(defaults).slice(0, 8)) {
@@ -802,7 +881,11 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
       i.title = entry ? `${entry.id} · ${entry.hex}` : code;
       swatches.appendChild(i);
     }
-    if (swatches.childElementCount) infoBody.appendChild(swatches);
+    if (swatches.childElementCount) {
+      const colorsLabel = document.createElement('p');
+      colorsLabel.textContent = 'Couleurs par défaut';
+      infoBody.append(colorsLabel, swatches);
+    }
 
     const info = disclosure({
       label: 'Infos',
@@ -835,19 +918,20 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     }
     const query = search.value.trim();
     const items = visibleCollections(catalogue, false).filter((c) => matches(c, query));
-    if (items.length === 0) {
+    if (items.length === 0 && !showingMotifTrash) {
       setStatus(
         sharedCollectionsUnavailable
           ? 'Aucune collection ne correspond. Collections partagées indisponibles (hors ligne ou API absente).'
           : 'Aucune collection ne correspond.',
       );
-      return;
+      // Toujours montrer la section partagées (+ Nouveau / Corbeille) même vide.
+    } else if (!showingMotifTrash) {
+      setStatus(
+        sharedCollectionsUnavailable
+          ? `${items.length} collection${items.length > 1 ? 's' : ''} · Collections partagées indisponibles.`
+          : `${items.length} collection${items.length > 1 ? 's' : ''} · un clic ajoute un calque Motif.`,
+      );
     }
-    setStatus(
-      sharedCollectionsUnavailable
-        ? `${items.length} collection${items.length > 1 ? 's' : ''} · Collections partagées indisponibles.`
-        : `${items.length} collection${items.length > 1 ? 's' : ''} · un clic ajoute un calque Motif.`,
-    );
 
     const byCat = new Map<string, Collection[]>();
     for (const c of items) {
@@ -860,13 +944,78 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
     for (const group of CATEGORY_ORDER) {
       const cols = byCat.get(group.id);
       if (group.id === 'partagees') {
+        const head = document.createElement('div');
+        head.className = 'library-shared-head';
         const h = document.createElement('h3');
         h.className = 'calep-group-title';
-        h.textContent = group.label;
+        h.textContent = showingMotifTrash ? 'Corbeille des motifs' : group.label;
         h.dataset.testid = `lib-cat-${group.id}`;
-        collectionsList.appendChild(h);
+        const trashBtn = kitButton({
+          variant: showingMotifTrash ? 'primary' : 'ghost',
+          label: showingMotifTrash ? 'Retour' : 'Corbeille',
+          compact: true,
+          icon: 'trash',
+          testId: 'lib-motifs-corbeille',
+          onClick: () => {
+            void toggleMotifTrash();
+          },
+        });
+        head.append(h, trashBtn);
+        collectionsList.appendChild(head);
+
         const row = document.createElement('div');
         row.className = 'library-grid';
+        row.dataset.testid = showingMotifTrash ? 'lib-motifs-trash-grid' : 'lib-motifs-grid';
+
+        if (showingMotifTrash) {
+          if (trashCollections.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'library-empty';
+            empty.dataset.testid = 'lib-motifs-trash-empty';
+            empty.textContent = 'Aucun motif dans la corbeille.';
+            collectionsList.appendChild(empty);
+          } else {
+            for (const c of trashCollections) {
+              const wrap = document.createElement('div');
+              wrap.className = 'library-item-wrap library-item-wrap--trash';
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.className = 'library-item';
+              button.dataset.testid = `lib-trash-${c.id}`;
+              const media = document.createElement('div');
+              media.className = 'library-item-media';
+              const img = document.createElement('img');
+              img.alt = '';
+              img.className = 'coll-thumb';
+              if (c.vignetteUrl) img.src = c.vignetteUrl;
+              media.appendChild(img);
+              const body = document.createElement('div');
+              body.className = 'library-item-body';
+              const name = document.createElement('span');
+              name.className = 'coll-name';
+              name.textContent = c.nom;
+              const meta = document.createElement('span');
+              meta.className = 'coll-meta';
+              meta.textContent = c.id;
+              body.append(name, meta);
+              button.append(media, body);
+              const restore = kitButton({
+                variant: 'primary',
+                label: 'Restaurer',
+                compact: true,
+                testId: `lib-trash-restore-${c.id}`,
+                onClick: () => {
+                  void restoreShared(c.id);
+                },
+              });
+              wrap.append(button, restore);
+              row.appendChild(wrap);
+            }
+            collectionsList.appendChild(row);
+          }
+          continue;
+        }
+
         const neo = document.createElement('a');
         neo.href = './motif.html';
         neo.className = 'library-item library-item--new';

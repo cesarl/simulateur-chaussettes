@@ -512,3 +512,9 @@ Contexte : le lien `#p=2.` est compressé — `lien.includes(collectionId)` ne c
 Options : A) laisser les couleurs du lien ; B) décoder le share pour compter + pour `paletteId === 'defaut'|null` d’un id `p-…`, recharger `couleursParDefaut` live ; C) changer le format de lien.
 Choix : B — `countFavorisUsingCollection` décode via `decodeShare` ; `liveSharedDefaultColors` dans `applyShare` ; bouton « Recharger le motif » (`motif-reload-shared`) refetch GET `/api/collections/:id` ; PATCH n’envoie que les variations `fileDirty`.
 Conséquence : les favoris sur palette défaut affichent la nouvelle version ; les palettes custom / codes hors défaut restent ceux du lien. Format `#p=2.` inchangé.
+
+## D85 — Vignette WebP + corbeille motifs en Bibliothèque (T104)
+Contexte : finitions galerie partagée (vignette chaussette, infos, corbeille) sans page séparée.
+Options : A) page `motifs.html` dédiée ; B) enrichir la section Bibliothèque existante.
+Choix : B — bouton Corbeille dans l’en-tête de section ; vignette multipart `vignette` (WebP via `encodeFavoriVignette` depuis le canvas 3D de l’atelier) ; `Collection.vignetteUrl` / `modifieLe` depuis l’API ; bonus `admin-publish`.
+Conséquence : cartes sans vignette gardent le thumb SVG recoloré ; César voit la corbeille sans quitter la Bibliothèque.

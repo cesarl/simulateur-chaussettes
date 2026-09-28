@@ -18,7 +18,18 @@ export type SharedCollectionApi = {
   calepinageParDefaut: string | null;
   source: string;
   modifie_le?: number;
+  has_vignette?: boolean;
+  vignette_url?: string | null;
 };
+
+export async function listSharedCollections(corbeille = false): Promise<SharedCollectionApi[]> {
+  const q = corbeille ? '?corbeille=1' : '';
+  const res = await fetch(`/api/collections${q}`);
+  const body = await parseJson(res);
+  if (!res.ok) throw new FavorisApiError(erreurOf(body, res.status), res.status);
+  const list = (body as { collections?: SharedCollectionApi[] }).collections;
+  return Array.isArray(list) ? list : [];
+}
 
 async function parseJson(res: Response): Promise<unknown> {
   const text = await res.text();

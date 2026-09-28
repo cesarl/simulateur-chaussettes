@@ -11,6 +11,10 @@ import {
 } from './core/svgZones';
 import { zoneSvgBatch } from './core/motifDraft';
 import { buildZip } from './io/zipStore';
+import { createSharedCollection } from './io/collectionsClient';
+import { askSharedPassword } from './io/imagesClient';
+import { storePassword, forgetPassword } from './io/favorisClient';
+import { FavorisApiError } from './io/favorisApi';
 
 interface LocalCollectionDraft {
   id: string;
@@ -194,6 +198,12 @@ function openEditor(draft?: LocalCollectionDraft): void {
   saveBtn.textContent = 'Enregistrer';
   saveBtn.addEventListener('click', () => void saveCurrent());
 
+  const publishBtn = document.createElement('button');
+  publishBtn.type = 'button';
+  publishBtn.dataset.testid = 'admin-publish';
+  publishBtn.textContent = 'Publier en ligne';
+  publishBtn.addEventListener('click', () => void publishOnline());
+
   form.append(
     labelWrap('Nom', nameInput),
     document.createTextNode(' Identifiant : '),
@@ -208,6 +218,7 @@ function openEditor(draft?: LocalCollectionDraft): void {
     fileList,
     preview,
     saveBtn,
+    publishBtn,
   );
   editorEl.appendChild(form);
   refreshFileList(fileList, preview);
@@ -455,6 +466,77 @@ async function saveCurrent(): Promise<void> {
   }
   renderList();
   void entry;
+}
+
+/** Bonus T104 : envoie la collection locale vers `/api/collections`. */
+async function publishOnline(): Promise<void> {
+  if (!editing) return;
+  const err = validateDraft(editing);
+  if (err) {
+    setStatus(err, false);
+    return;
+  }
+  if (!editing.files.length) {
+    setStatus('Ajoutez au moins une variation.', false);
+    return;
+  }
+  const password = await askSharedPassword();
+  if (!password) return;
+  storePassword(password);
+
+  const zones = new Set<string>();
+  const couleursParDefaut: Record<string, string> = {};
+  for (const f of editing.files) {
+    for (const z of f.zones) {
+      zones.add(z.id);
+      if (!couleursParDefaut[z.id] && z.suggestedColorId) couleursParDefaut[z.id] = z.suggestedColorId;
+    }
+  }
+  const zoneList = [...zones].sort((a, b) => Number(a.split('-')[1]) - Number(b.split('-')[1]));
+  const donnees = {
+    zones: zoneList,
+    couleursParDefaut,
+    recommandations: [],
+    calepinages: editing.layouts.length ? editing.layouts : ['damier'],
+    calepinageParDefaut: editing.defaut_layout || editing.layouts[0] || 'damier',
+    variations: editing.files.map((f, i) => ({
+      name: `VAR${i + 1}`,
+      motif: i + 1,
+      file: '',
+      zones: f.zones.map((z) => z.id),
+    })),
+  };
+  const form = new FormData();
+  form.set(
+    'json',
+    JSON.stringify({
+      nom: editing.nom.trim(),
+      description: '',
+      format: editing.format,
+      donnees,
+    }),
+  );
+  for (let i = 0; i < editing.files.length; i++) {
+    const f = editing.files[i]!;
+    const name = `VAR${i + 1}`;
+    if (/\.png$/i.test(f.name)) {
+      const res = await fetch(f.text);
+      form.set(name, await res.blob(), `${name}.png`);
+    } else {
+      form.set(name, new Blob([f.zoned], { type: 'image/svg+xml' }), `${name}.svg`);
+    }
+  }
+  try {
+    const created = await createSharedCollection(form, password);
+    setStatus(`Publié en ligne : ${created.id}`);
+  } catch (e) {
+    if (e instanceof FavorisApiError && e.status === 401) {
+      forgetPassword();
+      setStatus('Mot de passe incorrect.', false);
+      return;
+    }
+    setStatus(e instanceof Error ? e.message : 'Publication impossible.', false);
+  }
 }
 
 async function writeToDirectory(

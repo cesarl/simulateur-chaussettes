@@ -175,7 +175,7 @@ Nouvelle page **`motif.html`** (entrée Vite). On y accède :
 **Critères**
 - [x] e2e : modifier la couleur par défaut d'un motif utilisé dans un favori → ouvrir le favori → nouvelle couleur ; dupliquer → deux motifs distincts ; supprimer puis restaurer.
 
-### [ ] T104 — Galerie « Motifs » et finitions
+### [x] T104 — Galerie « Motifs » et finitions
 
 - Dans la Bibliothèque, section « **Collections partagées** » :
   - première carte « + Nouveau motif » ;
@@ -186,7 +186,7 @@ Nouvelle page **`motif.html`** (entrée Vite). On y accède :
 - **`admin.html`** (outil local de César) : bouton « Publier en ligne », qui envoie une collection locale vers l'API. Bonus, si le temps le permet.
 
 **Critères**
-- [ ] Captures : section Collections partagées, fiche d'infos ouverte, corbeille.
+- [x] Captures : section Collections partagées, fiche d'infos ouverte, corbeille.
 
 ### [ ] T105 — Bilan V12
 
