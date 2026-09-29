@@ -1382,6 +1382,27 @@ Fait :
 1. Retrait du bouton / contrôle **Décor** sur `/motif` (`motif-preview-decor`) — vue décor 3D abandonnée.
 2. Persistance `calepinagePerso` (cells + rotationGlobale + overrides rot/tile) dans MotifDraft, `donnees` D1, payload API, Collection catalogue.
 3. Round-trip édition → Enregistrer → `motif.html?id=` restaure les overrides ; bake preset `perso` à l’ajout simulateur / décor.
-Vérification : `npm run verify` (en cours / à confirmer) ; e2e `calepinage édité : save → reopen`.
+Vérification : `npm run verify` ✅ (223 unit + 16 worker, build, **85 e2e**) ; `e2e:api` motif-creer ✅ (5/5 dont save→reopen).
+Contrôle visuel :
+- `calep-preview-no-decor.png` : atelier sans bouton Décor ; hint clic gauche/droit ; palette « Défaut » seule.
+- `calep-save-before.png` / `calep-save-after-reopen.png` : même nom « Calep Persist », même g-suite, overrides restaurés (`data-overrides` égal) ; titre « Modifier un motif » après reopen.
 Décisions : D90
 Reste / risques : aucun ; `#p=2.` inchangé.
+
+## Point pour César — calepinage perso + sans Décor atelier
+
+### Ce qui marche
+1. Édition preview (rotate / motif suivant) **enregistrée** avec le motif et **rechargée** à l’édition.
+2. Plus de bouton Décor sur `/motif` (aperçu 3D chaussette inchangé, sans sol/mur).
+3. À l’ajout simulateur, un preset `perso` bake les overrides si présents.
+
+### Tester en 3 étapes
+1. `npm run db:migrate:local && npm run dev:api` → http://localhost:4173/motif.html
+2. 2 SVG → calepinage Rapides → clic gauche ×2 + clic droit sur une case → Enregistrer (`essai`)
+3. Rouvrir via Bibliothèque › ⋯ › Modifier (ou `/motif.html?id=p-…`) → même grille éditéepersistée
+
+### Décisions à relire
+- D90 (et D87–D89 inchangées)
+
+### Blocages
+- aucun
