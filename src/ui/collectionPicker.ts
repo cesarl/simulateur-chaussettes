@@ -46,15 +46,21 @@ function matchesQuery(c: Collection, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
+/** Source minimale pour résoudre un calepinage (collection API ou brouillon atelier). */
+export type CalepSource = {
+  calepinageParDefaut: string | null;
+  calepinagePerso?: CalepinagePerso | null;
+};
+
 function hasPersoOverrides(perso: CalepinagePerso | null | undefined): boolean {
   return !!perso && perso.overrides.length > 0;
 }
 
 /**
- * Calepinage par défaut d’une collection.
+ * Calepinage effectif d’une collection / brouillon.
  * Si un calepinagePerso a des overrides, on pointe le preset bake `perso`.
  */
-export function calepinageForCollection(c: Collection): CalepinageSpec {
+export function calepinageForCollection(c: CalepSource): CalepinageSpec {
   const perso = c.calepinagePerso ?? null;
   if (hasPersoOverrides(perso)) {
     return {
@@ -75,7 +81,7 @@ export function calepinageForCollection(c: Collection): CalepinageSpec {
 
 /** Bake + injecte le preset `perso` dans la bibliothèque (retire l’ancien). */
 export function presetsWithPerso(
-  c: Collection,
+  c: CalepSource,
   tileCount: number,
   library: readonly Preset[] = BUILTIN_PRESETS,
 ): Preset[] {

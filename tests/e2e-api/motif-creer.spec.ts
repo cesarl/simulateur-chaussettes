@@ -19,6 +19,28 @@ function writeSvgFixture(name: string, fill1: string, fill2: string): string {
   return file;
 }
 
+/** Deux formes distinctes (cercle vs triangle) pour que rotate/tileDelta soient visibles après recolor. */
+function writeAsymPair(): [string, string] {
+  fs.mkdirSync(FIXTURE_DIR, { recursive: true });
+  const a = path.join(FIXTURE_DIR, 'asym-a.svg');
+  const b = path.join(FIXTURE_DIR, 'asym-b.svg');
+  fs.writeFileSync(
+    a,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect data-zone="zone-1" width="100" height="100" fill="#ab4236"/>
+  <circle data-zone="zone-2" cx="30" cy="30" r="22" fill="#303446"/>
+</svg>`,
+  );
+  fs.writeFileSync(
+    b,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect data-zone="zone-1" width="100" height="100" fill="#ab4236"/>
+  <polygon data-zone="zone-2" points="100,0 100,100 0,100" fill="#303446"/>
+</svg>`,
+  );
+  return [a, b];
+}
+
 test.describe('T102 créer un motif', () => {
   test('déposer, couleurs, damier, enregistrer, bibliothèque', async ({ page, request }) => {
     test.setTimeout(240_000);
@@ -270,6 +292,35 @@ test.describe('T102 créer un motif', () => {
     });
   });
 
+  test('clics preview mettent à jour le 3D (pattern-fp)', async ({ page }) => {
+    test.setTimeout(120_000);
+    const [f1, f2] = writeAsymPair();
+    await page.goto('/motif.html');
+    await page.getByTestId('motif-nom').fill('Calep 3D');
+    await page.getByTestId('motif-file-input').setInputFiles([f1, f2]);
+    await expect(page.getByTestId('motif-var-1')).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId('calep-thumb-g-suite').click();
+
+    const canvas = page.getByTestId('motif-preview-2d');
+    const host3d = page.getByTestId('motif-preview-3d');
+    await expect(host3d).toHaveAttribute('data-pattern-fp', /.+/);
+
+    const fp0 = await host3d.getAttribute('data-pattern-fp');
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'right' });
+    await expect(canvas).toHaveAttribute('data-edit-gen', '3', { timeout: 5_000 });
+    await expect(host3d).toHaveAttribute('data-preset-id', 'perso');
+    await expect
+      .poll(async () => host3d.getAttribute('data-pattern-fp'), { timeout: 10_000 })
+      .not.toBe(fp0);
+
+    await page.screenshot({
+      path: 'test-results/visuel-v12-calep-3d-after-clicks.png',
+      fullPage: true,
+    });
+  });
+
   test('calepinage édité : save → reopen → même état', async ({ page, request }) => {
     test.setTimeout(180_000);
 
@@ -279,8 +330,7 @@ test.describe('T102 créer un motif', () => {
       await request.delete(`/api/collections/${c.id}`, { headers: { 'X-Mot-De-Passe': PASSWORD } });
     }
 
-    const f1 = writeSvgFixture('persist1.svg', '#ab4236', '#303446');
-    const f2 = writeSvgFixture('persist2.svg', '#1a1a1a', '#fff8eb');
+    const [f1, f2] = writeAsymPair();
     await page.goto('/motif.html');
     await page.getByTestId('motif-nom').fill('Calep Persist');
     await page.getByTestId('motif-file-input').setInputFiles([f1, f2]);
@@ -288,12 +338,20 @@ test.describe('T102 créer un motif', () => {
     await page.getByTestId('calep-thumb-g-suite').click();
 
     const canvas = page.getByTestId('motif-preview-2d');
+    const host3dBefore = page.getByTestId('motif-preview-3d');
+    await expect(host3dBefore).toHaveAttribute('data-pattern-fp', /.+/);
+    const fp0 = await host3dBefore.getAttribute('data-pattern-fp');
     await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
     await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
     await canvas.click({ position: { x: 48, y: 48 }, button: 'right' });
     await expect(canvas).toHaveAttribute('data-edit-gen', '3', { timeout: 5_000 });
+    await expect
+      .poll(async () => host3dBefore.getAttribute('data-pattern-fp'), { timeout: 10_000 })
+      .not.toBe(fp0);
+    await expect(host3dBefore).toHaveAttribute('data-preset-id', 'perso');
 
     const overridesBefore = await canvas.getAttribute('data-overrides');
+    const patternFpBefore = await host3dBefore.getAttribute('data-pattern-fp');
     expect(overridesBefore).toBeTruthy();
     expect(overridesBefore).toContain('rotAdd');
     expect(overridesBefore).toContain('tileDelta');
@@ -348,6 +406,13 @@ test.describe('T102 créer un motif', () => {
     await expect
       .poll(async () => canvas2.getAttribute('data-overrides'), { timeout: 15_000 })
       .toBe(overridesBefore);
+
+    const host3d = page.getByTestId('motif-preview-3d');
+    await expect(host3d).toHaveAttribute('data-preset-id', 'perso');
+    await expect(host3d).toHaveAttribute('data-calep-fp', overridesBefore!);
+    await expect
+      .poll(async () => host3d.getAttribute('data-pattern-fp'), { timeout: 15_000 })
+      .toBe(patternFpBefore);
 
     await page.screenshot({
       path: 'test-results/visuel-v12-calep-save-after-reopen.png',

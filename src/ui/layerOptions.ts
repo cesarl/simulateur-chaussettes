@@ -11,15 +11,6 @@
  * restent ceux de `panel.ts` / `collectionPicker.ts` / `palettePanel.ts` / `calepGallery.ts`,
  * branchés sur le calque Motif sélectionné via `editingMotif()`.
  */
-import { motifRows } from '../core/layout';
-import { decodeDessinCells, setMotifBand, type DessinLayer, type StackLayer } from '../core/layers';
-import type { Hex } from '../core/types';
-import { NUANCIER_DEFAULTS } from '../core/nuancierDefaults';
-import { isSharedCollectionId } from '../core/collectionSlug';
-import { upsertSharedCollection } from '../core/sharedCatalogue';
-import { fetchSharedCollectionById } from '../io/catalogue';
-import { nuancierMap, tilesFromCollection } from '../io/collectionTiles';
-import { loadTileFromFile } from '../io/tiles';
 import {
   clearDessinLayer,
   getState,
@@ -35,11 +26,21 @@ import {
   toggleLayerTransparentColor,
   update,
 } from '../state';
+import { decodeDessinCells, setMotifBand, updateStackLayer, type DessinLayer, type MotifLayer, type StackLayer } from '../core/layers';
+import { calepinageForCollection, presetsWithPerso } from './collectionPicker';
 import { createColorRow } from './colorRow';
 import { details, makeCheckbox, makeColor, makeSliderNumber } from './controls';
 import { embeddedAssetFromTile } from './library';
 import { yarnLegendLabels } from './palettePanel';
 import { isPngCollection } from '../core/collections';
+import { isSharedCollectionId } from '../core/collectionSlug';
+import { upsertSharedCollection } from '../core/sharedCatalogue';
+import { fetchSharedCollectionById } from '../io/catalogue';
+import { nuancierMap, tilesFromCollection } from '../io/collectionTiles';
+import { loadTileFromFile } from '../io/tiles';
+import { motifRows } from '../core/layout';
+import type { Hex } from '../core/types';
+import { NUANCIER_DEFAULTS } from '../core/nuancierDefaults';
 
 export interface LayerOptionsDeps {
   /** Couleurs principales du calque (une pastille par couleur). */
@@ -163,7 +164,18 @@ export function mountLayerOptions(deps: LayerOptionsDeps): LayerOptionsApi {
         const prefix = `${id.toLowerCase()}-`;
         const others = existing.filter((t) => !t.name.toLowerCase().startsWith(prefix));
         setMotifCollection(id, png ? {} : colors, paletteId ?? 'defaut', layer.id);
-        update({ catalogue: nextCat, tiles: [...others, ...newTiles], error: null });
+        const calep = calepinageForCollection(fetched);
+        update({
+          catalogue: nextCat,
+          tiles: [...others, ...newTiles],
+          calepPresets: presetsWithPerso(fetched, newTiles.length, getState().calepPresets),
+          design: {
+            layers: updateStackLayer<MotifLayer>(getState().design.layers, layer.id, {
+              layout: { ...layer.layout, calepinage: calep },
+            }),
+          },
+          error: null,
+        });
       } catch (e) {
         update(
           { error: e instanceof Error ? e.message : 'Rechargement impossible.' },

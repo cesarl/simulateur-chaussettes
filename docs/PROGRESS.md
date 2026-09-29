@@ -1406,3 +1406,34 @@ Reste / risques : aucun ; `#p=2.` inchangé.
 
 ### Blocages
 - aucun
+
+## Fix — preview 3D suit le calepinage perso — 2026-09-29
+Statut : terminée
+Fait :
+1. Diagnostic : #18 sauvait `calepinagePerso` et bakait au simulateur, mais `update3d()` de `/motif` ignoraît les overrides (`BUILTIN_PRESETS` + `currentCalepSpec` seuls) → 2D changeait, 3D figée.
+2. Branchement : `previewCalepSource()` → `calepinageForCollection` + `presetsWithPerso` (même bake `perso` que l’ajout Bibliothèque) ; attrs `data-pattern-fp` / `data-calep-fp` / `data-preset-id` ; reload motif réapplique le bake.
+3. Tests : unit `calep-perso-3d` ; e2e-api clics → pattern-fp change + save→reopen empreinte 3D ; fixtures SVG asymétriques.
+Vérification : typecheck ✅ ; 224 unit + 16 worker ✅ ; e2e-api motif-creer **6/6** ✅ ; e2e UI **85/85** ✅.
+Contrôle visuel (formes asymétriques cercle/triangle) :
+- `calep-3d-broken-sock-before.png` === `…-after.png` (md5 identique) : avant fix, 3D inchangé après 3 clics.
+- `calep-3d-fixed-sock-before.png` → `…-after.png` (md5 différent) : après fix, calepinage 3D change ; full page `calep-3d-fixed-after-clicks.png` montre 2D+3D cohérents.
+Décisions : D91
+Reste / risques : variations quasi identiques après recolor restent peu lisibles à l’œil (rotation d’un cercle) — normal.
+
+## Point pour César — clics preview → 3D + save réel
+
+### Ce qui marche
+1. Sur `/motif` : clic gauche (rotate) / clic droit (motif suivant) sur la **grille 2D** met à jour **immédiatement** la chaussette 3D dessous.
+2. **Enregistrer en ligne** persiste `calepinagePerso` ; rouvrir le motif recharge la même grille **et** le même 3D.
+3. **Ajouter** le motif depuis la Bibliothèque applique le bake `perso` sur le calque Motif.
+
+### Tester en 3 étapes
+1. `npm run db:migrate:local && npm run dev:api` → http://localhost:4173/motif.html
+2. Déposer **2 variations de formes différentes** → Rapides « À la suite » → clic gauche ×2 + clic droit sur une case → la **chaussette 3D** doit changer tout de suite → Enregistrer (`essai`)
+3. Bibliothèque › Collections partagées › ⋯ › Modifier (ou `/motif.html?id=p-…`) → même calepinage ; ou **Ajouter** au projet → motif perso visible sur la chaussette simulateur
+
+### Décisions à relire
+- D91 (branchement 3D) ; D90 inchangée pour le format `calepinagePerso`
+
+### Blocages
+- aucun

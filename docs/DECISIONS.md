@@ -547,3 +547,9 @@ Contexte : édition preview (rotate / motif suivant) inutilisable sans sauvegard
 Options : A) abandonner l’édition interactive ; B) persister overrides relatifs (`calepinagePerso`) dans `donnees` D1 + bake preset `perso` à l’ajout ; C) stocker uniquement une matrice bake sans overrides pour re-édition.
 Choix : B — `CalepinagePerso { cells, rotationGlobale, overrides[] }` dans MotifDraft / CollectionDonnees / payload API (optionnel, null si vide) ; reload atelier restaure overrides ; simulateur bake `perso` via `presetsWithPerso` ; bouton `motif-preview-decor` retiré.
 Conséquence : round-trip save → reopen OK ; `#p=2.` inchangé ; collections anciennes sans le champ restent valides.
+
+## D91 — Preview 3D atelier branchée sur le bake `perso`
+Contexte : #18 persistait `calepinagePerso` et le simulateur bakait `perso` à l’ajout, mais `update3d()` de `/motif` appelait encore `samplePattern(..., currentCalepSpec(), BUILTIN_PRESETS)` sans overrides → clics 2D visibles, chaussette 3D figée ; César concluait à tort que rien n’était sauvé.
+Options : A) dupliquer la logique d’overrides dans le 3D ; B) réutiliser `calepinageForCollection` + `presetsWithPerso` (même bake que le simulateur) ; C) ne garder que la 2D.
+Choix : B — `previewCalepSource()` alimente le même couple spec/presets ; `data-pattern-fp` / `data-calep-fp` / `data-preset-id` sur `motif-preview-3d` pour les e2e ; « Recharger le motif » réapplique aussi le bake.
+Conséquence : un clic gauche/droit met à jour immédiatement 2D **et** 3D ; save/reopen conserve l’empreinte 3D ; variations de test e2e doivent être **asymétriques** (sinon recolor → formes identiques → overrides invisibles).

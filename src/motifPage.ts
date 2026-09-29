@@ -43,6 +43,7 @@ import {
   type CellOverride,
   type CellKey,
 } from './core/motifPreviewEdit';
+import { calepinageForCollection, presetsWithPerso } from './ui/collectionPicker';
 import { createScene } from './render/scene';
 import { createSockObject } from './render/sock3d/sockObject';
 import { defaultDimensions } from './core/sizes';
@@ -68,11 +69,7 @@ let cellOverrides = new Map<CellKey, CellOverride>();
 let previewRotationGlobale: Rot = 0;
 
 function syncPersoToDraft(): void {
-  draft.calepinagePerso = serializeCalepinagePerso(
-    PREVIEW_CELLS,
-    previewRotationGlobale,
-    cellOverrides,
-  );
+  draft.calepinagePerso = currentPerso();
   persistDraft();
 }
 
@@ -82,6 +79,7 @@ function restorePersoFromDraft(): void {
     previewRotationGlobale = perso.rotationGlobale;
     cellOverrides = storedToOverrides(perso.overrides);
   } else {
+    previewRotationGlobale = 0;
     cellOverrides = new Map();
   }
 }
@@ -237,9 +235,33 @@ async function rebuildPreviewTiles(): Promise<void> {
   previewTiles = tiles;
 }
 
+function currentPerso() {
+  return serializeCalepinagePerso(PREVIEW_CELLS, previewRotationGlobale, cellOverrides);
+}
+
+/** Spec de base (sans bake perso) — pour la grille 2D qui applique les overrides à la volée. */
 function currentCalepSpec(): CalepinageSpec {
   const base = specFromCalepinageId(draft.calepinageParDefaut ?? 'g-unique', 1, previewRotationGlobale);
   return { ...base, rotationGlobale: previewRotationGlobale };
+}
+
+/** Même résolution que le simulateur (preset `perso` bake) pour le 3D / save. */
+function previewCalepSource() {
+  return {
+    calepinageParDefaut: draft.calepinageParDefaut ?? 'g-suite',
+    calepinagePerso: currentPerso(),
+  };
+}
+
+/** Empreinte courte du motif RGB (tests e2e : le 3D suit les clics). */
+function patternFingerprint(rgb: Uint8ClampedArray | null, palette: string[]): string {
+  if (!rgb || rgb.length === 0) return '';
+  let h = palette.length * 2654435761;
+  const step = Math.max(1, Math.floor(rgb.length / 96));
+  for (let i = 0; i < rgb.length; i += step) {
+    h = (Math.imul(h ^ rgb[i]!, 16777619) >>> 0) ^ (i & 0xffff);
+  }
+  return `${palette.length}:${(h >>> 0).toString(16)}`;
 }
 
 function applyCalepSelection(spec: CalepinageSpec, selectedId: string | null): void {
@@ -361,10 +383,14 @@ function update3d(): void {
     };
     let pattern: Uint8Array | null = null;
     let palette: string[] = [NUANCIER_DEFAULT_ZONE_COLORS.footColor];
+    let rgbFp: Uint8ClampedArray | null = null;
     if (previewTiles.length) {
       const tileStitches = Math.max(2, Math.round(dims.needles / 6));
+      const source = previewCalepSource();
+      const calep = calepinageForCollection(source);
+      const presets = presetsWithPerso(source, previewTiles.length, BUILTIN_PRESETS);
       const layout: LayoutSettings = {
-        calepinage: currentCalepSpec(),
+        calepinage: calep,
         tileStitches,
         tileRows: Math.max(1, Math.round(tileStitches / (dims.stitchesPerCm / dims.rowsPerCm))),
         gapStitches: 0,
@@ -377,7 +403,8 @@ function update3d(): void {
         tileSizeMode: 'around',
         tileIds: previewTiles.map((t) => t.id),
       };
-      const rgb = samplePattern(previewTiles, layout, dims, zones, 'majoritaire', BUILTIN_PRESETS);
+      const rgb = samplePattern(previewTiles, layout, dims, zones, 'majoritaire', presets);
+      rgbFp = rgb;
       const map = new Map<string, number>();
       palette = [];
       const h = Math.max(1, dims.legRows);
@@ -429,6 +456,10 @@ function update3d(): void {
     );
     sceneHandle.scene.add(sockObj.mesh);
     sceneHandle.requestRender();
+    const perso = currentPerso();
+    host.dataset.calepFp = persoFingerprint(perso);
+    host.dataset.patternFp = patternFingerprint(rgbFp, palette);
+    host.dataset.presetId = calepinageForCollection(previewCalepSource()).presetId ?? '';
   } catch (e) {
     console.warn('Aperçu 3D', e);
   }

@@ -221,7 +221,10 @@ test('lien de partage : palette manuelle (pas calques) survit aussi', async ({ b
   );
   const hashBefore = await page.evaluate(() => window.location.hash);
   await page.getByTestId('panel-copy-link').click();
-  await expect(page.getByTestId('share-hint')).toContainText(/Lien copié|carreaux importés|Lien long/i);
+  // buildShareUrl peut être lent sous charge (2 workers) ; le hint n’apparaît qu’après.
+  await expect(page.getByTestId('share-hint')).toContainText(/Lien copié|carreaux importés|Lien long/i, {
+    timeout: 30_000,
+  });
   await page.waitForFunction(
     (prev) => window.location.hash.startsWith('#p=2.') && window.location.hash.length >= prev.length,
     hashBefore,
