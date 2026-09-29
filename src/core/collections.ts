@@ -54,9 +54,26 @@ export interface Collection {
   modifieLe?: number;
 }
 
+/**
+ * Chemin sans query/hash — les URL publiques API sont versionnées (`…/VAR1.png?v=123`).
+ * Sans ce strip, `/\.png$/` échoue et le client traite un PNG comme un SVG.
+ */
+export function filePathWithoutQuery(file: string): string {
+  const cut = file.split(/[?#]/)[0];
+  return cut && cut.length > 0 ? cut : file;
+}
+
+/** Détection d’extension PNG tolérante aux `?v=` / `#`. */
+export function fileLooksLikePng(file: string): boolean {
+  return /\.png$/i.test(filePathWithoutQuery(file));
+}
+
 /** Collection locale PNG (pas de zones) → pas de recoloration. */
 export function isPngCollection(c: Collection): boolean {
-  return c.variations.length > 0 && c.variations.every((v) => v.zones.length === 0 && /\.png$/i.test(v.file));
+  return (
+    c.variations.length > 0 &&
+    c.variations.every((v) => v.zones.length === 0 && fileLooksLikePng(v.file))
+  );
 }
 
 export interface Catalogue {

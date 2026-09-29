@@ -1327,3 +1327,51 @@ npm run build && npx wrangler deploy
 
 ### Décision à relire
 - D86
+
+## Fix UX post-V12 (add/thumb, calepinage, nuancier, polish) — 2026-09-29
+Statut : terminée
+Branche : `cursor/v12-ux-bugs-f7e6`
+
+### Fait
+1. **Ajouter + miniature PNG** : sniff `?v=` corrigé (`fileLooksLikePng`) → save → bibliothèque → Ajouter crée un calque Motif avec vignette dock.
+2. **Calepinage atelier** : `mountCalepGallery` réutilisée (Rapides + presets complets) ; `specFromCalepinageId` ; preview fidèle `planPlacements`.
+3. **Édition preview** : clic gauche rotate case, clic droit variation suivante (e2e souris).
+4. **Zones Chaussette** : pastilles nuancier (`ctl-cuff/heel/toe-color`), plus de color picker libre.
+5. **Polish `/motif`** : densification kit (disclosures, preview sticky, hint édition, galerie calep scrollable).
+
+### Vérification
+- `npm run verify` ✅ (typecheck, 220 unit + 15 worker, build, **85 e2e**)
+- `e2e:api` motif-creer ✅ (4 tests dont PNG add + preview clic)
+- `nuancier-zones` ✅
+
+### Contrôle visuel (ouvert)
+Captures `/cursor/stores/self/media/v12-ux/` (+ `docs/captures/v12-ux/`) :
+
+- **motif-ui-avant.png** : 4 boutons texte grille/damier/quinconce/aléatoire ; « Calepinage par défaut : aucun » ; layout plus lâche.
+- **motif-ui-apres.png** / **motif-calep-apres.png** : galerie RAPIDES complète (11 thumbs) + filtre « tous » ; hint « Clic gauche / clic droit » sous la preview 4×4 ; disclosures densifiées ; défaut `damier` ou `g-suite` affiché.
+- **calep-preview-edit.png** : atelier « Edit Preview », RAPIDES avec `g-suite` sélectionné (bordure accent), 2 variations, preview interactive.
+- **add-ok.png** : après Ajouter PNG partagé — calque « Png Preview » sélectionné dans le dock avec **miniature motif visible** (plus image cassée) ; 2D/3D montrent le damier ; panneau Collection « Png Preview ».
+- **thumb-ok-preview.png** : preview PNG dans l’atelier avant save.
+- **nuancier-zones-panel.png** : onglet Chaussette › Zones — pastilles `BL016 · Bleu noir météorite` / talon / pointe (boutons, **pas** `input[type=color]`).
+
+### Décisions
+D87 (`?v=` PNG), D88 (calepGallery + preview edit), D89 (nuancier zones Chaussette).
+
+## Point pour César — fix UX post-V12
+
+### Ce qui marche
+1. Motif PNG enregistré → Bibliothèque › Collections partagées → **Ajouter** ouvre un calque Motif utilisable + miniature dock OK.
+2. `/motif.html` : galerie de calepinages complète (comme l’éditeur) ; preview 2D éditable à la souris.
+3. Onglet Chaussette : bord-côte / talon / pointe = fils du nuancier uniquement.
+
+### Tester en 3 étapes
+1. `npm run db:migrate:local && npm run dev:api` → http://localhost:4173/motif.html
+2. Déposer `public/fixtures/carreau-test-damier.png` → choisir un calepinage Rapides → Enregistrer (mdp `essai`)
+3. Simulateur → Bibliothèque › Collections partagées → clic carte → calque Motif + thumb ; onglet Chaussette › Zones → pastilles nuancier
+
+### Décisions à relire
+- D87, D88, D89
+
+### Blocages
+- aucun ; migration remote prod toujours requise si pas faite (D86).
+- Overrides de cases sur la preview motif restent locaux (non sérialisés dans l’API collections).

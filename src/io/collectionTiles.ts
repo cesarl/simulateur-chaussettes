@@ -2,6 +2,7 @@ import {
   recolorSvg,
   zoneHex,
   isPngCollection,
+  fileLooksLikePng,
   type Catalogue,
   type Collection,
   type CollectionVariation,
@@ -54,8 +55,8 @@ export async function tilesFromCollection(
   const out: TileAsset[] = [];
   for (const variation of collection.variations) {
     const url = fichierUrl(collection, variation);
-    if (/\.png$/i.test(variation.file)) {
-      const tile = await loadTileFromUrl(url);
+    if (fileLooksLikePng(variation.file)) {
+      const tile = await loadTileFromUrl(url, 'png');
       out.push({ ...tile, id: tile.id, name: `${collection.id}-${variation.name}` });
       continue;
     }
@@ -74,7 +75,7 @@ export async function collectionThumbDataUrl(
 ): Promise<string> {
   const first = collection.variations[0];
   if (!first) return '';
-  if (/\.png$/i.test(first.file)) return fichierUrl(collection, first);
+  if (fileLooksLikePng(first.file)) return fichierUrl(collection, first);
   const raw = await fetchSvgText(first.file);
   const hexByZone = zoneHex(collection.couleursParDefaut, nuancier);
   const svg = isPngCollection(collection) || first.zones.length === 0 ? raw : recolorSvg(raw, hexByZone);

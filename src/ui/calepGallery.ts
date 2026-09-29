@@ -153,10 +153,61 @@ export function paintCalepThumb(
   }
 }
 
-export function mountCalepGallery(host: HTMLElement): {
-  sync: (tiles: readonly TileAsset[], spec: CalepinageSpec, presets: readonly Preset[]) => void;
+export type CalepGalleryOptions = {
+  /** Spéc courante (défaut : layout du calque motif édité). */
+  getSpec?: () => CalepinageSpec;
+  /** Appliquer une spéc ; `selectedId` = id galerie (`g-…` ou preset). */
+  setSpec?: (spec: CalepinageSpec, selectedId: string | null) => void;
+  getTiles?: () => readonly TileAsset[];
+  /** Ids de calepinages « de la collection » (défaut : collection active simulateur). */
+  getCollectionCalepIds?: () => string[];
+  showCustom?: boolean;
+  showImport?: boolean;
+  showFilter?: boolean;
+  initialFilter?: CalepFilter;
+};
+
+function defaultGetSpec(): CalepinageSpec {
+  return editingLayoutSettings().calepinage;
+}
+
+function defaultSetSpec(spec: CalepinageSpec): void {
+  update({ design: { layout: { calepinage: spec } } });
+}
+
+function defaultGetTiles(): readonly TileAsset[] {
+  return getState().tiles;
+}
+
+function defaultCollectionCalepIds(): string[] {
+  const state = getState();
+  const activeId = editingCollection()?.id ?? null;
+  const activeColl =
+    activeId && state.catalogue
+      ? state.catalogue.collections.find((c) => c.id === activeId) ?? null
+      : null;
+  return activeColl?.calepinages ?? [];
+}
+
+export function mountCalepGallery(
+  host: HTMLElement,
+  options: CalepGalleryOptions = {},
+): {
+  sync: (tiles?: readonly TileAsset[], spec?: CalepinageSpec, presets?: readonly Preset[]) => void;
 } {
-  let filter: CalepFilter = 'le';
+  const getSpec = options.getSpec ?? defaultGetSpec;
+  const setSpec =
+    options.setSpec ??
+    ((spec: CalepinageSpec) => {
+      defaultSetSpec(spec);
+    });
+  const getTiles = options.getTiles ?? defaultGetTiles;
+  const getCollectionCalepIds = options.getCollectionCalepIds ?? defaultCollectionCalepIds;
+  const showCustom = options.showCustom !== false;
+  const showImport = options.showImport !== false;
+  const showFilter = options.showFilter !== false;
+
+  let filter: CalepFilter = options.initialFilter ?? 'le';
   let presets: readonly Preset[] = BUILTIN_PRESETS;
   let warnings: readonly string[] = BUILTIN_PRESET_WARNINGS;
 
@@ -180,6 +231,7 @@ export function mountCalepGallery(host: HTMLElement): {
       }
     },
   );
+  if (!showFilter) filterSelect.root.hidden = true;
 
   const rapidesTitle = document.createElement('h3');
   rapidesTitle.className = 'calep-group-title';
@@ -197,8 +249,8 @@ export function mountCalepGallery(host: HTMLElement): {
   reroll.textContent = 'Nouveau tirage';
   reroll.hidden = true;
   reroll.addEventListener('click', () => {
-    const current = editingLayoutSettings().calepinage;
-    update({ design: { layout: { calepinage: { graine: current.graine + 1 } } } });
+    const current = getSpec();
+    setSpec({ ...current, graine: current.graine + 1 }, selectedId(current));
   });
 
   const custom = document.createElement('details');
@@ -209,6 +261,7 @@ export function mountCalepGallery(host: HTMLElement): {
   custom.appendChild(customSummary);
   const customBody = document.createElement('div');
   custom.appendChild(customBody);
+  if (!showCustom) custom.hidden = true;
 
   const ordre = makeSelect(
     'Ordre',
@@ -269,21 +322,16 @@ export function mountCalepGallery(host: HTMLElement): {
     ],
     'droit',
     (value) => {
-      const current = editingLayoutSettings().calepinage;
-      update({
-        design: {
-          layout: {
-            calepinage: {
-              source: 'genere',
-              presetId: null,
-              genere: { ...current.genere },
-              appareil: value as CalepinageSpec['appareil'],
-              rotationGlobale: current.rotationGlobale,
-              graine: current.graine,
-            },
-          },
-        },
-      });
+      const current = getSpec();
+      const next: CalepinageSpec = {
+        source: 'genere',
+        presetId: null,
+        genere: { ...current.genere },
+        appareil: value as CalepinageSpec['appareil'],
+        rotationGlobale: current.rotationGlobale,
+        graine: current.graine,
+      };
+      setSpec(next, selectedId(next));
     },
   );
   const rotGlobale = makeSelect(
@@ -297,19 +345,14 @@ export function mountCalepGallery(host: HTMLElement): {
     ],
     '0',
     (value) => {
-      const current = editingLayoutSettings().calepinage;
-      update({
-        design: {
-          layout: {
-            calepinage: {
-              ...current,
-              source: 'genere',
-              presetId: null,
-              rotationGlobale: Number(value) as Rot,
-            },
-          },
-        },
-      });
+      const current = getSpec();
+      const next: CalepinageSpec = {
+        ...current,
+        source: 'genere',
+        presetId: null,
+        rotationGlobale: Number(value) as Rot,
+      };
+      setSpec(next, selectedId(next));
     },
   );
   customBody.append(ordre.root, pas.root, rotation.root, rotFixe.root, appareil.root, rotGlobale.root);
@@ -343,6 +386,9 @@ export function mountCalepGallery(host: HTMLElement): {
       update({ error: 'Fichier de préréglages illisible.' });
     }
   });
+  if (!showImport) {
+    importBtn.hidden = true;
+  }
 
   const warnDetails = document.createElement('details');
   warnDetails.className = 'calep-warnings';
@@ -367,21 +413,16 @@ export function mountCalepGallery(host: HTMLElement): {
   host.appendChild(root);
 
   function patchGenere(partial: Partial<GeneratedSpec>): void {
-    const current = editingLayoutSettings().calepinage;
-    update({
-      design: {
-        layout: {
-          calepinage: {
-            source: 'genere',
-            presetId: null,
-            genere: { ...current.genere, ...partial },
-            appareil: current.appareil,
-            rotationGlobale: current.rotationGlobale,
-            graine: current.graine,
-          },
-        },
-      },
-    });
+    const current = getSpec();
+    const next: CalepinageSpec = {
+      source: 'genere',
+      presetId: null,
+      genere: { ...current.genere, ...partial },
+      appareil: current.appareil,
+      rotationGlobale: current.rotationGlobale,
+      graine: current.graine,
+    };
+    setSpec(next, selectedId(next));
   }
 
   function makeThumb(
@@ -414,9 +455,8 @@ export function mountCalepGallery(host: HTMLElement): {
   }
 
   function render(): void {
-    const state = getState();
-    const tiles = state.tiles;
-    const spec = editingLayoutSettings().calepinage;
+    const tiles = getTiles();
+    const spec = getSpec();
     const tileCount = tiles.length;
     const currentId = selectedId(spec);
     const preset = spec.source === 'prereglage' ? presets.find((p) => p.id === spec.presetId) ?? null : null;
@@ -436,21 +476,16 @@ export function mountCalepGallery(host: HTMLElement): {
           null,
           tiles,
           currentId === g.id,
-          () => update({ design: { layout: { calepinage: gSpec } } }),
+          () => setSpec(gSpec, g.id),
         ),
       );
     }
 
     presetsHost.replaceChildren();
 
-    // Groupe « Calepinages de la collection » en tête (T30).
-    const activeId = editingCollection()?.id ?? null;
-    const activeColl =
-      activeId && state.catalogue
-        ? state.catalogue.collections.find((c) => c.id === activeId) ?? null
-        : null;
-    if (activeColl && activeColl.calepinages.length > 0) {
-      const collPresets = activeColl.calepinages
+    const collIds = getCollectionCalepIds();
+    if (collIds.length > 0) {
+      const collPresets = collIds
         .map((id) => presets.find((p) => p.id === id))
         .filter((p): p is Preset => !!p)
         .filter((p) => matchesFilter(Math.max(1, p.tilesUsed || 1), tileCount, filter));
@@ -475,7 +510,7 @@ export function mountCalepGallery(host: HTMLElement): {
               p,
               tiles,
               currentId === p.id,
-              () => update({ design: { layout: { calepinage: pSpec } } }),
+              () => setSpec(pSpec, p.id),
             ),
           );
         }
@@ -513,7 +548,7 @@ export function mountCalepGallery(host: HTMLElement): {
             p,
             tiles,
             currentId === p.id,
-            () => update({ design: { layout: { calepinage: pSpec } } }),
+            () => setSpec(pSpec, p.id),
           ),
         );
       }
@@ -529,13 +564,13 @@ export function mountCalepGallery(host: HTMLElement): {
     rotGlobale.input.value = String(spec.rotationGlobale);
 
     warnBody.textContent = warnings.join('\n');
-    warnDetails.hidden = warnings.length === 0;
+    warnDetails.hidden = warnings.length === 0 || !showImport;
   }
 
-  function sync(tiles: readonly TileAsset[], spec: CalepinageSpec, library: readonly Preset[]): void {
+  function sync(tiles?: readonly TileAsset[], spec?: CalepinageSpec, library?: readonly Preset[]): void {
     void tiles;
     void spec;
-    if (library.length) presets = library;
+    if (library && library.length) presets = library;
     const state = getState();
     if (state.calepWarnings) warnings = state.calepWarnings;
     render();

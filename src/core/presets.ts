@@ -109,3 +109,34 @@ export function applyGeneratedPreset(id: string, seed: number, rotationGlobale: 
     graine: seed,
   };
 }
+
+/**
+ * Résout un id de calepinage collection (preset JSON, `g-…`, ou ancien LayoutKind).
+ * Les presets JSON priment sur les ids legacy homonymes (`damier`).
+ */
+export function specFromCalepinageId(
+  id: string | null | undefined,
+  seed = DEFAULT_CALEPINAGE.graine,
+  rotationGlobale: Rot = DEFAULT_CALEPINAGE.rotationGlobale,
+): CalepinageSpec {
+  if (!id) return { ...DEFAULT_CALEPINAGE, graine: seed, rotationGlobale };
+  if (presetById(id)) {
+    return {
+      ...DEFAULT_CALEPINAGE,
+      source: 'prereglage',
+      presetId: id,
+      graine: seed,
+      rotationGlobale,
+    };
+  }
+  const generated = applyGeneratedPreset(id, seed, rotationGlobale);
+  if (generated) return generated;
+  if (isLegacyLayoutKind(id)) return migrateLegacyKind(id, seed, rotationGlobale);
+  return {
+    ...DEFAULT_CALEPINAGE,
+    source: 'prereglage',
+    presetId: id,
+    graine: seed,
+    rotationGlobale,
+  };
+}

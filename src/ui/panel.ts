@@ -37,6 +37,7 @@ import { mountCalepGallery } from './calepGallery';
 import { mountCollectionPicker } from './collectionPicker';
 import { mountLayerOptions, type LayerOptionsDeps } from './layerOptions';
 import { mountPalettePanel } from './palettePanel';
+import { mountZoneYarnField } from './zoneYarnField';
 import { OPTIONS_TABS, type OptionsTab, type OptionsTabsApi } from './optionsTabs';
 import {
   details,
@@ -1339,11 +1340,21 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
     unit: 'rangs',
     onChange: (value) => slide({ design: { dimensions: { cuffRows: Math.max(0, Math.round(value)) } } }),
   });
-  const cuffColor = makeColor('Couleur du bord-côte', 'ctl-cuff-color', design.zones.cuffColor, (value) => {
-    slide({ design: { zones: { cuffColor: value } } });
+  const cuffColor = mountZoneYarnField({
+    label: 'Couleur du bord-côte',
+    kind: 'cuff',
+    hex: design.zones.cuffColor,
+    onChange: (value) => {
+      slide({ design: { zones: { cuffColor: value } } });
+    },
   });
-  const heelColor = makeColor('Couleur du talon', 'ctl-heel-color', design.zones.heelColor, (value) => {
-    slide({ design: { zones: { heelColor: value } } });
+  const heelColor = mountZoneYarnField({
+    label: 'Couleur du talon',
+    kind: 'heel',
+    hex: design.zones.heelColor,
+    onChange: (value) => {
+      slide({ design: { zones: { heelColor: value } } });
+    },
   });
   const heelHelp =
     'Aperçu seulement : la taille réelle du talon dépend du tricotage (rangs de talon), à valider avec le fabricant.';
@@ -1383,8 +1394,13 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
     onChange: (value) =>
       slide({ design: { zones: { heelSpread: Math.min(100, Math.max(50, Math.round(value))) } } }),
   });
-  const toeColor = makeColor('Couleur de la pointe', 'ctl-toe-color', design.zones.toeColor, (value) => {
-    slide({ design: { zones: { toeColor: value } } });
+  const toeColor = mountZoneYarnField({
+    label: 'Couleur de la pointe',
+    kind: 'toe',
+    hex: design.zones.toeColor,
+    onChange: (value) => {
+      slide({ design: { zones: { toeColor: value } } });
+    },
   });
   const patternFoot = makeCheckbox(
     'Motif sur le pied',
@@ -1711,12 +1727,12 @@ function mountSettings(panes: Panes, actions: PanelActions): void {
     syncManual(current);
     cuff.input.checked = current.zones.cuffEnabled;
     cuffRows.setValue(current.dimensions.cuffRows);
-    if (document.activeElement !== cuffColor.input) cuffColor.input.value = current.zones.cuffColor;
-    if (document.activeElement !== heelColor.input) heelColor.input.value = current.zones.heelColor;
+    cuffColor.setHex(current.zones.cuffColor);
+    heelColor.setHex(current.zones.heelColor);
     heelHeight.setValue(current.zones.heelHeightMm);
     heelDepth.setValue(current.zones.heelDepthMm);
     heelSpread.setValue(current.zones.heelSpread);
-    if (document.activeElement !== toeColor.input) toeColor.input.value = current.zones.toeColor;
+    toeColor.setHex(current.zones.toeColor);
     patternFoot.input.checked = current.zones.patternOnFoot;
     if (document.activeElement !== decorMode.input) decorMode.input.value = current.decor.mode;
     decorTileCm.setValue(current.decor.tileCm);

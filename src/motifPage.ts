@@ -15,7 +15,7 @@ import {
   type MotifVariationDraft,
 } from './core/motifDraft';
 import { recolorPreview, type NuancierEntry } from './core/svgZones';
-import { recolorSvg } from './core/collections';
+import { fileLooksLikePng, recolorSvg } from './core/collections';
 import { loadTileFromSvgText, loadTileFromUrl } from './io/tiles';
 import { createSharedCollection, patchSharedCollection, countFavorisUsingCollection } from './io/collectionsClient';
 import { encodeFavoriVignette, encodeSolidFavoriVignette } from './io/favoriVignette';
@@ -27,19 +27,27 @@ import { disclosure } from './ui/kit/disclosure';
 import { kitButton } from './ui/kit/button';
 import { showToast } from './ui/kit/toast';
 import { openDialog } from './ui/kit/dialog';
-import { BUILTIN_PRESETS } from './core/presets';
-import type { TileAsset } from './core/types';
+import { BUILTIN_PRESETS, resolvePreset, specFromCalepinageId } from './core/presets';
+import { samplePattern } from './core/layout';
+import type { LayoutSettings, TileAsset, ZoneSettings } from './core/types';
+import { planPlacements, type CalepinageSpec, type Rot } from './core/calepinage';
+import { mountCalepGallery } from './ui/calepGallery';
+import {
+  bumpCellNextTile,
+  bumpCellRotate,
+  cellFromPointer,
+  type CellOverride,
+  type CellKey,
+} from './core/motifPreviewEdit';
 import { createScene } from './render/scene';
 import { createSockObject } from './render/sock3d/sockObject';
 import { defaultDimensions } from './core/sizes';
 import { composeGrid } from './core/grid';
 import { NUANCIER_DEFAULT_ZONE_COLORS } from './core/nuancierDefaults';
-import { migrateLegacyKind } from './core/presets';
-import { samplePattern } from './core/layout';
-import type { LayoutSettings, ZoneSettings } from './core/types';
 import * as THREE from 'three';
 
 const DRAFT_KEY = 'simulateur-chaussettes:motif-draft';
+const PREVIEW_CELLS = 4;
 
 const formHost = document.querySelector('[data-testid="motif-form"]') as HTMLElement;
 const previewHost = document.querySelector('[data-testid="motif-preview"]') as HTMLElement;
@@ -52,8 +60,9 @@ let previewPaletteId: 'defaut' | 'reco-1' | 'reco-2' | 'reco-3' = 'defaut';
 let showDecor = false;
 let sockObj: ReturnType<typeof createSockObject> | null = null;
 let sceneHandle: ReturnType<typeof createScene> | null = null;
-
-const CALEP_CHOICES = ['grille', 'damier', 'quinconce-h', 'aleatoire'] as const;
+/** Overrides locaux sur la grille d’aperçu (édition interactive). */
+let cellOverrides = new Map<CellKey, CellOverride>();
+let previewRotationGlobale: Rot = 0;
 
 function setStatus(msg: string, ok = true): void {
   statusEl.hidden = !msg;
@@ -200,6 +209,24 @@ async function rebuildPreviewTiles(): Promise<void> {
   previewTiles = tiles;
 }
 
+function currentCalepSpec(): CalepinageSpec {
+  const base = specFromCalepinageId(draft.calepinageParDefaut ?? 'g-unique', 1, previewRotationGlobale);
+  return { ...base, rotationGlobale: previewRotationGlobale };
+}
+
+function applyCalepSelection(spec: CalepinageSpec, selectedId: string | null): void {
+  const id = selectedId ?? (spec.source === 'prereglage' ? spec.presetId : null);
+  if (id) {
+    draft.calepinageParDefaut = id;
+    if (!draft.calepinages.includes(id)) draft.calepinages.push(id);
+  }
+  previewRotationGlobale = spec.rotationGlobale;
+  cellOverrides = new Map();
+  persistDraft();
+  renderForm();
+  renderPreview();
+}
+
 function draw2dPreview(canvas: HTMLCanvasElement): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -210,16 +237,25 @@ function draw2dPreview(canvas: HTMLCanvasElement): void {
   ctx.fillRect(0, 0, size, size);
   if (!previewTiles.length) {
     ctx.fillStyle = '#5a5348';
-    ctx.font = '14px sans-serif';
+    ctx.font = '14px "Source Sans 3", sans-serif';
     ctx.fillText('Déposez des variations pour prévisualiser', 24, 40);
     return;
   }
-  const cells = 4;
+  const cells = PREVIEW_CELLS;
   const cell = Math.floor(size / cells);
-  const kind = draft.calepinageParDefaut ?? 'grille';
-  for (let row = 0; row < cells; row++) {
-    for (let col = 0; col < cells; col++) {
-      const t = previewTiles[(row * cells + col) % previewTiles.length]!;
+  const spec = currentCalepSpec();
+  const preset = resolvePreset(spec, BUILTIN_PRESETS);
+  const tileCount = previewTiles.length;
+  const plan = planPlacements(spec, { tileCount, preset, tilesAround: cells }, cells, cells);
+  for (let cy = 0; cy < cells; cy++) {
+    for (let cx = 0; cx < cells; cx++) {
+      const p = plan[cy * cells + cx]!;
+      const ov = cellOverrides.get(`${cx},${cy}`);
+      const rotAdd = ov?.rotAdd ?? 0;
+      const tileDelta = ov?.tileDelta ?? 0;
+      const tileIdx = (p.tile + tileDelta) % tileCount;
+      const t = previewTiles[tileIdx]!;
+      const rot = ((p.rot + rotAdd) % 360) as Rot;
       const off = document.createElement('canvas');
       off.width = t.width;
       off.height = t.height;
@@ -227,10 +263,49 @@ function draw2dPreview(canvas: HTMLCanvasElement): void {
       const img = octx.createImageData(t.width, t.height);
       img.data.set(t.rgba);
       octx.putImageData(img, 0, 0);
-      const shift = kind.includes('damier') && row % 2 === 1 ? cell / 2 : 0;
-      ctx.drawImage(off, col * cell + shift, row * cell, cell, cell);
+      const x = cx * cell;
+      const y = cy * cell;
+      ctx.save();
+      ctx.translate(x + cell / 2, y + cell / 2);
+      ctx.rotate((rot * Math.PI) / 180);
+      if (p.flipX || p.flipY) ctx.scale(p.flipX ? -1 : 1, p.flipY ? -1 : 1);
+      ctx.drawImage(off, -cell / 2 + 1, -cell / 2 + 1, cell - 2, cell - 2);
+      ctx.restore();
     }
   }
+}
+
+function bindPreviewEdit(canvas: HTMLCanvasElement): void {
+  canvas.style.cursor = 'crosshair';
+  canvas.title = 'Clic gauche : tourner la case · clic droit : motif suivant';
+  canvas.dataset.editGen = '0';
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!previewTiles.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const cell = cellFromPointer(
+      (e.clientX - rect.left) * scaleX,
+      (e.clientY - rect.top) * scaleY,
+      canvas.width,
+      PREVIEW_CELLS,
+    );
+    if (!cell) return;
+    e.preventDefault();
+    if (e.button === 2) {
+      cellOverrides = bumpCellNextTile(cellOverrides, cell.cx, cell.cy);
+      canvas.dataset.lastEdit = 'next';
+    } else if (e.button === 0) {
+      cellOverrides = bumpCellRotate(cellOverrides, cell.cx, cell.cy);
+      canvas.dataset.lastEdit = 'rot';
+    } else {
+      return;
+    }
+    canvas.dataset.editGen = String(Number(canvas.dataset.editGen ?? '0') + 1);
+    draw2dPreview(canvas);
+    update3d();
+  });
 }
 
 function ensure3d(host: HTMLElement): void {
@@ -259,7 +334,7 @@ function update3d(): void {
     if (previewTiles.length) {
       const tileStitches = Math.max(2, Math.round(dims.needles / 6));
       const layout: LayoutSettings = {
-        calepinage: migrateLegacyKind(draft.calepinageParDefaut ?? 'grille', 1, 0),
+        calepinage: currentCalepSpec(),
         tileStitches,
         tileRows: Math.max(1, Math.round(tileStitches / (dims.stitchesPerCm / dims.rowsPerCm))),
         gapStitches: 0,
@@ -367,8 +442,14 @@ function renderPreview(): void {
   const c2 = document.createElement('canvas');
   c2.className = 'motif-preview-canvas';
   c2.dataset.testid = 'motif-preview-2d';
-  previewHost.appendChild(c2);
   draw2dPreview(c2);
+  bindPreviewEdit(c2);
+  previewHost.appendChild(c2);
+  const hint = document.createElement('p');
+  hint.className = 'motif-preview-hint';
+  hint.dataset.testid = 'motif-preview-hint';
+  hint.textContent = 'Clic gauche : tourner la case · clic droit : motif suivant';
+  previewHost.appendChild(hint);
 
   previewHost.appendChild(
     kitButton({
@@ -528,32 +609,25 @@ function renderForm(): void {
 
   const calBody = document.createElement('div');
   calBody.dataset.testid = 'motif-calep-host';
-  const calRow = document.createElement('div');
-  calRow.className = 'motif-preview-tabs';
-  for (const id of CALEP_CHOICES) {
-    const preset = BUILTIN_PRESETS.find((p) => p.id === id);
-    calRow.appendChild(
-      kitButton({
-        variant: draft.calepinageParDefaut === id ? 'primary' : 'ghost',
-        label: preset?.nom ?? id,
-        compact: true,
-        testId: `motif-calep-${id}`,
-        onClick: () => {
-          draft.calepinageParDefaut = id;
-          if (!draft.calepinages.includes(id)) draft.calepinages.push(id);
-          persistDraft();
-          renderForm();
-          renderPreview();
-        },
-      }),
-    );
-  }
-  calBody.appendChild(calRow);
+  calBody.className = 'motif-calep-host';
   const more = document.createElement('p');
   more.className = 'motif-id-preview';
   more.textContent = `Calepinage par défaut : ${draft.calepinageParDefaut ?? 'aucun'}`;
   more.dataset.testid = 'motif-calep-default';
   calBody.appendChild(more);
+  const galleryHost = document.createElement('div');
+  galleryHost.className = 'motif-calep-gallery';
+  calBody.appendChild(galleryHost);
+  mountCalepGallery(galleryHost, {
+    getSpec: () => currentCalepSpec(),
+    setSpec: (spec, selectedId) => applyCalepSelection(spec, selectedId),
+    getTiles: () => previewTiles,
+    getCollectionCalepIds: () => draft.calepinages,
+    showCustom: true,
+    showImport: false,
+    showFilter: true,
+    initialFilter: 'tous',
+  });
   formHost.appendChild(
     disclosure({ label: '4. Calepinage', open: true, testId: 'motif-step-calepinage', content: calBody }),
   );
@@ -744,8 +818,8 @@ async function saveOnline(): Promise<void> {
     return;
   }
   if (!draft.calepinageParDefaut) {
-    draft.calepinageParDefaut = 'damier';
-    if (!draft.calepinages.includes('damier')) draft.calepinages.push('damier');
+    draft.calepinageParDefaut = 'g-suite';
+    if (!draft.calepinages.includes('g-suite')) draft.calepinages.push('g-suite');
   }
   const password = await askSharedPassword();
   if (!password) return;
@@ -825,7 +899,7 @@ async function loadExisting(id: string, asCopy: boolean): Promise<void> {
     try {
       const res = await fetch(v.file.startsWith('/') || /^https?:/i.test(v.file) ? v.file : v.file);
       if (!res.ok) continue;
-      if (/\.png$/i.test(v.file)) {
+      if (fileLooksLikePng(v.file)) {
         const blob = await res.blob();
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const r = new FileReader();

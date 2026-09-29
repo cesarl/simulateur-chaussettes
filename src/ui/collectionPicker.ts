@@ -1,6 +1,10 @@
 /**
  * Section « Collection » : recherche, groupes, choix d’une collection.
  */
+import type { CalepinageSpec } from '../core/calepinage';
+import { specFromCalepinageId } from '../core/presets';
+import { editingCollection, getState, setMotifCollection, update } from '../state';
+import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 import {
   visibleCollections,
   yarnColors,
@@ -8,9 +12,6 @@ import {
   type Catalogue,
   type Collection,
 } from '../core/collections';
-import { DEFAULT_CALEPINAGE } from '../core/calepinage';
-import { editingCollection, getState, setMotifCollection, update } from '../state';
-import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 
 const CATEGORY_ORDER: Array<{ id: string; label: string }> = [
   { id: 'partagees', label: 'Collections partagées' },
@@ -39,15 +40,11 @@ function matchesQuery(c: Collection, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
-/** Calepinage par défaut d’une collection (préréglage du catalogue s’il existe). */
-export function calepinageForCollection(c: Collection) {
-  const id = c.calepinageParDefaut;
-  if (!id) return { ...DEFAULT_CALEPINAGE };
-  return {
-    ...DEFAULT_CALEPINAGE,
-    source: 'prereglage' as const,
-    presetId: id,
-  };
+/**
+ * Calepinage par défaut d’une collection (voir `specFromCalepinageId`).
+ */
+export function calepinageForCollection(c: Collection): CalepinageSpec {
+  return specFromCalepinageId(c.calepinageParDefaut);
 }
 
 export interface CollectionPickerApi {

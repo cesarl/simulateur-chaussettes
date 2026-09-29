@@ -125,7 +125,9 @@ export async function loadTileFromUrl(
   url: string,
   sourceHint?: TileAsset['source'],
 ): Promise<TileAsset> {
-  const name = decodeURIComponent(url.split('/').pop() || 'carreau');
+  // Strip ?v= / #fragment so « VAR1.png?v=123 » still sniffs as png.
+  const pathOnly = url.split(/[?#]/)[0] ?? url;
+  const name = decodeURIComponent(pathOnly.split('/').pop() || 'carreau');
   const source = sourceHint ?? detectSource(name, '');
   if (!source) throw unsupported(name);
   return rasterize(url, name, source);

@@ -4,9 +4,8 @@
  */
 import * as THREE from 'three';
 import type { CalepinageSpec } from '../core/calepinage';
-import { DEFAULT_CALEPINAGE } from '../core/calepinage';
 import type { Collection } from '../core/collections';
-import { resolvePreset } from '../core/presets';
+import { resolvePreset, specFromCalepinageId } from '../core/presets';
 import type { DecorSettings, TileAsset } from '../core/types';
 import { tilesFromCollection, nuancierMap } from '../io/collectionTiles';
 import { editingCollection, editingLayoutSettings, getState } from '../state';
@@ -59,13 +58,7 @@ function toOptions(d: DecorSettings): DecorOptions {
 }
 
 function calepinageForCollection(c: Collection): CalepinageSpec {
-  const id = c.calepinageParDefaut;
-  if (!id) return { ...DEFAULT_CALEPINAGE };
-  return {
-    ...DEFAULT_CALEPINAGE,
-    source: 'prereglage',
-    presetId: id,
-  };
+  return specFromCalepinageId(c.calepinageParDefaut);
 }
 
 function loadGrainOnce(): Promise<TileSource | null> {

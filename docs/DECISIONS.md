@@ -524,3 +524,20 @@ Contexte : après merge V12, « Réponse API illisible » à l’enregistrement 
 Options : A) documenter seulement la migration remote ; B) corriger le client (PNG ignorés dans `rebuildPreviewTiles`) + messages JSON actionnables + catch D1 « no such table » côté Worker.
 Choix : B — `loadTileFromUrl(dataUrl, 'png')` dans l’atelier ; `messageForNonJsonBody` remplace « illisible » ; Worker renvoie 503 JSON si table `collections` absente.
 Conséquence : PNG visibles en preview 2D/3D ; si migration/Worker manquent, César lit quoi faire (`db:migrate:remote` / `dev:api`) au lieu d’un parse opaque. e2e `catalogue.spec` mocke aussi `/api/collections` vide (V12 peut lever `missing` via les partagées seules).
+
+## D87 — URL `?v=` : sniff PNG avant extension (fix UX post-V12)
+Contexte : les fichiers publics collections sont versionnés (`…/VAR1.png?v=123`). `/\.png$/` échouait → `tilesFromCollection` traitait les PNG comme SVG → Ajouter silencieux + vignettes « image not found ».
+Options : A) retirer `?v=` côté Worker ; B) helper `fileLooksLikePng` / strip query partout.
+Choix : B — `filePathWithoutQuery` + `fileLooksLikePng` dans `collections.ts` ; branchés dans `isPngCollection`, `collectionTiles`, `compositionImages`, `loadTileFromUrl` (pathname sans query).
+Conséquence : PNG partagés s’ajoutent et s’affichent comme les SVG ; `#p=2.` inchangé.
+
+## D88 — Atelier motif : calepGallery découplée + édition preview
+Contexte : `CALEP_CHOICES` (4 legacy ids) incomplets et faux (collision `damier` legacy vs preset JSON).
+Options : A) élargir la liste de boutons ; B) réutiliser `mountCalepGallery` avec adapters.
+Choix : B — `CalepGalleryOptions` (`getSpec`/`setSpec`/`getTiles`/`initialFilter`) ; `specFromCalepinageId` (preset JSON > `g-…` > legacy) ; preview 2D via `planPlacements` ; clic gauche = rotate case, clic droit = variation suivante (overrides locaux, `data-edit-gen` / `data-last-edit`).
+Conséquence : liste complète Rapides + presets ; défaut save `g-suite` ; overrides preview non persistés dans l’API (ids de calepinage seulement).
+
+## D89 — Zones Chaussette : nuancier only (plus de `input[type=color]`)
+Contexte : onglet Chaussette gardait `makeColor` libre pour bord-côte / talon / pointe alors que Motif avait déjà le nuancier.
+Choix : `mountZoneYarnField` (pastille + picker nuancier public) ; testids `ctl-*-color` conservés sur le bouton (plus sur un color input).
+Conséquence : hex toujours écrits dans `zones.*` (share intact) ; pas de couleur hors nuancier Validé via cette UI.

@@ -3,7 +3,7 @@
  * Clé = assetKey + couleurs (SVG) + taille cible.
  */
 import { assetKey, type AssetRef, type RasterImage, type EmbeddedAsset } from '../core/composition';
-import { recolorSvg, zoneHex, type Catalogue, type ZoneColors } from '../core/collections';
+import { recolorSvg, zoneHex, fileLooksLikePng, type Catalogue, type ZoneColors } from '../core/collections';
 import { resolveVariationUrl } from './collectionTiles';
 import { bibliothequeImageUrl, resolveBibliothequeFichier } from './bibliothequeImages';
 import { loadTileFromSvgText, loadTileFromUrl } from './tiles';
@@ -110,8 +110,8 @@ export async function loadCompositionImage(req: CompositionImageRequest): Promis
     if (!collection || !variation) {
       throw new Error(`Variation introuvable : ${ref.collectionId}/${ref.variation}`);
     }
-    if (/\.png$/i.test(variation.file)) {
-      const tile = await loadTileFromUrl(resolveVariationUrl(variation.file));
+    if (fileLooksLikePng(variation.file)) {
+      const tile = await loadTileFromUrl(resolveVariationUrl(variation.file), 'png');
       img = { width: tile.width, height: tile.height, rgba: tile.rgba };
     } else {
       const res = await fetch(resolveVariationUrl(variation.file));

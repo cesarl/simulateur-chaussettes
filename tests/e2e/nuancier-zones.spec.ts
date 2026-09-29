@@ -121,6 +121,14 @@ test.describe('défauts zones = nuancier', () => {
       fond: NUANCIER_DEFAULTS.fond,
     });
 
+    // Chaussette › Zones : pastilles nuancier (pas de color picker libre)
+    await page.getByTestId('tab-chaussette').click();
+    await expect(page.getByTestId('ctl-cuff-color')).toBeVisible();
+    await expect(page.getByTestId('ctl-cuff-color')).not.toHaveAttribute('type', 'color');
+    await expect(page.locator('input[type="color"][data-testid="ctl-cuff-color"]')).toHaveCount(0);
+    await expect(page.locator('input[type="color"][data-testid="ctl-heel-color"]')).toHaveCount(0);
+    await expect(page.locator('input[type="color"][data-testid="ctl-toe-color"]')).toHaveCount(0);
+
     // Avant : anciens hex hors nuancier (référence visuelle historique).
     await applyZoneColors(page, LEGACY);
     expect(await readZones(page)).toEqual({
@@ -135,7 +143,15 @@ test.describe('défauts zones = nuancier', () => {
     await page.getByTestId('view2d').screenshot({ path: 'test-results/visuel-nuancier-zones-avant-plat.png' });
     copyCapture('visuel-nuancier-zones-avant-plat.png');
 
-    // Après : retour aux défauts nuancier (sans rechargement IndexedDB).
+    // Après : retour aux défauts nuancier via le picker UI (bord-côte)
+    await page.getByTestId('ctl-cuff-color').click();
+    await expect(page.getByTestId('ctl-cuff-nuancier')).toBeVisible();
+    await page.getByTestId(`ctl-cuff-yarn-${NUANCIER_DEFAULTS.cuffId}`).click();
+    await page.getByTestId('ctl-heel-color').click();
+    await page.getByTestId(`ctl-heel-yarn-${NUANCIER_DEFAULTS.heelId}`).click();
+    await page.getByTestId('ctl-toe-color').click();
+    await page.getByTestId(`ctl-toe-yarn-${NUANCIER_DEFAULTS.toeId}`).click();
+
     await applyZoneColors(page, {
       cuff: NUANCIER_DEFAULTS.cuff,
       heel: NUANCIER_DEFAULTS.heel,
@@ -154,6 +170,10 @@ test.describe('défauts zones = nuancier', () => {
     copyCapture('visuel-nuancier-zones-apres-3d.png');
     await page.getByTestId('view2d').screenshot({ path: 'test-results/visuel-nuancier-zones-apres-plat.png' });
     copyCapture('visuel-nuancier-zones-apres-plat.png');
+    await page.screenshot({
+      path: 'test-results/visuel-v12-ux-nuancier-zones-panel.png',
+      fullPage: true,
+    });
 
     expect(errors).toEqual([]);
   });

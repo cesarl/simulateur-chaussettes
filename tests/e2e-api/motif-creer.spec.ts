@@ -79,7 +79,7 @@ test.describe('T102 créer un motif', () => {
     expect(afterPx.split(',').length).toBe(3);
     void beforePx;
 
-    await page.getByTestId('motif-calep-damier').click();
+    await page.getByTestId('calep-thumb-damier').click();
     await expect(page.getByTestId('motif-calep-default')).toContainText('damier');
 
     await page.screenshot({
@@ -169,14 +169,14 @@ test.describe('T102 créer un motif', () => {
 
     const canvas = page.getByTestId('motif-preview-2d');
     await expect(canvas).toBeVisible();
-    // Fond vide = #e8e4dc ; un PNG remplit le canvas → pixel ≠ fond uni beige
+    // Fond vide = #e8e4dc ; échantillon au centre d’une case (évite le joint beige)
     await expect
       .poll(
         async () =>
           canvas.evaluate((el) => {
             const c = el as HTMLCanvasElement;
             const ctx = c.getContext('2d')!;
-            const d = ctx.getImageData(120, 120, 1, 1).data;
+            const d = ctx.getImageData(150, 150, 1, 1).data;
             return `${d[0]},${d[1]},${d[2]}`;
           }),
         { timeout: 20_000 },
@@ -188,7 +188,7 @@ test.describe('T102 créer un motif', () => {
       fullPage: true,
     });
 
-    await page.getByTestId('motif-calep-damier').click();
+    await page.getByTestId('calep-thumb-g-suite').click();
     await page.getByTestId('motif-save').click();
     await expect(page.getByTestId('lib-shared-password-dialog')).toBeVisible();
     await page.getByTestId('lib-shared-password').fill(PASSWORD);
@@ -206,9 +206,65 @@ test.describe('T102 créer un motif', () => {
       )
       .not.toBeNull();
 
+    const pngId = (
+      (await (await request.get('/api/collections')).json()) as {
+        collections: Array<{ id: string; nom: string }>;
+      }
+    ).collections.find((c) => c.nom === 'Png Preview')!.id;
+
     await expect(page.getByTestId('motif-status')).toContainText(/enregistré|p-png-preview/i);
     await page.screenshot({
       path: 'test-results/visuel-fix-v12-png-save-ok.png',
+      fullPage: true,
+    });
+
+    // Bug 4 : Ajouter depuis la bibliothèque doit créer un calque Motif + vignette dock
+    await page.goto('/?dev');
+    await page.waitForFunction(() => window.__SIM__?.ready === true, null, { timeout: 90_000 });
+    await page.getByTestId('project-library').click();
+    await expect(page.getByTestId(`lib-collection-${pngId}`)).toBeVisible({ timeout: 30_000 });
+    const thumbSrc = await page.getByTestId(`lib-collection-${pngId}`).locator('img').getAttribute('src');
+    expect(thumbSrc).toBeTruthy();
+    expect(thumbSrc).not.toMatch(/data:image\/svg\+xml/);
+
+    await page.getByTestId(`lib-collection-${pngId}`).click();
+    await expect(page.getByTestId('library-dialog')).toBeHidden({ timeout: 30_000 });
+    await page.waitForFunction((cid) => window.__SIM__?.activeCollectionId === cid, pngId, {
+      timeout: 30_000,
+    });
+    const layerCount = await page.evaluate(() => window.__SIM__?.design.layers.length ?? 0);
+    expect(layerCount).toBeGreaterThan(1);
+    await expect(page.locator('[data-testid^="layer-thumb-"]').first()).toBeVisible();
+    await page.screenshot({
+      path: 'test-results/visuel-v12-ux-add-png-ok.png',
+      fullPage: true,
+    });
+  });
+
+  test('preview : clic gauche rotate, clic droit variation suivante', async ({ page }) => {
+    test.setTimeout(120_000);
+    const f1 = writeSvgFixture('edit1.svg', '#ab4236', '#303446');
+    const f2 = writeSvgFixture('edit2.svg', '#1a1a1a', '#fff8eb');
+    await page.goto('/motif.html');
+    await page.getByTestId('motif-nom').fill('Edit Preview');
+    await page.getByTestId('motif-file-input').setInputFiles([f1, f2]);
+    await expect(page.getByTestId('motif-var-1')).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId('calep-thumb-g-suite').click();
+
+    const canvas = page.getByTestId('motif-preview-2d');
+    await expect(canvas).toBeVisible();
+    await expect(canvas).toHaveAttribute('data-edit-gen', '0');
+
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
+    await expect(canvas).toHaveAttribute('data-edit-gen', '1', { timeout: 5_000 });
+    await expect(canvas).toHaveAttribute('data-last-edit', 'rot');
+
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'right' });
+    await expect(canvas).toHaveAttribute('data-edit-gen', '2', { timeout: 5_000 });
+    await expect(canvas).toHaveAttribute('data-last-edit', 'next');
+
+    await page.screenshot({
+      path: 'test-results/visuel-v12-ux-calep-preview-edit.png',
       fullPage: true,
     });
   });
