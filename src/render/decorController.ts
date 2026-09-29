@@ -3,12 +3,13 @@
  * Charge une fois le grain photo `public/textures/grain-ciment.jpg`.
  */
 import * as THREE from 'three';
-import type { CalepinageSpec } from '../core/calepinage';
+import type { CalepinageSpec, Preset } from '../core/calepinage';
 import type { Collection } from '../core/collections';
-import { resolvePreset, specFromCalepinageId } from '../core/presets';
+import { resolvePreset } from '../core/presets';
 import type { DecorSettings, TileAsset } from '../core/types';
 import { tilesFromCollection, nuancierMap } from '../io/collectionTiles';
 import { editingCollection, editingLayoutSettings, getState } from '../state';
+import { calepinageForCollection, presetsWithPerso } from '../ui/collectionPicker';
 import {
   buildTileSurface,
   createDecor,
@@ -55,10 +56,6 @@ function toOptions(d: DecorSettings): DecorOptions {
     grainStrength: d.grainStrength,
     tilesPerSide: tilesPerSideFor(d.tileCm),
   };
-}
-
-function calepinageForCollection(c: Collection): CalepinageSpec {
-  return specFromCalepinageId(c.calepinageParDefaut);
 }
 
 function loadGrainOnce(): Promise<TileSource | null> {
@@ -159,6 +156,7 @@ export function createDecorController(
   async function resolveTilesAndSpec(): Promise<{
     tiles: TileAsset[];
     spec: CalepinageSpec;
+    presets: readonly Preset[];
   } | null> {
     const { design, tiles, catalogue, calepPresets } = getState();
     const layout = editingLayoutSettings();
@@ -168,7 +166,7 @@ export function createDecorController(
 
     if (d.tileSource === 'sock' || !catalogue) {
       if (tiles.length === 0) return null;
-      return { tiles, spec: layout.calepinage };
+      return { tiles, spec: layout.calepinage, presets: calepPresets };
     }
 
     let collection: Collection | undefined;
@@ -176,7 +174,7 @@ export function createDecorController(
       collection = catalogue.collections.find((c) => c.id === activeCollectionId);
       if (!collection) {
         if (tiles.length === 0) return null;
-        return { tiles, spec: layout.calepinage };
+        return { tiles, spec: layout.calepinage, presets: calepPresets };
       }
     } else {
       const id = d.otherCollectionId;
@@ -191,8 +189,11 @@ export function createDecorController(
       loaded = await tilesFromCollection(collection, collection.couleursParDefaut, nuancierMap(catalogue));
       tileCache.set(cacheKey, loaded);
     }
-    void calepPresets;
-    return { tiles: loaded, spec: calepinageForCollection(collection) };
+    return {
+      tiles: loaded,
+      spec: calepinageForCollection(collection),
+      presets: presetsWithPerso(collection, loaded.length, calepPresets),
+    };
   }
 
   function applyBuilt(
@@ -200,11 +201,11 @@ export function createDecorController(
     spec: CalepinageSpec,
     opts: DecorOptions,
     grainSrc: TileSource | null,
+    presets: readonly Preset[],
   ): void {
-    const { calepPresets } = getState();
     const layout = editingLayoutSettings();
     const sources = mapsTiles.map(tileToCanvas);
-    const preset = resolvePreset(spec, calepPresets);
+    const preset = resolvePreset(spec, presets);
     const maps = buildTileSurface({
       tiles: sources,
       grain: grainSrc,
@@ -241,7 +242,7 @@ export function createDecorController(
       markBuilt();
       return;
     }
-    applyBuilt(resolved.tiles, resolved.spec, opts, grainSrc);
+    applyBuilt(resolved.tiles, resolved.spec, opts, grainSrc, resolved.presets);
   }
 
   function scheduleBuild(): void {

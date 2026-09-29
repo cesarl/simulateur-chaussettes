@@ -36,6 +36,10 @@ import {
   bumpCellNextTile,
   bumpCellRotate,
   cellFromPointer,
+  parseCalepinagePerso,
+  persoFingerprint,
+  serializeCalepinagePerso,
+  storedToOverrides,
   type CellOverride,
   type CellKey,
 } from './core/motifPreviewEdit';
@@ -57,12 +61,36 @@ let draft: MotifDraft = emptyMotifDraft();
 let nuancier: NuancierEntry[] = [];
 let previewTiles: TileAsset[] = [];
 let previewPaletteId: 'defaut' | 'reco-1' | 'reco-2' | 'reco-3' = 'defaut';
-let showDecor = false;
 let sockObj: ReturnType<typeof createSockObject> | null = null;
 let sceneHandle: ReturnType<typeof createScene> | null = null;
 /** Overrides locaux sur la grille d’aperçu (édition interactive). */
 let cellOverrides = new Map<CellKey, CellOverride>();
 let previewRotationGlobale: Rot = 0;
+
+function syncPersoToDraft(): void {
+  draft.calepinagePerso = serializeCalepinagePerso(
+    PREVIEW_CELLS,
+    previewRotationGlobale,
+    cellOverrides,
+  );
+  persistDraft();
+}
+
+function restorePersoFromDraft(): void {
+  const perso = parseCalepinagePerso(draft.calepinagePerso);
+  if (perso) {
+    previewRotationGlobale = perso.rotationGlobale;
+    cellOverrides = storedToOverrides(perso.overrides);
+  } else {
+    cellOverrides = new Map();
+  }
+}
+
+function overridesAttr(): string {
+  return persoFingerprint(
+    serializeCalepinagePerso(PREVIEW_CELLS, previewRotationGlobale, cellOverrides),
+  );
+}
 
 function setStatus(msg: string, ok = true): void {
   statusEl.hidden = !msg;
@@ -222,7 +250,7 @@ function applyCalepSelection(spec: CalepinageSpec, selectedId: string | null): v
   }
   previewRotationGlobale = spec.rotationGlobale;
   cellOverrides = new Map();
-  persistDraft();
+  syncPersoToDraft();
   renderForm();
   renderPreview();
 }
@@ -303,6 +331,8 @@ function bindPreviewEdit(canvas: HTMLCanvasElement): void {
       return;
     }
     canvas.dataset.editGen = String(Number(canvas.dataset.editGen ?? '0') + 1);
+    canvas.dataset.overrides = overridesAttr();
+    syncPersoToDraft();
     draw2dPreview(canvas);
     update3d();
   });
@@ -402,7 +432,6 @@ function update3d(): void {
   } catch (e) {
     console.warn('Aperçu 3D', e);
   }
-  void showDecor;
 }
 
 function renderPreview(): void {
@@ -442,6 +471,7 @@ function renderPreview(): void {
   const c2 = document.createElement('canvas');
   c2.className = 'motif-preview-canvas';
   c2.dataset.testid = 'motif-preview-2d';
+  c2.dataset.overrides = overridesAttr();
   draw2dPreview(c2);
   bindPreviewEdit(c2);
   previewHost.appendChild(c2);
@@ -450,19 +480,6 @@ function renderPreview(): void {
   hint.dataset.testid = 'motif-preview-hint';
   hint.textContent = 'Clic gauche : tourner la case · clic droit : motif suivant';
   previewHost.appendChild(hint);
-
-  previewHost.appendChild(
-    kitButton({
-      variant: showDecor ? 'primary' : 'ghost',
-      label: showDecor ? 'Décor : sol + mur' : 'Décor : désactivé',
-      compact: true,
-      testId: 'motif-preview-decor',
-      onClick: () => {
-        showDecor = !showDecor;
-        renderPreview();
-      },
-    }),
-  );
 
   const d3 = document.createElement('div');
   d3.className = 'motif-preview-3d';
@@ -821,6 +838,7 @@ async function saveOnline(): Promise<void> {
     draft.calepinageParDefaut = 'g-suite';
     if (!draft.calepinages.includes('g-suite')) draft.calepinages.push('g-suite');
   }
+  syncPersoToDraft();
   const password = await askSharedPassword();
   if (!password) return;
   storePassword(password);
@@ -894,6 +912,8 @@ async function loadExisting(id: string, asCopy: boolean): Promise<void> {
   draft.recommandations = (col.recommandations ?? []).map((r) => ({ nom: '', colors: { ...r } }));
   draft.calepinages = [...(col.calepinages ?? [])];
   draft.calepinageParDefaut = col.calepinageParDefaut;
+  draft.calepinagePerso = parseCalepinagePerso(col.calepinagePerso ?? null);
+  restorePersoFromDraft();
   draft.variations = [];
   for (const v of col.variations) {
     try {
@@ -966,6 +986,8 @@ function offerDraftRestore(): void {
         testId: 'motif-draft-resume',
         onClick: () => {
           draft = { ...emptyMotifDraft(), ...saved };
+          draft.calepinagePerso = parseCalepinagePerso(draft.calepinagePerso);
+          restorePersoFromDraft();
           void rebuildPreviewTiles().then(() => renderAll());
           return true;
         },

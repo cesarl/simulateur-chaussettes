@@ -132,11 +132,13 @@ describe('API collections (D1 + R2)', () => {
       variations: Array<{ name: string; file: string }>;
       calepinageParDefaut: string;
       couleursParDefaut: Record<string, string>;
+      calepinagePerso: unknown;
     };
     expect(body.id).toBe('p-vagues');
     expect(body.source).toBe('partagee');
     expect(body.variations).toHaveLength(3);
     expect(body.calepinageParDefaut).toBe('damier');
+    expect(body.calepinagePerso).toBeNull();
     expect(body.variations[0]!.file).toContain('/api/collections/p-vagues/fichiers/');
     expect(body.variations[0]!.file).toContain('?v=');
 
@@ -296,6 +298,37 @@ describe('API collections (D1 + R2)', () => {
     expect(idA).toBe('p-vagues');
     expect(idB).toBe('p-vagues-2');
     expect(idA).not.toBe(idB);
+  });
+
+  it('persiste calepinagePerso (overrides preview)', async () => {
+    const perso = {
+      cells: 4,
+      rotationGlobale: 90,
+      overrides: [
+        { cx: 0, cy: 0, rotAdd: 90, tileDelta: 0 },
+        { cx: 1, cy: 0, rotAdd: 0, tileDelta: 1 },
+      ],
+    };
+    const meta = {
+      nom: 'Perso Calep',
+      description: '',
+      format: '20x20',
+      donnees: { ...baseDonnees(2), calepinagePerso: perso },
+    };
+    const form = buildForm(meta, { VAR1: tinySvg(), VAR2: tinySvg() });
+    const created = await call('/api/collections', {
+      method: 'POST',
+      headers: { [PASSWORD_HEADER]: 'essai' },
+      body: form,
+    });
+    expect(created.status).toBe(201);
+    const body = (await created.json()) as { id: string; calepinagePerso: typeof perso };
+    expect(body.calepinagePerso).toEqual(perso);
+
+    const got = await call(`/api/collections/${body.id}`);
+    expect(got.status).toBe(200);
+    const again = (await got.json()) as { calepinagePerso: typeof perso };
+    expect(again.calepinagePerso).toEqual(perso);
   });
 
   it('table collections absente → 503 JSON lisible', async () => {

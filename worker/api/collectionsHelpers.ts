@@ -2,6 +2,10 @@
 
 import { collectionIdFromNom, isSharedCollectionId } from '../../src/core/collectionSlug';
 import { sanitizeSvg } from '../../src/core/sanitizeSvg';
+import {
+  parseCalepinagePerso,
+  type CalepinagePerso,
+} from '../../src/core/motifPreviewEdit';
 import { jsonErreur } from './favorisHelpers';
 
 export { jsonErreur, collectionIdFromNom, isSharedCollectionId, sanitizeSvg };
@@ -42,6 +46,8 @@ export type CollectionDonnees = {
   recommandations: Array<Recommendation | ZoneColors>;
   calepinages: string[];
   calepinageParDefaut: string | null;
+  /** Overrides preview atelier (optionnel ; absents = anciens motifs). */
+  calepinagePerso: CalepinagePerso | null;
   variations: StoredVariation[];
 };
 
@@ -111,6 +117,14 @@ export function validateDonnees(raw: unknown): CollectionDonnees | null {
       ? (raw.calepinageParDefaut as string | null)
       : null;
   if (raw.calepinageParDefaut !== null && typeof raw.calepinageParDefaut !== 'string') return null;
+  // Optionnel : absent / null OK (collections antérieures) ; forme invalide → rejet.
+  let calepinagePerso: CalepinagePerso | null = null;
+  if ('calepinagePerso' in raw && raw.calepinagePerso != null) {
+    if (typeof raw.calepinagePerso !== 'object' || Array.isArray(raw.calepinagePerso)) return null;
+    const persoRaw = raw.calepinagePerso as Record<string, unknown>;
+    if (!Array.isArray(persoRaw.overrides)) return null;
+    calepinagePerso = parseCalepinagePerso(raw.calepinagePerso);
+  }
   if (!Array.isArray(raw.variations)) return null;
   if (raw.variations.length < VARIATIONS_MIN || raw.variations.length > VARIATIONS_MAX) return null;
 
@@ -135,6 +149,7 @@ export function validateDonnees(raw: unknown): CollectionDonnees | null {
     recommandations,
     calepinages: raw.calepinages as string[],
     calepinageParDefaut,
+    calepinagePerso,
     variations,
   };
 }
@@ -250,6 +265,7 @@ export function publicCollectionPayload(
     recommandationsNoms: recoNoms,
     calepinages: donnees.calepinages,
     calepinageParDefaut: donnees.calepinageParDefaut,
+    calepinagePerso: donnees.calepinagePerso,
     urlCollection: null,
     source: 'partagee',
     cree_le: row.cree_le,

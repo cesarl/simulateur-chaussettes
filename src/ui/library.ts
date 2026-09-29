@@ -34,7 +34,7 @@ import { collectionFromSharedPayload, upsertSharedCollection } from '../core/sha
 import { fetchSharedCollectionById } from '../io/catalogue';
 import { encodePng, bytesToBase64 } from '../io/pngCodec';
 import { fixtureUrl, loadTileFromFile, loadTileFromUrl } from '../io/tiles';
-import { calepinageForCollection } from './collectionPicker';
+import { calepinageForCollection, presetsWithPerso } from './collectionPicker';
 import { openMenu, closeOpenMenu, type MenuEntry } from './kit/menu';
 import { kitButton } from './kit/button';
 import { disclosure } from './kit/disclosure';
@@ -431,8 +431,10 @@ export function mountLibrary(host: HTMLElement): LibraryApi {
         c.nom,
         [...others, ...tiles],
       );
-      if (added) close();
-      else setStatus('16 calques au maximum.');
+      if (added) {
+        update({ calepPresets: presetsWithPerso(c, tiles.length, getState().calepPresets) });
+        close();
+      } else setStatus('16 calques au maximum.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Collection illisible.';
       setStatus(message);

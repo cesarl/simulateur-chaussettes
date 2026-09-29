@@ -11,6 +11,7 @@ import {
 } from './svgZones';
 import { collectionIdFromNom, slugifyNom } from './collectionSlug';
 import { sanitizeSvg } from './sanitizeSvg';
+import { parseCalepinagePerso, type CalepinagePerso } from './motifPreviewEdit';
 
 export type MotifFormat = '20x20' | '15x15' | '10x10';
 
@@ -45,6 +46,8 @@ export type MotifDraft = {
   recommandations: MotifRecoDraft[];
   calepinages: string[];
   calepinageParDefaut: string | null;
+  /** Édition preview (rotations / motifs par case) — persistée API + brouillon. */
+  calepinagePerso: CalepinagePerso | null;
 };
 
 export function emptyMotifDraft(): MotifDraft {
@@ -58,6 +61,7 @@ export function emptyMotifDraft(): MotifDraft {
     recommandations: [],
     calepinages: [],
     calepinageParDefaut: null,
+    calepinagePerso: null,
   };
 }
 
@@ -177,9 +181,11 @@ export function draftToApiDonnees(draft: MotifDraft): {
   recommandations: Array<{ nom?: string; colors: Record<string, string> }>;
   calepinages: string[];
   calepinageParDefaut: string | null;
+  calepinagePerso: CalepinagePerso | null;
   variations: Array<{ name: string; motif: number; file: string; zones: string[] }>;
 } {
   const zones = unionZones(draft.variations);
+  const perso = parseCalepinagePerso(draft.calepinagePerso);
   return {
     zones,
     couleursParDefaut: { ...draft.couleursParDefaut },
@@ -188,6 +194,7 @@ export function draftToApiDonnees(draft: MotifDraft): {
     ),
     calepinages: [...draft.calepinages],
     calepinageParDefaut: draft.calepinageParDefaut,
+    calepinagePerso: perso,
     variations: draft.variations.map((v, i) => ({
       name: v.name,
       motif: i + 1,

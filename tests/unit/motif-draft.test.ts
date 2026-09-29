@@ -40,9 +40,15 @@ describe('motifDraft', () => {
     draft.couleursParDefaut = colors;
     draft.calepinageParDefaut = 'damier';
     draft.calepinages = ['damier'];
+    draft.calepinagePerso = {
+      cells: 4,
+      rotationGlobale: 90,
+      overrides: [{ cx: 0, cy: 0, rotAdd: 90, tileDelta: 1 }],
+    };
     const donnees = draftToApiDonnees(draft);
     expect(donnees.variations).toHaveLength(2);
     expect(donnees.calepinageParDefaut).toBe('damier');
+    expect(donnees.calepinagePerso).toEqual(draft.calepinagePerso);
   });
 
   it('variationsFromZoned accepte des PNG (data-URL) sans zones', () => {

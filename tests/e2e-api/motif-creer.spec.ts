@@ -254,6 +254,7 @@ test.describe('T102 créer un motif', () => {
     const canvas = page.getByTestId('motif-preview-2d');
     await expect(canvas).toBeVisible();
     await expect(canvas).toHaveAttribute('data-edit-gen', '0');
+    await expect(page.getByTestId('motif-preview-decor')).toHaveCount(0);
 
     await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
     await expect(canvas).toHaveAttribute('data-edit-gen', '1', { timeout: 5_000 });
@@ -265,6 +266,91 @@ test.describe('T102 créer un motif', () => {
 
     await page.screenshot({
       path: 'test-results/visuel-v12-ux-calep-preview-edit.png',
+      fullPage: true,
+    });
+  });
+
+  test('calepinage édité : save → reopen → même état', async ({ page, request }) => {
+    test.setTimeout(180_000);
+
+    const listed = await request.get('/api/collections');
+    const before = (await listed.json()) as { collections: Array<{ id: string }> };
+    for (const c of before.collections) {
+      await request.delete(`/api/collections/${c.id}`, { headers: { 'X-Mot-De-Passe': PASSWORD } });
+    }
+
+    const f1 = writeSvgFixture('persist1.svg', '#ab4236', '#303446');
+    const f2 = writeSvgFixture('persist2.svg', '#1a1a1a', '#fff8eb');
+    await page.goto('/motif.html');
+    await page.getByTestId('motif-nom').fill('Calep Persist');
+    await page.getByTestId('motif-file-input').setInputFiles([f1, f2]);
+    await expect(page.getByTestId('motif-var-1')).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId('calep-thumb-g-suite').click();
+
+    const canvas = page.getByTestId('motif-preview-2d');
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'left' });
+    await canvas.click({ position: { x: 48, y: 48 }, button: 'right' });
+    await expect(canvas).toHaveAttribute('data-edit-gen', '3', { timeout: 5_000 });
+
+    const overridesBefore = await canvas.getAttribute('data-overrides');
+    expect(overridesBefore).toBeTruthy();
+    expect(overridesBefore).toContain('rotAdd');
+    expect(overridesBefore).toContain('tileDelta');
+
+    await page.screenshot({
+      path: 'test-results/visuel-v12-calep-save-before.png',
+      fullPage: true,
+    });
+
+    await page.getByTestId('motif-save').click();
+    await expect(page.getByTestId('lib-shared-password-dialog')).toBeVisible();
+    await page.getByTestId('lib-shared-password').fill(PASSWORD);
+    await page.getByTestId('lib-shared-password-ok').click();
+
+    await expect
+      .poll(
+        async () => {
+          const r = (await (await request.get('/api/collections')).json()) as {
+            collections: Array<{ id: string; nom: string }>;
+          };
+          return r.collections.find((c) => c.nom === 'Calep Persist')?.id ?? null;
+        },
+        { timeout: 60_000 },
+      )
+      .not.toBeNull();
+
+    const motifId = (
+      (await (await request.get('/api/collections')).json()) as {
+        collections: Array<{ id: string; nom: string }>;
+      }
+    ).collections.find((c) => c.nom === 'Calep Persist')!.id;
+
+    const apiOne = (await (await request.get(`/api/collections/${motifId}`)).json()) as {
+      calepinagePerso: {
+        cells: number;
+        rotationGlobale: number;
+        overrides: Array<{ cx: number; cy: number; rotAdd: number; tileDelta: number }>;
+      } | null;
+      calepinageParDefaut: string;
+    };
+    expect(apiOne.calepinageParDefaut).toBe('g-suite');
+    expect(apiOne.calepinagePerso).not.toBeNull();
+    expect(apiOne.calepinagePerso!.overrides.length).toBeGreaterThan(0);
+    expect(apiOne.calepinagePerso!.overrides.some((o) => o.rotAdd === 180)).toBe(true);
+    expect(apiOne.calepinagePerso!.overrides.some((o) => o.tileDelta >= 1)).toBe(true);
+
+    await page.goto(`/motif.html?id=${motifId}`);
+    await expect(page.getByTestId('motif-nom')).toHaveValue('Calep Persist', { timeout: 30_000 });
+    await expect(page.getByTestId('motif-preview-decor')).toHaveCount(0);
+    const canvas2 = page.getByTestId('motif-preview-2d');
+    await expect(canvas2).toBeVisible();
+    await expect
+      .poll(async () => canvas2.getAttribute('data-overrides'), { timeout: 15_000 })
+      .toBe(overridesBefore);
+
+    await page.screenshot({
+      path: 'test-results/visuel-v12-calep-save-after-reopen.png',
       fullPage: true,
     });
   });

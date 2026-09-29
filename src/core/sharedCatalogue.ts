@@ -3,6 +3,8 @@
  */
 import type { Catalogue, Collection, CollectionVariation, ZoneColors } from './collections';
 import { isSharedCollectionId } from './collectionSlug';
+import type { CalepinagePerso } from './motifPreviewEdit';
+import { parseCalepinagePerso } from './motifPreviewEdit';
 
 export type SharedCollectionPayload = {
   id: string;
@@ -16,6 +18,7 @@ export type SharedCollectionPayload = {
   recommandationsNoms?: string[];
   calepinages?: string[];
   calepinageParDefaut?: string | null;
+  calepinagePerso?: CalepinagePerso | null;
   categorie?: string | null;
   source?: string;
   actif?: boolean;
@@ -49,6 +52,7 @@ export function collectionFromSharedPayload(raw: SharedCollectionPayload): Colle
     recommandations: (raw.recommandations ?? []).map((r) => ({ ...r })),
     calepinages: [...(raw.calepinages ?? [])],
     calepinageParDefaut: raw.calepinageParDefaut ?? null,
+    calepinagePerso: parseCalepinagePerso(raw.calepinagePerso ?? null),
     urlCollection: null,
     source: 'partagee',
     vignetteUrl: raw.vignette_url ?? null,

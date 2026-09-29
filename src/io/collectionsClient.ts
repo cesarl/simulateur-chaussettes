@@ -4,6 +4,7 @@ import { shareDefaultsFor } from '../core/layers';
 import { FavorisApiError } from './favorisApi';
 import { decodeShare } from './shareLink';
 import { PASSWORD_HEADER } from '../../worker/password';
+import type { CalepinagePerso } from '../core/motifPreviewEdit';
 
 export type SharedCollectionApi = {
   id: string;
@@ -16,6 +17,7 @@ export type SharedCollectionApi = {
   recommandations: Record<string, string>[];
   calepinages: string[];
   calepinageParDefaut: string | null;
+  calepinagePerso?: CalepinagePerso | null;
   source: string;
   modifie_le?: number;
   has_vignette?: boolean;

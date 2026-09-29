@@ -1375,3 +1375,13 @@ D87 (`?v=` PNG), D88 (calepGallery + preview edit), D89 (nuancier zones Chausset
 ### Blocages
 - aucun ; migration remote prod toujours requise si pas faite (D86).
 - Overrides de cases sur la preview motif restent locaux (non sérialisés dans l’API collections).
+
+## Fix — calepinage perso persisté + retrait Décor atelier — 2026-09-29
+Statut : terminée
+Fait :
+1. Retrait du bouton / contrôle **Décor** sur `/motif` (`motif-preview-decor`) — vue décor 3D abandonnée.
+2. Persistance `calepinagePerso` (cells + rotationGlobale + overrides rot/tile) dans MotifDraft, `donnees` D1, payload API, Collection catalogue.
+3. Round-trip édition → Enregistrer → `motif.html?id=` restaure les overrides ; bake preset `perso` à l’ajout simulateur / décor.
+Vérification : `npm run verify` (en cours / à confirmer) ; e2e `calepinage édité : save → reopen`.
+Décisions : D90
+Reste / risques : aucun ; `#p=2.` inchangé.

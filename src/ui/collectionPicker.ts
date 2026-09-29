@@ -1,8 +1,14 @@
 /**
  * Section « Collection » : recherche, groupes, choix d’une collection.
  */
-import type { CalepinageSpec } from '../core/calepinage';
-import { specFromCalepinageId } from '../core/presets';
+import type { CalepinageSpec, Preset } from '../core/calepinage';
+import { DEFAULT_CALEPINAGE } from '../core/calepinage';
+import { BUILTIN_PRESETS, specFromCalepinageId } from '../core/presets';
+import {
+  bakePersoPreset,
+  PERSO_PRESET_ID,
+  type CalepinagePerso,
+} from '../core/motifPreviewEdit';
 import { editingCollection, getState, setMotifCollection, update } from '../state';
 import { collectionThumbDataUrl, nuancierMap, tilesFromCollection } from '../io/collectionTiles';
 import {
@@ -40,11 +46,44 @@ function matchesQuery(c: Collection, q: string): boolean {
   return hay.includes(q.toLowerCase());
 }
 
+function hasPersoOverrides(perso: CalepinagePerso | null | undefined): boolean {
+  return !!perso && perso.overrides.length > 0;
+}
+
 /**
- * Calepinage par défaut d’une collection (voir `specFromCalepinageId`).
+ * Calepinage par défaut d’une collection.
+ * Si un calepinagePerso a des overrides, on pointe le preset bake `perso`.
  */
 export function calepinageForCollection(c: Collection): CalepinageSpec {
-  return specFromCalepinageId(c.calepinageParDefaut);
+  const perso = c.calepinagePerso ?? null;
+  if (hasPersoOverrides(perso)) {
+    return {
+      source: 'prereglage',
+      presetId: PERSO_PRESET_ID,
+      genere: { ...DEFAULT_CALEPINAGE.genere },
+      appareil: 'droit',
+      rotationGlobale: 0,
+      graine: 1,
+    };
+  }
+  const base = specFromCalepinageId(c.calepinageParDefaut);
+  if (perso && perso.rotationGlobale !== 0) {
+    return { ...base, rotationGlobale: perso.rotationGlobale };
+  }
+  return base;
+}
+
+/** Bake + injecte le preset `perso` dans la bibliothèque (retire l’ancien). */
+export function presetsWithPerso(
+  c: Collection,
+  tileCount: number,
+  library: readonly Preset[] = BUILTIN_PRESETS,
+): Preset[] {
+  const perso = c.calepinagePerso ?? null;
+  const without = library.filter((p) => p.id !== PERSO_PRESET_ID);
+  if (!hasPersoOverrides(perso)) return [...without];
+  const base = specFromCalepinageId(c.calepinageParDefaut, 1, perso!.rotationGlobale);
+  return [...without, bakePersoPreset(base, perso!, Math.max(1, tileCount), library)];
 }
 
 export interface CollectionPickerApi {
@@ -115,6 +154,7 @@ export function mountCollectionPicker(host: HTMLElement): CollectionPickerApi {
       setMotifCollection(c.id, png ? {} : colors, 'defaut');
       update({
         tiles,
+        calepPresets: presetsWithPerso(c, tiles.length, getState().calepPresets),
         design: {
           layout: { calepinage: calepinageForCollection(c) },
           name: c.nom,

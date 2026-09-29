@@ -541,3 +541,9 @@ Conséquence : liste complète Rapides + presets ; défaut save `g-suite` ; over
 Contexte : onglet Chaussette gardait `makeColor` libre pour bord-côte / talon / pointe alors que Motif avait déjà le nuancier.
 Choix : `mountZoneYarnField` (pastille + picker nuancier public) ; testids `ctl-*-color` conservés sur le bouton (plus sur un color input).
 Conséquence : hex toujours écrits dans `zones.*` (share intact) ; pas de couleur hors nuancier Validé via cette UI.
+
+## D90 — Calepinage perso persisté + retrait Décor atelier
+Contexte : édition preview (rotate / motif suivant) inutilisable sans sauvegarde ; bouton Décor `/motif` cassé (vue 3D décor).
+Options : A) abandonner l’édition interactive ; B) persister overrides relatifs (`calepinagePerso`) dans `donnees` D1 + bake preset `perso` à l’ajout ; C) stocker uniquement une matrice bake sans overrides pour re-édition.
+Choix : B — `CalepinagePerso { cells, rotationGlobale, overrides[] }` dans MotifDraft / CollectionDonnees / payload API (optionnel, null si vide) ; reload atelier restaure overrides ; simulateur bake `perso` via `presetsWithPerso` ; bouton `motif-preview-decor` retiré.
+Conséquence : round-trip save → reopen OK ; `#p=2.` inchangé ; collections anciennes sans le champ restent valides.

@@ -10,6 +10,7 @@
  */
 
 import { emptyYarnZoneFallback } from './nuancierDefaults';
+import type { CalepinagePerso } from './motifPreviewEdit';
 
 export interface NuancierColor {
   id: string; // ex. « OR008 »
@@ -45,6 +46,11 @@ export interface Collection {
   recommandations: ZoneColors[];
   calepinages: string[];
   calepinageParDefaut: string | null;
+  /**
+   * Calepinage personnalisé (atelier motif : rotations / motifs par case).
+   * Absent ou null = aucun override ; le simulateur bake un preset `perso` si présent.
+   */
+  calepinagePerso?: CalepinagePerso | null;
   urlCollection: string | null;
   /** Provenance (T43) : absent dans d’anciens catalogues ⇒ traité comme `carreaux`. */
   source?: 'carreaux' | 'locale' | 'partagee';
